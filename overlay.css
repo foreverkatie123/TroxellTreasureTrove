@@ -1,0 +1,11 @@
+#diceFxLayer{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    z-index:99999;
+}
+
+#diceCanvas{
+    width:100%;
+    height:100%;
+}

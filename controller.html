@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Troxell Treasure Trove — Overlay Controller</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      :root{
+        --bg:#0a0e13; --panel:#121a21; --border:#2a3944;
+        --accent:#4fb8c9; --accent-bright:#7ad4e0; --accent-2:#5ac8c0;
+        --text:#d9e1e6; --text-dim:#7c8a94; --danger:#d1605a;
+      }
+      *{box-sizing:border-box;}
+      html,body{ margin:0; padding:0; background:var(--bg); color:var(--text);
+        font-family:'Inter',system-ui,sans-serif; }
+      h1,h2,h3,.display{ font-family:'Cinzel',Georgia,serif; letter-spacing:0.02em; }
+      body{ padding:16px; max-width:460px; }
+
+      #connBar{
+        display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px;
+        margin-bottom:14px; font-size:12px; text-transform:uppercase; letter-spacing:.06em;
+        border:1px solid var(--border); background:var(--panel);
+      }
+      #connDot{ width:8px; height:8px; border-radius:50%; background:var(--danger); flex-shrink:0; }
+      #connDot.live{ background:var(--accent-2); box-shadow:0 0 8px var(--accent-2); }
+      #connText{ color:var(--text-dim); }
+
+      #noOpener{
+        display:none; text-align:center; padding:40px 20px; color:var(--text-dim);
+        border:1px dashed var(--border); border-radius:12px;
+      }
+      #noOpener h2{ color:var(--accent-bright); margin-top:0; }
+
+      #appBody{ display:flex; flex-direction:column; gap:16px; }
+
+      .panel{
+        background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:14px 16px;
+      }
+      .panel h3{ margin:0 0 12px; color:var(--accent-bright); font-size:14px; text-transform:uppercase; letter-spacing:.08em; }
+      .panel h3 .sub{ text-transform:none; letter-spacing:0; color:var(--text-dim); font-size:11px; font-weight:400; display:block; margin-top:2px; }
+
+      #roundDisplay{ text-align:center; margin-bottom:10px; }
+      #roundDisplay .num{ font-size:36px; color:var(--accent-bright); display:block; line-height:1; }
+      #roundDisplay .label{ font-size:11px; text-transform:uppercase; letter-spacing:.12em; color:var(--text-dim); }
+      #activeName{ text-align:center; font-family:'Cinzel',serif; font-size:20px; color:var(--accent-2); font-weight:700; margin-bottom:2px; }
+      #onDeckName{ text-align:center; font-size:12px; color:var(--text-dim); margin-bottom:14px; }
+      #onDeckName span{ color:var(--text); font-weight:600; }
+
+      .row2{ display:flex; gap:10px; }
+      .row2 > *{ flex:1; }
+      .row3{ display:flex; gap:8px; }
+      .row3 > *{ flex:1; }
+
+      .btn{
+        padding:11px; border-radius:8px; border:1px solid var(--border);
+        background:#161d24; color:var(--text); font-family:'Inter',sans-serif; font-size:14px;
+        cursor:pointer; transition:border-color .15s, background .15s; width:100%;
+      }
+      .btn:hover{ border-color:var(--accent); background:#1c252d; }
+      .btn.primary{ background:var(--accent); color:#062229; border-color:var(--accent); font-weight:600; }
+      .btn.primary:hover{ background:var(--accent-bright); }
+      .btn.danger{ color:var(--danger); }
+      .btn.danger:hover{ border-color:var(--danger); }
+      .btn.armed{ background:var(--danger); color:#fff; border-color:var(--danger); }
+      .btn.on{ background:var(--accent-2); color:#08211f; border-color:var(--accent-2); font-weight:600; }
+      .btn:disabled{ opacity:.4; cursor:not-allowed; }
+      .btn:disabled:hover{ border-color:var(--border); background:#161d24; }
+      .btn + .btn{ margin-top:8px; }
+      .btn.small{ padding:8px; font-size:12px; width:auto; }
+
+      input[type=text], input[type=number], select, textarea{
+        width:100%; background:#0d1318; border:1px solid var(--border); border-radius:6px;
+        color:var(--text); padding:9px 10px; font-size:14px; font-family:'Inter',sans-serif;
+      }
+      textarea{ resize:vertical; min-height:44px; }
+      .field{ margin-bottom:10px; }
+      .field label{ display:block; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--text-dim); margin-bottom:5px; }
+
+      #combatantList{ display:flex; flex-direction:column; gap:8px; margin-bottom:12px; max-height:320px; overflow-y:auto; }
+      .card{
+        background:#0d1318; border:1px solid var(--border); border-radius:8px;
+        padding:9px 12px;
+      }
+      .card.active{ border-color:var(--accent-2); box-shadow:0 0 0 1px var(--accent-2); }
+      .cardTop{ display:flex; align-items:center; gap:9px; }
+      .card .initNum{ font-family:'Cinzel',serif; font-size:17px; color:var(--accent-bright); width:26px; text-align:center; flex-shrink:0; }
+      .card .name{ flex:1; font-size:14px; font-weight:600; }
+      .card .iconBtn{ background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:15px; padding:2px 6px; flex-shrink:0; }
+      .card .iconBtn:hover{ color:var(--accent-2); }
+      .card .iconBtn.removeBtn:hover{ color:var(--danger); }
+      .cardStats{ display:flex; align-items:center; gap:6px; margin-top:7px; flex-wrap:wrap; }
+      .cardStats .statText{ font-size:12px; color:var(--text-dim); flex:1 1 auto; min-width:110px; }
+      .cardStats .statText.bloodied{ color:var(--danger); }
+      .amtInput{ width:52px; padding:6px 6px; font-size:12px; text-align:center; flex-shrink:0; }
+      .miniBtn{ width:auto; padding:6px 9px; font-size:11px; margin:0; flex-shrink:0; }
+
+      .fxCard{
+        background:#0d1318; border:1px solid var(--border); border-radius:8px;
+        padding:8px 10px; display:flex; align-items:center; gap:9px; margin-bottom:7px;
+      }
+      .fxCard .fxDot{ width:11px; height:11px; border-radius:50%; flex-shrink:0; }
+      .fxCard .fxDot.frost{ background:#7fd4ea; }
+      .fxCard .fxDot.poison{ background:#8fe04a; }
+      .fxCard .fxDot.acid{ background:#d8f24a; }
+      .fxCard .fxDot.generic{ background:#c9a8ff; }
+      .fxCard .fxInfo{ flex:1; font-size:12px; }
+      .fxCard .removeBtn{ background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:15px; padding:2px 6px; }
+      .fxCard .removeBtn:hover{ color:var(--danger); }
+
+      .statusLine{ font-size:11px; color:var(--text-dim); margin-bottom:10px; }
+      .divider{ height:1px; background:var(--border); margin:12px 0; }
+      ::-webkit-scrollbar{ width:6px; }
+      ::-webkit-scrollbar-thumb{ background:var(--border); border-radius:3px; }
+
+      /* ---------- Roster ---------- */
+      #rosterFilter{ margin-bottom:10px; }
+      #rosterList{ display:flex; flex-direction:column; gap:8px; margin-bottom:12px; max-height:360px; overflow-y:auto; }
+      .rosterCard{
+        background:#0d1318; border:1px solid var(--border); border-radius:8px; padding:10px 12px;
+      }
+      .rcTop{ display:flex; align-items:flex-start; gap:8px; margin-bottom:8px; }
+      .rcName{ font-size:14px; font-weight:600; flex:1; }
+      .rcTypeTag{
+        font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-dim);
+        border:1px solid var(--border); border-radius:4px; padding:2px 6px; margin-left:6px;
+      }
+      .rcMeta{ font-size:12px; color:var(--text-dim); }
+      .rcActions{ display:flex; gap:6px; align-items:center; margin-top:8px; }
+      .rcActions input{ width:64px; padding:7px; font-size:12px; text-align:center; flex-shrink:0; }
+      .rcActions .btn{ padding:8px 10px; font-size:12px; }
+      .rcEmpty{ font-size:12px; color:var(--text-dim); text-align:center; padding:16px 0; }
+
+      /* ---------- Modal overlay (sheet editor / quick stats) ---------- */
+      .modalOverlay{
+        display:none; position:fixed; inset:0; background:rgba(4,6,8,0.82); z-index:100;
+        align-items:flex-start; justify-content:center; overflow-y:auto; padding:20px 12px 40px;
+      }
+      .modalOverlay.open{ display:flex; }
+      .modalBox{
+        background:var(--panel); border:1px solid var(--border); border-radius:12px;
+        width:100%; max-width:440px; padding:16px; box-shadow:0 20px 60px rgba(0,0,0,0.6);
+      }
+      .modalBox h2{ margin:0 0 12px; color:var(--accent-bright); font-size:18px; }
+      .tabBar{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
+      .tabBtn{
+        padding:6px 10px; font-size:11px; border-radius:6px; border:1px solid var(--border);
+        background:#0d1318; color:var(--text-dim); cursor:pointer; text-transform:uppercase; letter-spacing:.05em;
+      }
+      .tabBtn.active{ border-color:var(--accent-2); color:var(--accent-2); }
+      .tabPanel{ display:none; }
+      .tabPanel.active{ display:block; }
+
+      .abilityGrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:12px; }
+      .abilityBox{ background:#0d1318; border:1px solid var(--border); border-radius:8px; padding:8px; text-align:center; }
+      .abilityBox label{ display:block; font-size:10px; text-transform:uppercase; color:var(--text-dim); margin-bottom:4px; }
+      .abilityBox input{ text-align:center; padding:6px; font-size:14px; margin-bottom:4px; }
+      .abilityBox .modDisplay{ font-size:12px; color:var(--accent-2); }
+
+      .saveGrid{ display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:12px; }
+      .saveRow{ display:flex; align-items:center; gap:6px; font-size:12px; background:#0d1318; border:1px solid var(--border); border-radius:6px; padding:6px 8px; }
+      .saveRow .saveBonus{ margin-left:auto; color:var(--accent-2); font-weight:600; }
+
+      .skillRow{ display:flex; align-items:center; gap:6px; font-size:12px; padding:5px 2px; border-bottom:1px solid var(--border); }
+      .skillRow .skillName{ flex:1; }
+      .skillRow .skillAbbr{ color:var(--text-dim); font-size:10px; width:26px; }
+      .skillRow .skillBonus{ color:var(--accent-2); font-weight:600; width:28px; text-align:right; }
+      .skillRow label{ display:flex; align-items:center; gap:3px; font-size:10px; color:var(--text-dim); }
+
+      .repRow{ display:flex; gap:6px; margin-bottom:6px; align-items:flex-start; }
+      .repRow input, .repRow textarea{ font-size:13px; }
+      .repRow .repRemove{ background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:15px; padding:4px; flex-shrink:0; }
+      .repRow .repRemove:hover{ color:var(--danger); }
+      .repAddBtn{ margin-top:2px; margin-bottom:14px; }
+
+      .passiveNote{ font-size:11px; color:var(--text-dim); margin-top:-4px; margin-bottom:12px; }
+      .modalFooter{ display:flex; gap:8px; margin-top:16px; }
+      .modalFooter .btn{ margin-top:0; }
+    </style>
+  </head>
+  <body>
+
+    <div id="connBar"><div id="connDot"></div><div id="connText">Connecting to TV display…</div></div>
+
+    <div id="noOpener">
+      <h2>No TV Display Found</h2>
+      <p>This remote must be opened from the "Open DM Remote Window" button on the table display — it talks to that window directly and won't work opened on its own.</p>
+    </div>
+
+    <div id="appBody">
+
+      <div class="panel">
+        <div id="roundDisplay">
+          <span class="num" id="roundNum">1</span>
+          <span class="label">Round</span>
+        </div>
+        <div id="activeName">—</div>
+        <div id="onDeckName">On deck: <span id="onDeckNameInner">—</span></div>
+        <div class="row2">
+          <button class="btn" id="prevTurnBtn">◀ Prev</button>
+          <button class="btn primary" id="nextTurnBtn">Next Turn ▶</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Initiative &amp; Combat<span class="sub">HP / temp HP / AC live-edit here — the TV only shows names and a bloodied/down icon</span></h3>
+        <div id="combatantList"></div>
+
+        <div class="divider"></div>
+        <div class="field"><label>Quick add (no roster entry)</label>
+          <div class="row2">
+            <input type="text" id="addName" placeholder="Name">
+            <input type="number" id="addInit" placeholder="Init" style="max-width:70px;">
+          </div>
+        </div>
+        <div class="row3">
+          <input type="number" id="addMaxHp" placeholder="Max HP">
+          <input type="number" id="addAc" placeholder="AC">
+        </div>
+        <div style="height:8px;"></div>
+        <button class="btn primary" id="addBtn">Add to Initiative</button>
+        <button class="btn danger" id="clearAllBtn">Clear All</button>
+      </div>
+
+      <div class="panel">
+        <h3>Roster <span class="sub">Prep your party &amp; monsters ahead of time — saved on this device</span></h3>
+        <input type="text" id="rosterFilter" placeholder="Filter by name…">
+        <div id="rosterList"></div>
+        <button class="btn primary" id="newCreatureBtn">+ New Character / Monster</button>
+      </div>
+
+      <div class="panel">
+        <h3>Fog of War</h3>
+        <div class="statusLine" id="fogStatus">No map loaded</div>
+        <button class="btn" id="fogToggleBtn" disabled>Toggle Fog</button>
+        <button class="btn" id="fogRevealBtn" disabled>Reveal All</button>
+        <button class="btn danger" id="fogResetBtn" disabled>Reset Fog</button>
+      </div>
+
+      <div class="panel">
+        <h3>Ruler</h3>
+        <button class="btn" id="rulerBtn" disabled>Ruler Mode</button>
+      </div>
+
+      <div class="panel">
+        <h3>Spell Effect</h3>
+        <div class="field">
+          <div class="row2">
+            <select id="fxShape">
+              <option value="cone">Cone</option>
+              <option value="line">Line</option>
+              <option value="circle">Circle</option>
+              <option value="square">Area</option>
+            </select>
+            <select id="fxType">
+              <option value="frost">Frost</option>
+              <option value="poison">Poison</option>
+              <option value="acid">Acid</option>
+              <option value="fire">Fire</option>
+              <option value="generic">Generic</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn primary" id="fxArmBtn" disabled>Arm — Drag on TV Map</button>
+        <div class="divider"></div>
+        <div id="effectsList"></div>
+        <button class="btn danger" id="fxClearAllBtn" disabled>Clear All Effects</button>
+      </div>
+
+      <div class="panel">
+        <h3>Overlay Window</h3>
+        <button class="btn" id="clickThroughBtn">Enable Interaction</button>
+        <div class="statusLine">Enable interaction only while drawing, measuring, or revealing fog. Disable it to pass mouse clicks to the program underneath.</div>
+        <div class="field"><label>Player display</label><select id="displaySelect"></select></div>
+        <button class="btn" id="moveOverlayBtn">Move Overlay to Display</button>
+      </div>
+
+      <div class="panel">
+        <h3>Settings</h3>
+        <div class="field">
+          <label>Feet per square</label>
+          <input type="number" id="feetPerSquare" value="5" min="1" max="50">
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Quick Stats modal (HP / AC editing during combat) -->
+    <div class="modalOverlay" id="statsModal">
+      <div class="modalBox">
+        <h2 id="statsModalTitle">Edit Stats</h2>
+        <div class="row2">
+          <div class="field"><label>Max HP</label><input type="number" id="statMaxHp"></div>
+          <div class="field"><label>Current HP</label><input type="number" id="statHp"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>Temp HP</label><input type="number" id="statTempHp"></div>
+          <div class="field"><label>Armor Class</label><input type="number" id="statAc"></div>
+        </div>
+        <div class="modalFooter">
+          <button class="btn" id="statsCancelBtn">Cancel</button>
+          <button class="btn primary" id="statsSaveBtn">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Full Character Sheet editor modal -->
+    <div class="modalOverlay" id="sheetModal">
+      <div class="modalBox">
+        <h2 id="sheetModalTitle">New Character</h2>
+        <div class="tabBar" id="tabBar">
+          <button class="tabBtn active" data-tab="core">Core</button>
+          <button class="tabBtn" data-tab="abilities">Abilities</button>
+          <button class="tabBtn" data-tab="skills">Skills</button>
+          <button class="tabBtn" data-tab="actions">Actions</button>
+          <button class="tabBtn" data-tab="spells">Spells</button>
+          <button class="tabBtn" data-tab="inventory">Inventory</button>
+          <button class="tabBtn" data-tab="features">Features</button>
+          <button class="tabBtn" data-tab="notes">Notes</button>
+        </div>
+
+        <div class="tabPanel active" data-panel="core">
+          <div class="field"><label>Name</label><input type="text" id="fName" placeholder="Creature or PC name"></div>
+          <div class="row2">
+            <div class="field"><label>Type</label>
+              <select id="fType"><option value="PC">PC</option><option value="NPC">NPC</option><option value="Monster">Monster</option></select>
+            </div>
+            <div class="field"><label>Class / Race / CR</label><input type="text" id="fClassRace" placeholder="e.g. Level 5 Ranger / CR 3"></div>
+          </div>
+          <div class="row3">
+            <div class="field"><label>Armor Class</label><input type="number" id="fAc" value="10"></div>
+            <div class="field"><label>Max HP</label><input type="number" id="fHpMax" value="10"></div>
+            <div class="field"><label>Speed</label><input type="text" id="fSpeed" placeholder="30 ft"></div>
+          </div>
+          <div class="row2">
+            <div class="field"><label>Initiative Bonus</label><input type="number" id="fInitBonus" value="0"></div>
+            <div class="field"><label>Alignment</label><input type="text" id="fAlignment"></div>
+          </div>
+          <div class="field"><label>Senses</label><input type="text" id="fSenses" placeholder="darkvision 60 ft, ..."></div>
+          <div class="field"><label>Languages</label><input type="text" id="fLanguages"></div>
+        </div>
+
+        <div class="tabPanel" data-panel="abilities">
+          <div class="field"><label>Proficiency Bonus</label><input type="number" id="fProfBonus" value="2" style="max-width:100px;"></div>
+          <div class="abilityGrid" id="abilityGrid"></div>
+          <div class="field" style="margin-bottom:6px;"><label>Saving Throw Proficiencies</label></div>
+          <div class="saveGrid" id="saveGrid"></div>
+        </div>
+
+        <div class="tabPanel" data-panel="skills">
+          <div class="passiveNote">Passive Perception: <span id="passivePerceptionDisplay">10</span> (auto, from Perception skill)</div>
+          <div id="skillList"></div>
+        </div>
+
+        <div class="tabPanel" data-panel="actions">
+          <div id="actionsList"></div>
+          <button class="btn repAddBtn" id="addActionBtn">+ Add Action</button>
+        </div>
+
+        <div class="tabPanel" data-panel="spells">
+          <div class="field"><label>Spellcasting Note</label><textarea id="fSpellNote" placeholder="e.g. Spell save DC 15, spell attack +7, slots: 4/3/2"></textarea></div>
+          <div id="spellsList"></div>
+          <button class="btn repAddBtn" id="addSpellBtn">+ Add Spell</button>
+        </div>
+
+        <div class="tabPanel" data-panel="inventory">
+          <div id="inventoryList"></div>
+          <button class="btn repAddBtn" id="addInventoryBtn">+ Add Item</button>
+        </div>
+
+        <div class="tabPanel" data-panel="features">
+          <div id="featuresList"></div>
+          <button class="btn repAddBtn" id="addFeatureBtn">+ Add Feature</button>
+        </div>
+
+        <div class="tabPanel" data-panel="notes">
+          <div class="field"><label>Notes</label><textarea id="fNotes" style="min-height:140px;" placeholder="Anything else — DM-only reminders, plot hooks, tactics..."></textarea></div>
+        </div>
+
+        <div class="modalFooter">
+          <button class="btn danger" id="sheetDeleteBtn" style="display:none;">Delete</button>
+          <button class="btn" id="sheetCancelBtn">Cancel</button>
+          <button class="btn primary" id="sheetSaveBtn">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function(){
+        const noOpener = document.getElementById('noOpener');
+        const appBody = document.getElementById('appBody');
+        const connDot = document.getElementById('connDot');
+        const connText = document.getElementById('connText');
+
+        const desktopMode = !!window.blackstoneDesktop;
+        if(!desktopMode && (!window.opener || window.opener.closed)){
+          noOpener.style.display = 'block';
+          appBody.style.display = 'none';
+          document.getElementById('connBar').style.display = 'none';
+          return;
+        }
+
+        let lastSnapshot = null;
+        let liveTimer = null;
+
+        function send(action, payload){
+          try{
+            if(window.blackstoneDesktop){
+              window.blackstoneDesktop.sendCommand(action, payload || {});
+            }else{
+              window.opener.postMessage({ source:'blackstoneRemote', type:'command', action, payload: payload || {} }, '*');
+            }
+          }catch(err){}
+        }
+
+        function markLive(){
+          connDot.classList.add('live');
+          connText.textContent = 'Connected to TV display';
+          clearTimeout(liveTimer);
+          liveTimer = setTimeout(() => {
+            connDot.classList.remove('live');
+            connText.textContent = 'No response from TV — is it still open?';
+          }, 3000);
+        }
+
+        window.addEventListener('message', e => {
+          const d = e.data;
+          if(!d || d.source !== 'blackstoneTV') return;
+          if(d.type === 'state'){
+            markLive();
+            lastSnapshot = d.payload;
+            renderSnapshot(lastSnapshot);
+          }
+        });
+
+        if(window.blackstoneDesktop){
+          window.blackstoneDesktop.onState(payload => {
+            markLive();
+            lastSnapshot = payload;
+            renderSnapshot(lastSnapshot);
+          });
+        }
+
+        window.addEventListener('beforeunload', () => {
+          try{ if(!window.blackstoneDesktop) window.opener.postMessage({ source:'blackstoneRemote', type:'closed' }, '*'); }catch(err){}
+        });
+
+        function escapeHtml(s){
+          const el = document.createElement('div'); el.textContent = s || ''; return el.innerHTML;
+        }
+        function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
+        function shapeName(s){ return { cone:'Cone', line:'Line', circle:'Circle', square:'Area' }[s] || s; }
+        function typeName(t){ return { frost:'Frost', poison:'Poison', acid:'Acid', generic:'Generic' }[t] || t; }
+
+        function hpStatText(c){
+          const hpPart = (c.hp === null || c.hp === undefined) ? '—' : c.hp;
+          const maxPart = (c.maxHp === null || c.maxHp === undefined) ? '' : ('/' + c.maxHp);
+          const tempPart = c.tempHp ? (' +' + c.tempHp + ' temp') : '';
+          const acPart = (c.ac === null || c.ac === undefined) ? '—' : c.ac;
+          return { text: 'AC ' + acPart + ' · HP ' + hpPart + maxPart + tempPart,
+                    bloodied: c.hp !== null && c.hp !== undefined && c.maxHp && c.hp <= c.maxHp/2 };
+        }
+
+        function renderCombatantList(s){
+          const list = document.getElementById('combatantList');
+
+          if(!s.combatants.length){
+            list.innerHTML = '<div class="statusLine">No combatants yet</div>';
+            return;
+          }
+
+          // remove cards for combatants that no longer exist
+          Array.from(list.children).forEach(el => {
+            if(el.dataset && el.dataset.id && !s.combatants.some(c => String(c.id) === el.dataset.id)){
+              el.remove();
+            }
+          });
+
+          s.combatants.forEach((c, idx) => {
+            let el = list.querySelector('.card[data-id="' + c.id + '"]');
+            const st = hpStatText(c);
+
+            if(!el){
+              el = document.createElement('div');
+              el.className = 'card';
+              el.dataset.id = c.id;
+              el.innerHTML = `
+                <div class="cardTop">
+                  <div class="initNum"></div>
+                  <div class="name"></div>
+                  <button class="iconBtn statBtn" title="Edit HP / AC">⚙</button>
+                  <button class="iconBtn removeBtn" title="Remove">✕</button>
+                </div>
+                <div class="cardStats">
+                  <span class="statText"></span>
+                  <input type="number" class="amtInput" placeholder="amt" min="0" value="1">
+                  <button class="btn miniBtn dmgBtn">−HP</button>
+                  <button class="btn miniBtn healBtn">+HP</button>
+                </div>
+              `;
+              // wire listeners ONCE, when the card is created — never re-attached on re-render
+              el.querySelector('.removeBtn').addEventListener('click', () => send('removeCombatant', { id: c.id }));
+              el.querySelector('.statBtn').addEventListener('click', () => openStatsModal(c.id));
+              el.querySelector('.dmgBtn').addEventListener('click', () => {
+                const amt = parseFloat(el.querySelector('.amtInput').value) || 0;
+                if(amt > 0) send('applyDamage', { id: c.id, amount: amt });
+              });
+              el.querySelector('.healBtn').addEventListener('click', () => {
+                const amt = parseFloat(el.querySelector('.amtInput').value) || 0;
+                if(amt > 0) send('applyHeal', { id: c.id, amount: amt });
+              });
+              list.appendChild(el);
+            }
+
+            // keep DOM order matching combatant order
+            if(list.children[idx] !== el) list.insertBefore(el, list.children[idx] || null);
+
+            // update only the mutable display bits — amtInput is never touched here
+            el.classList.toggle('active', c.id === s.activeId);
+            el.querySelector('.initNum').textContent = c.init;
+            el.querySelector('.name').textContent = c.name;
+            const statSpan = el.querySelector('.statText');
+            statSpan.textContent = st.text;
+            statSpan.classList.toggle('bloodied', st.bloodied);
+          });
+        }
+
+        function renderSnapshot(s){
+          document.getElementById('roundNum').textContent = s.round;
+          const active = s.combatants.find(c => c.id === s.activeId);
+          document.getElementById('activeName').textContent = active ? active.name : '—';
+          const onDeck = s.combatants.find(c => c.id === s.onDeckId);
+          document.getElementById('onDeckNameInner').textContent = onDeck ? onDeck.name : '—';
+
+          const list = document.getElementById('combatantList');
+          
+          renderCombatantList(s);
+
+          // Fog
+          const fogStatus = document.getElementById('fogStatus');
+          const fogToggleBtn = document.getElementById('fogToggleBtn');
+          const fogRevealBtn = document.getElementById('fogRevealBtn');
+          const fogResetBtn = document.getElementById('fogResetBtn');
+          if(!s.mapLoaded){ fogStatus.textContent = 'No map loaded on TV'; }
+          else if(!s.hasMask){ fogStatus.textContent = 'No fog mask loaded on TV'; }
+          else { fogStatus.textContent = s.regionsTotal + ' region' + (s.regionsTotal===1?'':'s') + ' — ' + s.regionsShown + ' revealed'; }
+          fogToggleBtn.disabled = !s.hasMask;
+          fogRevealBtn.disabled = !s.hasMask;
+          fogResetBtn.disabled = !s.hasMask;
+          fogToggleBtn.classList.toggle('on', s.fogEnabled && s.hasMask);
+          fogToggleBtn.textContent = s.fogEnabled ? 'Fog: On' : 'Toggle Fog';
+
+          // Ruler
+          const rulerBtn = document.getElementById('rulerBtn');
+          rulerBtn.disabled = !s.mapLoaded;
+          rulerBtn.classList.toggle('on', s.mode === 'ruler');
+          rulerBtn.textContent = s.mode === 'ruler' ? 'Ruler: On' : 'Ruler Mode';
+
+          // Spell arm button
+          const fxArmBtn = document.getElementById('fxArmBtn');
+          fxArmBtn.disabled = !s.mapLoaded;
+          if(s.mode === 'spell'){
+            fxArmBtn.textContent = 'Cancel Placement';
+            fxArmBtn.classList.add('armed'); fxArmBtn.classList.remove('primary');
+          } else {
+            fxArmBtn.textContent = 'Arm — Drag on TV Map';
+            fxArmBtn.classList.remove('armed'); fxArmBtn.classList.add('primary');
+          }
+
+          // Effects list
+          const fxList = document.getElementById('effectsList');
+          fxList.innerHTML = (s.effects || []).map(fx => `
+            <div class="fxCard">
+              <div class="fxDot ${fx.dtype}"></div>
+              <div class="fxInfo">${shapeName(fx.shape)} • ${typeName(fx.dtype)} • ${fx.label}</div>
+              <button class="removeBtn" data-fxid="${fx.id}">✕</button>
+            </div>
+          `).join('') || '<div class="statusLine">No effects placed</div>';
+          fxList.querySelectorAll('.removeBtn').forEach(btn => {
+            btn.addEventListener('click', () => send('removeEffect', { id: btn.dataset.fxid }));
+          });
+          document.getElementById('fxClearAllBtn').disabled = !(s.effects && s.effects.length);
+
+          // Feet per square (don't clobber while user is typing)
+          const fpsInput = document.getElementById('feetPerSquare');
+          if(document.activeElement !== fpsInput) fpsInput.value = s.feetPerSquare;
+        }
+
+        // ---- Turn / quick-add controls ----
+        document.getElementById('nextTurnBtn').addEventListener('click', () => send('nextTurn'));
+        document.getElementById('prevTurnBtn').addEventListener('click', () => send('prevTurn'));
+
+        function addCombatant(){
+          const nameInput = document.getElementById('addName');
+          const initInput = document.getElementById('addInit');
+          const name = nameInput.value.trim();
+          const init = parseFloat(initInput.value);
+          const maxHpRaw = document.getElementById('addMaxHp').value;
+          const acRaw = document.getElementById('addAc').value;
+          if(!name){
+            nameInput.style.borderColor = 'var(--danger)';
+            nameInput.focus();
+            setTimeout(() => { nameInput.style.borderColor = ''; }, 1800);
+            return;
+          }
+          if(isNaN(init)){
+            initInput.style.borderColor = 'var(--danger)';
+            initInput.placeholder = 'Init!';
+            initInput.focus();
+            setTimeout(() => { initInput.style.borderColor = ''; initInput.placeholder = 'Init'; }, 1800);
+            return;
+          }
+          const maxHp = maxHpRaw === '' ? null : parseFloat(maxHpRaw);
+          const ac = acRaw === '' ? null : parseFloat(acRaw);
+          send('addCombatant', { name, init, maxHp, hp: maxHp, ac });
+          nameInput.value = '';
+          initInput.value = '';
+          document.getElementById('addMaxHp').value = '';
+          document.getElementById('addAc').value = '';
+          nameInput.focus();
+        }
+        document.getElementById('addBtn').addEventListener('click', addCombatant);
+        document.getElementById('addInit').addEventListener('keydown', e => { if(e.key === 'Enter') addCombatant(); });
+        document.getElementById('clearAllBtn').addEventListener('click', () => {
+          if(confirm('Clear the entire initiative order?')) send('clearAll');
+        });
+
+        document.getElementById('fogToggleBtn').addEventListener('click', () => send('toggleFog'));
+        document.getElementById('fogRevealBtn').addEventListener('click', () => send('revealAllFog'));
+        document.getElementById('fogResetBtn').addEventListener('click', () => {
+          if(confirm('Reset fog — re-hide all revealed regions?')) send('resetFog');
+        });
+
+        document.getElementById('rulerBtn').addEventListener('click', () => {
+          const nowOn = lastSnapshot && lastSnapshot.mode === 'ruler';
+          send('setRulerMode', { on: !nowOn });
+        });
+
+        document.getElementById('fxArmBtn').addEventListener('click', () => {
+          if(lastSnapshot && lastSnapshot.mode === 'spell'){
+            send('cancelSpell');
+          } else {
+            send('armSpell', { shape: document.getElementById('fxShape').value, dtype: document.getElementById('fxType').value });
+          }
+        });
+        document.getElementById('fxClearAllBtn').addEventListener('click', () => {
+          if(confirm('Clear all placed spell effects?')) send('clearAllEffects');
+        });
+
+        document.getElementById('feetPerSquare').addEventListener('change', function(){
+          const v = parseFloat(this.value);
+          if(!isNaN(v) && v > 0) send('setFeetPerSquare', { value: v });
+        });
+
+        // ---- Quick Stats modal (HP / AC editing during combat) ----
+        const statsModal = document.getElementById('statsModal');
+        let statsEditingId = null;
+        function openStatsModal(id){
+          const c = lastSnapshot && lastSnapshot.combatants.find(x => x.id === id);
+          if(!c) return;
+          statsEditingId = id;
+          document.getElementById('statsModalTitle').textContent = 'Edit Stats — ' + c.name;
+          document.getElementById('statMaxHp').value = c.maxHp !== null && c.maxHp !== undefined ? c.maxHp : '';
+          document.getElementById('statHp').value = c.hp !== null && c.hp !== undefined ? c.hp : '';
+          document.getElementById('statTempHp').value = c.tempHp || 0;
+          document.getElementById('statAc').value = c.ac !== null && c.ac !== undefined ? c.ac : '';
+          statsModal.classList.add('open');
+        }
+        document.getElementById('statsCancelBtn').addEventListener('click', () => statsModal.classList.remove('open'));
+        document.getElementById('statsSaveBtn').addEventListener('click', () => {
+          if(statsEditingId === null) return;
+          const maxHpRaw = document.getElementById('statMaxHp').value;
+          const hpRaw = document.getElementById('statHp').value;
+          const tempRaw = document.getElementById('statTempHp').value;
+          const acRaw = document.getElementById('statAc').value;
+          send('setCombatantStats', {
+            id: statsEditingId,
+            maxHp: maxHpRaw === '' ? null : parseFloat(maxHpRaw),
+            hp: hpRaw === '' ? null : parseFloat(hpRaw),
+            tempHp: tempRaw === '' ? 0 : parseFloat(tempRaw),
+            ac: acRaw === '' ? null : parseFloat(acRaw)
+          });
+          statsModal.classList.remove('open');
+        });
+
+        // =====================================================================
+        // ROSTER — persistent character/monster library (saved locally on this
+        // device only; independent of the live combat session on the TV).
+        // =====================================================================
+        const ROSTER_KEY = 'blackstoneRosterLibrary_v1';
+        let roster = [];
+        function loadRoster(){
+          try{ roster = JSON.parse(localStorage.getItem(ROSTER_KEY)) || []; }
+          catch(err){ roster = []; }
+        }
+        function saveRoster(){
+          try{ localStorage.setItem(ROSTER_KEY, JSON.stringify(roster)); }
+          catch(err){ console.warn('Roster save failed', err); }
+        }
+
+        const SKILLS = [
+          ['Acrobatics','dex'],['Animal Handling','wis'],['Arcana','int'],['Athletics','str'],
+          ['Deception','cha'],['History','int'],['Insight','wis'],['Intimidation','cha'],
+          ['Investigation','int'],['Medicine','wis'],['Nature','int'],['Perception','wis'],
+          ['Performance','cha'],['Persuasion','cha'],['Religion','int'],['Sleight of Hand','dex'],
+          ['Stealth','dex'],['Survival','wis']
+        ];
+        const ABILS = ['str','dex','con','int','wis','cha'];
+        const ABIL_LABELS = { str:'STR', dex:'DEX', con:'CON', int:'INT', wis:'WIS', cha:'CHA' };
+
+        function abilityMod(score){ return Math.floor((score - 10) / 2); }
+        function fmtBonus(n){ return (n >= 0 ? '+' : '') + n; }
+
+        function blankCreature(){
+          return {
+            id: 'c' + Date.now() + Math.floor(Math.random()*100000),
+            name: '', type: 'PC', classRace: '', ac: 10, hpMax: 10, speed: '30 ft',
+            initBonus: 0, alignment: '', senses: '', languages: '',
+            abilities: { str:10, dex:10, con:10, int:10, wis:10, cha:10 },
+            profBonus: 2,
+            saveProf: { str:false, dex:false, con:false, int:false, wis:false, cha:false },
+            skillProf: {}, // skillName -> 0 none / 1 prof / 2 expertise
+            actions: [], spellNote: '', spells: [], inventory: [], features: [], notes: ''
+          };
+        }
+
+        function rosterCardMeta(c){
+          const parts = ['AC ' + c.ac, 'HP ' + c.hpMax];
+          if(c.classRace) parts.push(c.classRace);
+          return parts.join(' · ');
+        }
+
+        function renderRosterList(){
+          const filterVal = document.getElementById('rosterFilter').value.trim().toLowerCase();
+          const listEl = document.getElementById('rosterList');
+          const filtered = roster.filter(c => !filterVal || c.name.toLowerCase().includes(filterVal));
+          if(!filtered.length){
+            listEl.innerHTML = '<div class="rcEmpty">' + (roster.length ? 'No matches.' : 'No characters yet — add your party and monsters here.') + '</div>';
+            return;
+          }
+          listEl.innerHTML = filtered.map(c => `
+            <div class="rosterCard" data-id="${c.id}">
+              <div class="rcTop">
+                <div class="rcName">${escapeHtml(c.name || 'Unnamed')}<span class="rcTypeTag">${c.type}</span></div>
+              </div>
+              <div class="rcMeta">${escapeHtml(rosterCardMeta(c))}</div>
+              <div class="rcActions">
+                <input type="number" class="rcInit" placeholder="Init" data-id="${c.id}">
+                <button class="btn primary rcAddBtn" data-id="${c.id}">Add to Fight</button>
+                <button class="btn rcEditBtn" data-id="${c.id}">Edit</button>
+                <button class="btn danger rcDelBtn" data-id="${c.id}">✕</button>
+              </div>
+            </div>
+          `).join('');
+
+          listEl.querySelectorAll('.rcAddBtn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const id = btn.dataset.id;
+              const creature = roster.find(c => c.id === id);
+              if(!creature) return;
+              const initInput = listEl.querySelector('.rcInit[data-id="' + id + '"]');
+              const init = parseFloat(initInput.value);
+              if(isNaN(init)){
+                initInput.style.borderColor = 'var(--danger)';
+                initInput.placeholder = 'Init!';
+                initInput.focus();
+                setTimeout(() => { initInput.style.borderColor = ''; initInput.placeholder = 'Init'; }, 1800);
+                return;
+              }
+              send('addCombatantFromRoster', {
+                name: creature.name || 'Unnamed', init,
+                hp: creature.hpMax, maxHp: creature.hpMax, tempHp: 0,
+                ac: creature.ac, notes: creature.classRace || '', rosterId: creature.id
+              });
+              initInput.value = '';
+              initInput.style.borderColor = '';
+            });
+          });
+          listEl.querySelectorAll('.rcEditBtn').forEach(btn => {
+            btn.addEventListener('click', () => openSheetEditor(btn.dataset.id));
+          });
+          listEl.querySelectorAll('.rcDelBtn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const creature = roster.find(c => c.id === btn.dataset.id);
+              if(creature && confirm('Delete "' + (creature.name || 'this entry') + '" from the roster? This cannot be undone.')){
+                roster = roster.filter(c => c.id !== btn.dataset.id);
+                saveRoster();
+                renderRosterList();
+              }
+            });
+          });
+        }
+        document.getElementById('rosterFilter').addEventListener('input', renderRosterList);
+        document.getElementById('newCreatureBtn').addEventListener('click', () => openSheetEditor(null));
+
+        // ---- Sheet editor modal ----
+        const sheetModal = document.getElementById('sheetModal');
+        let editingCreature = null;
+        let editingIsNew = true;
+
+        function openSheetEditor(id){
+          if(id){
+            const found = roster.find(c => c.id === id);
+            editingCreature = found ? JSON.parse(JSON.stringify(found)) : blankCreature();
+            editingIsNew = !found;
+          } else {
+            editingCreature = blankCreature();
+            editingIsNew = true;
+          }
+          document.getElementById('sheetModalTitle').textContent = editingIsNew ? 'New Character / Monster' : ('Edit — ' + (editingCreature.name || 'Unnamed'));
+          document.getElementById('sheetDeleteBtn').style.display = editingIsNew ? 'none' : 'block';
+          setActiveTab('core');
+          populateEditorFields();
+          sheetModal.classList.add('open');
+        }
+        function closeSheetEditor(){ sheetModal.classList.remove('open'); editingCreature = null; }
+
+        function setActiveTab(tab){
+          document.querySelectorAll('#tabBar .tabBtn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+          document.querySelectorAll('.tabPanel').forEach(p => p.classList.toggle('active', p.dataset.panel === tab));
+        }
+        document.getElementById('tabBar').addEventListener('click', e => {
+          const btn = e.target.closest('.tabBtn');
+          if(btn) setActiveTab(btn.dataset.tab);
+        });
+
+        function populateEditorFields(){
+          const c = editingCreature;
+          document.getElementById('fName').value = c.name;
+          document.getElementById('fType').value = c.type;
+          document.getElementById('fClassRace').value = c.classRace;
+          document.getElementById('fAc').value = c.ac;
+          document.getElementById('fHpMax').value = c.hpMax;
+          document.getElementById('fSpeed').value = c.speed;
+          document.getElementById('fInitBonus').value = c.initBonus;
+          document.getElementById('fAlignment').value = c.alignment;
+          document.getElementById('fSenses').value = c.senses;
+          document.getElementById('fLanguages').value = c.languages;
+          document.getElementById('fProfBonus').value = c.profBonus;
+          document.getElementById('fSpellNote').value = c.spellNote;
+          document.getElementById('fNotes').value = c.notes;
+          renderAbilitiesTab();
+          renderSkillsTab();
+          renderRepeatable('actionsList', c.actions, [
+            { key:'name', placeholder:'Action name', type:'text' },
+            { key:'desc', placeholder:'e.g. Melee Weapon Attack: +5 to hit, reach 5 ft, 1d8+3 slashing', type:'textarea' }
+          ]);
+          renderRepeatable('spellsList', c.spells, [
+            { key:'name', placeholder:'Spell name', type:'text' },
+            { key:'level', placeholder:'Lvl', type:'text', narrow:true },
+            { key:'desc', placeholder:'Short effect / notes', type:'textarea' }
+          ]);
+          renderRepeatable('inventoryList', c.inventory, [
+            { key:'name', placeholder:'Item', type:'text' },
+            { key:'qty', placeholder:'Qty', type:'text', narrow:true },
+            { key:'desc', placeholder:'Notes', type:'text' }
+          ]);
+          renderRepeatable('featuresList', c.features, [
+            { key:'name', placeholder:'Feature / trait name', type:'text' },
+            { key:'desc', placeholder:'Description', type:'textarea' }
+          ]);
+        }
+
+        // Core field bindings — write straight into editingCreature on change
+        [
+          ['fName','name','text'], ['fType','type','text'], ['fClassRace','classRace','text'],
+          ['fAc','ac','number'], ['fHpMax','hpMax','number'], ['fSpeed','speed','text'],
+          ['fInitBonus','initBonus','number'], ['fAlignment','alignment','text'],
+          ['fSenses','senses','text'], ['fLanguages','languages','text'],
+          ['fSpellNote','spellNote','text'], ['fNotes','notes','text']
+        ].forEach(([elId, key, kind]) => {
+          document.getElementById(elId).addEventListener('input', function(){
+            if(!editingCreature) return;
+            editingCreature[key] = kind === 'number' ? (parseFloat(this.value) || 0) : this.value;
+          });
+        });
+        document.getElementById('fProfBonus').addEventListener('change', function(){
+          if(!editingCreature) return;
+          editingCreature.profBonus = parseInt(this.value) || 0;
+          renderAbilitiesTab(); renderSkillsTab();
+        });
+
+        function renderAbilitiesTab(){
+          const c = editingCreature;
+          const grid = document.getElementById('abilityGrid');
+          grid.innerHTML = ABILS.map(a => `
+            <div class="abilityBox">
+              <label>${ABIL_LABELS[a]}</label>
+              <input type="number" class="abilityInput" data-abil="${a}" value="${c.abilities[a]}">
+              <div class="modDisplay">${fmtBonus(abilityMod(c.abilities[a]))}</div>
+            </div>
+          `).join('');
+          grid.querySelectorAll('.abilityInput').forEach(inp => {
+            inp.addEventListener('change', function(){
+              c.abilities[this.dataset.abil] = parseInt(this.value) || 0;
+              renderAbilitiesTab();
+              renderSkillsTab();
+            });
+          });
+
+          const saveGrid = document.getElementById('saveGrid');
+          saveGrid.innerHTML = ABILS.map(a => {
+            const prof = !!c.saveProf[a];
+            const bonus = abilityMod(c.abilities[a]) + (prof ? c.profBonus : 0);
+            return `
+              <label class="saveRow">
+                <input type="checkbox" class="saveCheck" data-abil="${a}" ${prof ? 'checked' : ''}>
+                ${ABIL_LABELS[a]} save <span class="saveBonus">${fmtBonus(bonus)}</span>
+              </label>
+            `;
+          }).join('');
+          saveGrid.querySelectorAll('.saveCheck').forEach(chk => {
+            chk.addEventListener('change', function(){
+              c.saveProf[this.dataset.abil] = this.checked;
+              renderAbilitiesTab();
+            });
+          });
+        }
+
+        function renderSkillsTab(){
+          const c = editingCreature;
+          const list = document.getElementById('skillList');
+          list.innerHTML = SKILLS.map(([name, abil]) => {
+            const level = c.skillProf[name] || 0; // 0 none, 1 prof, 2 expertise
+            const bonus = abilityMod(c.abilities[abil]) + (level === 1 ? c.profBonus : level === 2 ? c.profBonus * 2 : 0);
+            return `
+              <div class="skillRow">
+                <span class="skillName">${name}</span>
+                <span class="skillAbbr">${ABIL_LABELS[abil]}</span>
+                <label><input type="checkbox" class="skillProfCheck" data-skill="${name}" ${level >= 1 ? 'checked' : ''}>P</label>
+                <label><input type="checkbox" class="skillExpertCheck" data-skill="${name}" ${level === 2 ? 'checked' : ''}>E</label>
+                <span class="skillBonus">${fmtBonus(bonus)}</span>
+              </div>
+            `;
+          }).join('');
+          list.querySelectorAll('.skillProfCheck').forEach(chk => {
+            chk.addEventListener('change', function(){
+              const name = this.dataset.skill;
+              const cur = c.skillProf[name] || 0;
+              c.skillProf[name] = this.checked ? Math.max(cur, 1) : 0;
+              renderSkillsTab();
+            });
+          });
+          list.querySelectorAll('.skillExpertCheck').forEach(chk => {
+            chk.addEventListener('change', function(){
+              const name = this.dataset.skill;
+              c.skillProf[name] = this.checked ? 2 : 1;
+              renderSkillsTab();
+            });
+          });
+          const perceptionBonus = abilityMod(c.abilities.wis) + ((c.skillProf['Perception']||0) === 1 ? c.profBonus : (c.skillProf['Perception']||0) === 2 ? c.profBonus*2 : 0);
+          document.getElementById('passivePerceptionDisplay').textContent = 10 + perceptionBonus;
+        }
+
+        function renderRepeatable(containerId, arr, fields){
+          const el = document.getElementById(containerId);
+          el.innerHTML = arr.map((item, idx) => `
+            <div class="repRow" data-idx="${idx}">
+              ${fields.map(f => f.type === 'textarea'
+                ? `<textarea class="repInput" data-idx="${idx}" data-field="${f.key}" placeholder="${f.placeholder}" style="flex:1;">${escapeHtml(item[f.key] || '')}</textarea>`
+                : `<input type="text" class="repInput" data-idx="${idx}" data-field="${f.key}" placeholder="${f.placeholder}" value="${escapeAttr(item[f.key] || '')}" style="${f.narrow ? 'max-width:56px;' : 'flex:1;'}">`
+              ).join('')}
+              <button class="repRemove" data-idx="${idx}" data-container="${containerId}">✕</button>
+            </div>
+          `).join('') + `<button class="btn repAddBtn" data-container="${containerId}">+ Add</button>`;
+
+          el.querySelectorAll('.repInput').forEach(inp => {
+            inp.addEventListener('input', function(){
+              arr[parseInt(this.dataset.idx)][this.dataset.field] = this.value;
+            });
+          });
+          el.querySelectorAll('.repRemove').forEach(btn => {
+            btn.addEventListener('click', function(){
+              arr.splice(parseInt(this.dataset.idx), 1);
+              renderRepeatable(containerId, arr, fields);
+            });
+          });
+          const addBtn = el.querySelector('.repAddBtn');
+          if(addBtn){
+            addBtn.addEventListener('click', () => {
+              const blank = {};
+              fields.forEach(f => blank[f.key] = '');
+              arr.push(blank);
+              renderRepeatable(containerId, arr, fields);
+            });
+          }
+        }
+
+        document.getElementById('addActionBtn').addEventListener('click', () => {
+          editingCreature.actions.push({ name:'', desc:'' });
+          renderRepeatable('actionsList', editingCreature.actions, [
+            { key:'name', placeholder:'Action name', type:'text' },
+            { key:'desc', placeholder:'e.g. Melee Weapon Attack: +5 to hit, reach 5 ft, 1d8+3 slashing', type:'textarea' }
+          ]);
+        });
+        document.getElementById('addSpellBtn').addEventListener('click', () => {
+          editingCreature.spells.push({ name:'', level:'', desc:'' });
+          renderRepeatable('spellsList', editingCreature.spells, [
+            { key:'name', placeholder:'Spell name', type:'text' },
+            { key:'level', placeholder:'Lvl', type:'text', narrow:true },
+            { key:'desc', placeholder:'Short effect / notes', type:'textarea' }
+          ]);
+        });
+        document.getElementById('addInventoryBtn').addEventListener('click', () => {
+          editingCreature.inventory.push({ name:'', qty:'', desc:'' });
+          renderRepeatable('inventoryList', editingCreature.inventory, [
+            { key:'name', placeholder:'Item', type:'text' },
+            { key:'qty', placeholder:'Qty', type:'text', narrow:true },
+            { key:'desc', placeholder:'Notes', type:'text' }
+          ]);
+        });
+        document.getElementById('addFeatureBtn').addEventListener('click', () => {
+          editingCreature.features.push({ name:'', desc:'' });
+          renderRepeatable('featuresList', editingCreature.features, [
+            { key:'name', placeholder:'Feature / trait name', type:'text' },
+            { key:'desc', placeholder:'Description', type:'textarea' }
+          ]);
+        });
+
+        document.getElementById('sheetCancelBtn').addEventListener('click', closeSheetEditor);
+        document.getElementById('sheetSaveBtn').addEventListener('click', () => {
+          if(!editingCreature) return;
+          if(!editingCreature.name.trim()){
+            alert('Give this character or monster a name before saving.');
+            setActiveTab('core');
+            document.getElementById('fName').focus();
+            return;
+          }
+          const idx = roster.findIndex(c => c.id === editingCreature.id);
+          if(idx >= 0) roster[idx] = editingCreature; else roster.push(editingCreature);
+          saveRoster();
+          renderRosterList();
+          closeSheetEditor();
+        });
+        document.getElementById('sheetDeleteBtn').addEventListener('click', () => {
+          if(!editingCreature) return;
+          if(confirm('Delete "' + (editingCreature.name || 'this entry') + '" from the roster? This cannot be undone.')){
+            roster = roster.filter(c => c.id !== editingCreature.id);
+            saveRoster();
+            renderRosterList();
+            closeSheetEditor();
+          }
+        });
+
+        if(window.blackstoneDesktop){
+          const clickBtn = document.getElementById('clickThroughBtn');
+          let interactive = false;
+          clickBtn.addEventListener('click', () => {
+            interactive = !interactive;
+            window.blackstoneDesktop.setOverlayInteractive(interactive);
+            clickBtn.textContent = interactive ? 'Disable Interaction' : 'Enable Interaction';
+            clickBtn.classList.toggle('armed', interactive);
+          });
+
+          const displaySelect = document.getElementById('displaySelect');
+          window.blackstoneDesktop.getDisplays().then(displays => {
+            displaySelect.innerHTML = '';
+            displays.forEach(display => {
+              const option = document.createElement('option');
+              option.value = display.id;
+              option.textContent = display.label;
+              displaySelect.appendChild(option);
+            });
+          });
+          document.getElementById('moveOverlayBtn').addEventListener('click', () => {
+            window.blackstoneDesktop.moveOverlay(Number(displaySelect.value));
+          });
+          window.blackstoneDesktop.onOverlayInteractive(on => {
+            interactive = !!on;
+            clickBtn.textContent = interactive ? 'Disable Interaction' : 'Enable Interaction';
+            clickBtn.classList.toggle('armed', interactive);
+          });
+        }
+
+        loadRoster();
+        renderRosterList();
+
+        // Let the TV know we're ready to receive state
+        try{ if(window.blackstoneDesktop) window.blackstoneDesktop.requestState(); else window.opener.postMessage({ source:'blackstoneRemote', type:'ready' }, '*'); }catch(err){}
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "troxell-transparent-overlay",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Transparent tabletop overlay controlled from a second screen",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "nodemon --exec electron ."
+  },
+  "devDependencies": {
+    "electron": "^37.2.0",
+    "nodemon": "^3.1.14"
+  },
+  "dependencies": {
+    "matter-js": "^0.20.0",
+    "pixi.js": "^8.19.0"
+  }
+}
