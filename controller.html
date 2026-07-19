@@ -27,6 +27,16 @@
       #connDot.live{ background:var(--accent-2); box-shadow:0 0 8px var(--accent-2); }
       #connText{ color:var(--text-dim); }
 
+      #fbBar{
+        display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px;
+        margin-bottom:14px; font-size:12px; text-transform:uppercase; letter-spacing:.06em;
+        border:1px solid var(--border); background:var(--panel);
+      }
+      #fbDot{ width:8px; height:8px; border-radius:50%; background:var(--danger); flex-shrink:0; }
+      #fbDot.live{ background:var(--accent-2); box-shadow:0 0 8px var(--accent-2); }
+      #fbDot.pending{ background:#c9a227; box-shadow:0 0 8px #c9a227; }
+      #fbText{ color:var(--text-dim); }
+
       #noOpener{
         display:none; text-align:center; padding:40px 20px; color:var(--text-dim);
         border:1px dashed var(--border); border-radius:12px;
@@ -75,6 +85,192 @@
         color:var(--text); padding:9px 10px; font-size:14px; font-family:'Inter',sans-serif;
       }
       textarea{ resize:vertical; min-height:44px; }
+      input[type=range]{ width:100%; accent-color:var(--accent); background:none; border:none; padding:6px 0; }
+
+      /* ---------- Dice roller (secret rolls, local to this device) ---------- */
+      .diceTypeGrid{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:12px; }
+      .diceTypeBtn{
+        padding:9px 4px; border-radius:8px; border:1px solid var(--border); background:#0d1318;
+        color:var(--text-dim); font-family:'Cinzel',serif; font-size:13px; cursor:pointer;
+      }
+      .diceTypeBtn:hover{ border-color:var(--accent); color:var(--text); }
+      .diceTypeBtn.active{ border-color:var(--accent-2); color:var(--accent-2); background:rgba(90,200,192,0.12); }
+      .diceStepper{ display:flex; align-items:center; gap:8px; }
+      .diceStepper button{
+        width:32px; height:32px; border-radius:8px; border:1px solid var(--border); background:#0d1318;
+        color:var(--text); font-size:16px; cursor:pointer; flex-shrink:0;
+      }
+      .diceStepper button:hover{ border-color:var(--accent); }
+      .diceStepper span{ min-width:34px; text-align:center; font-family:'Cinzel',serif; color:var(--accent-bright); font-size:16px; }
+      .advRow{ display:flex; gap:8px; margin:10px 0; }
+      .advBtn{
+        flex:1; padding:9px; border-radius:8px; border:1px solid var(--border); background:#0d1318;
+        color:var(--text-dim); font-size:12px; cursor:pointer;
+      }
+      .advBtn:hover:not(:disabled){ border-color:var(--accent); color:var(--text); }
+      .advBtn.active[data-mode="adv"]{ border-color:var(--accent-2); color:var(--accent-2); background:rgba(90,200,192,0.12); }
+      .advBtn.active[data-mode="dis"]{ border-color:var(--danger); color:var(--danger); background:rgba(209,96,90,0.12); }
+      .advBtn:disabled{ opacity:.35; cursor:not-allowed; }
+      .rollBtn{ font-size:16px; padding:14px; margin:4px 0 14px; letter-spacing:.02em; }
+      .diceFaces{ display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:2px 0 10px; min-height:0; }
+      .dieFace{
+        width:34px; height:34px; border-radius:7px; border:1px solid var(--border); background:#0d1318;
+        display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; color:var(--text);
+      }
+      .dieFace.rolling{ animation:rdDicePulse .3s ease-in-out infinite; border-color:var(--accent-2); }
+      @keyframes rdDicePulse{ 0%,100%{ color:var(--text-dim); } 50%{ color:var(--accent-2); } }
+      .dieFace.settled{ animation:rdDieSettle .2s ease; }
+      @keyframes rdDieSettle{ 0%{ transform:scale(1.3); } 100%{ transform:scale(1); } }
+      .dieFace.crit20{ border-color:var(--accent-2); color:var(--accent-2); box-shadow:0 0 10px rgba(90,200,192,0.5); }
+      .dieFace.crit1{ border-color:var(--danger); color:var(--danger); box-shadow:0 0 10px rgba(209,96,90,0.5); }
+      .dieFace.unused{ opacity:.35; text-decoration:line-through; }
+      .diceResultBig{ text-align:center; font-family:'Cinzel',serif; font-size:40px; color:var(--accent-bright); line-height:1; margin-bottom:4px; min-height:46px; }
+      .diceResultBig.crit20{ color:var(--accent-2); text-shadow:0 0 16px rgba(90,200,192,0.6); }
+      .diceResultBig.crit1{ color:var(--danger); text-shadow:0 0 16px rgba(209,96,90,0.6); }
+      .diceBreakdown{ text-align:center; font-size:12px; color:var(--text-dim); margin-bottom:14px; min-height:16px; }
+      .toggle{ display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+      .switch{ width:38px; height:22px; border-radius:11px; background:#0d1318; border:1px solid var(--border); position:relative; cursor:pointer; flex-shrink:0; }
+      .switch::after{ content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:var(--text-dim); transition:left .15s, background .15s; }
+      .switch.on{ background:rgba(90,200,192,0.18); border-color:var(--accent-2); }
+      .switch.on::after{ left:18px; background:var(--accent-2); }
+      #diceHistory{ max-height:180px; overflow-y:auto; margin-bottom:10px; }
+      .diceHistoryEntry{ display:flex; gap:8px; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.04); font-size:12px; }
+      .diceHistoryEntry .dhTime{ color:var(--text-dim); font-size:11px; flex-shrink:0; padding-top:1px; }
+      .diceHistoryEntry .dhText{ flex:1; color:var(--text); }
+      #diceHistoryEmpty{ font-size:12px; color:var(--text-dim); text-align:center; padding:8px 0; }
+
+      /* ---------- Combat log ---------- */
+      #logList{ max-height:220px; overflow-y:auto; margin-bottom:10px; }
+      .logEntry{ display:flex; gap:8px; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.04); font-size:12px; }
+      .logEntry .logTime{ color:var(--text-dim); font-size:11px; flex-shrink:0; padding-top:1px; }
+      .logEntry .logText{ flex:1; color:var(--text); }
+      #logEmpty{ font-size:12px; color:var(--text-dim); text-align:center; padding:8px 0; }
+      .logAddRow{ display:flex; gap:8px; }
+      .logAddRow input{ flex:1; }
+      .logAddRow button{ width:auto; padding:9px 14px; flex-shrink:0; }
+
+      /* ---------- Timers ---------- */
+      .timerTypeGrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:12px; }
+      .timerTypeGrid .diceTypeBtn{ font-size:12px; padding:9px 2px; }
+      #timerList{ display:flex; flex-direction:column; gap:6px; }
+      .timerRow{
+        display:flex; align-items:center; gap:8px; background:#0d1318; border:1px solid var(--border);
+        border-radius:8px; padding:7px 10px; font-size:13px;
+      }
+      .timerRow.expired{ border-color:var(--danger); }
+      .timerRow .timerRowIcon{ font-size:15px; flex-shrink:0; }
+      .timerRow .timerRowLabel{ color:var(--text); font-weight:600; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .timerRow .timerRowValue{ color:var(--accent-bright); font-family:'Cinzel',serif; flex-shrink:0; }
+      .timerRow.expired .timerRowValue{ color:var(--danger); }
+      .timerRow.paused{ opacity:.55; }
+      .timerRow .iconBtn{ flex-shrink:0; }
+      #timerListEmpty{ font-size:12px; color:var(--text-dim); text-align:center; padding:8px 0; }
+
+      /* ---------- Spellcasting modal ---------- */
+      .slotRow{ display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.04); }
+      .slotRow .slotLvl{ width:44px; font-size:12px; color:var(--text-dim); flex-shrink:0; }
+      .slotRow .diceStepper{ flex-shrink:0; }
+      .slotRow .slotSep{ color:var(--text-dim); flex-shrink:0; }
+      .slotRow .slotMaxInput{ width:56px; padding:6px; font-size:13px; }
+      .preparedRow{ display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.04); font-size:13px; }
+      .preparedRow .preparedName{ flex:1; }
+      .preparedRow.used .preparedName{ text-decoration:line-through; color:var(--text-dim); }
+      .preparedRow .repRemove{ background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:15px; padding:4px; flex-shrink:0; }
+      .preparedRow .repRemove:hover{ color:var(--danger); }
+      #preparedSpellsEmpty{ font-size:12px; color:var(--text-dim); padding:4px 0 8px; }
+      .concLine{
+        margin-top:6px; font-size:11px; color:var(--accent-2); background:rgba(90,200,192,0.1);
+        border:1px solid rgba(90,200,192,0.35); border-radius:6px; padding:3px 8px; display:none;
+      }
+
+      /* ---------- Monster Library ---------- */
+      #monsterResults{ margin-top:8px; }
+      .monsterResultRow{
+        display:flex; align-items:center; justify-content:space-between; gap:8px;
+        padding:8px 10px; border:1px solid var(--border); border-radius:8px; margin-bottom:6px;
+        background:#0d1318; cursor:pointer; font-size:13px;
+      }
+      .monsterResultRow:hover{ border-color:var(--accent); }
+      .monsterResultRow .mrMeta{ color:var(--text-dim); font-size:11px; }
+      #monsterSearchEmpty, #monsterSearchLoading{ font-size:12px; color:var(--text-dim); padding:8px 0; }
+      .monsterStatBlock{
+        margin-top:10px; padding:12px; border:1px solid var(--border); border-radius:8px; background:#0d1318;
+        max-height:360px; overflow-y:auto; font-size:12px; line-height:1.5;
+      }
+      .monsterStatBlock h4{ margin:0 0 2px; color:var(--accent-bright); font-family:'Cinzel',serif; font-size:16px; }
+      .monsterStatBlock .mMeta{ color:var(--text-dim); font-style:italic; margin-bottom:8px; }
+      .monsterStatBlock .mStatsRow{ margin-bottom:8px; }
+      .monsterStatBlock .mStatsRow b{ color:var(--accent-2); }
+      .monsterStatBlock .mSection{ margin-top:10px; padding-top:8px; border-top:1px solid var(--border); }
+      .monsterStatBlock .mSection > b{ display:block; color:var(--accent-2); text-transform:uppercase; letter-spacing:.05em; font-size:11px; margin-bottom:4px; }
+      .monsterStatBlock .mEntry{ margin-bottom:6px; }
+      .monsterStatBlock .mEntry b{ color:var(--text); }
+      .monsterStatBlock .btn{ margin-top:12px; }
+
+      /* ---------- Encounter Builder ---------- */
+      #encounterTemplateList{ display:flex; flex-direction:column; gap:6px; margin-bottom:4px; }
+      .encTemplateBtn{
+        display:flex; flex-direction:column; align-items:flex-start; gap:2px;
+        padding:10px 12px; border:1px solid var(--border); border-radius:8px; background:#0d1318;
+        color:var(--text); cursor:pointer; text-align:left; font-size:13px; font-weight:600;
+      }
+      .encTemplateBtn:hover{ border-color:var(--accent); }
+      .encTemplateBtn .etComp{ font-size:11px; color:var(--text-dim); font-weight:400; }
+      .encTemplateBtn .etRemove{ align-self:flex-end; background:none; border:none; color:var(--text-dim); font-size:12px; cursor:pointer; }
+      #encPendingList{ margin:10px 0; }
+      .encPendingRow{
+        display:flex; align-items:center; gap:8px; padding:6px 8px; border-bottom:1px solid rgba(255,255,255,0.04); font-size:13px;
+      }
+      .encPendingRow .epName{ flex:1; }
+      .encPendingRow .epQty{ color:var(--accent-2); }
+      .encPendingRow .repRemove{ background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:15px; padding:4px; }
+      #encPendingEmpty{ font-size:12px; color:var(--text-dim); padding:4px 0; }
+
+      /* ---------- Campaign Database ---------- */
+      .cdbTabGrid{ display:grid; grid-template-columns:repeat(5,1fr); gap:4px; margin-bottom:10px; }
+      .cdbTabGrid .diceTypeBtn{ font-size:11px; padding:7px 2px; }
+      #cdbList{ margin:10px 0; }
+      .cdbEntry{
+        padding:9px 10px; border:1px solid var(--border); border-radius:8px; background:#0d1318;
+        margin-bottom:6px; cursor:pointer;
+      }
+      .cdbEntry:hover{ border-color:var(--accent); }
+      .cdbEntry .cdbTop{ display:flex; align-items:center; gap:6px; margin-bottom:3px; }
+      .cdbEntry .cdbTypeBadge{
+        font-size:9px; text-transform:uppercase; letter-spacing:.05em; color:var(--accent-2);
+        border:1px solid rgba(90,200,192,0.35); border-radius:4px; padding:1px 5px; flex-shrink:0;
+      }
+      .cdbEntry .cdbTitle{ font-weight:600; color:var(--text); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .cdbEntry .cdbStatus{ font-size:10px; color:var(--text-dim); flex-shrink:0; }
+      .cdbEntry .cdbSnippet{ font-size:11px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      #cdbListEmpty{ font-size:12px; color:var(--text-dim); text-align:center; padding:12px 0; }
+
+      /* ---------- Plugins ---------- */
+      .pluginToggleRow{ display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid rgba(255,255,255,0.04); cursor:pointer; }
+      .pluginToggleRow:last-child{ border-bottom:none; }
+      .pluginToggleRow .pluginIcon{ font-size:20px; flex-shrink:0; }
+      .pluginToggleText{ flex:1; min-width:0; }
+      .pluginToggleName{ font-size:13px; font-weight:600; color:var(--text); }
+      .pluginToggleDesc{ font-size:11px; color:var(--text-dim); }
+
+      /* ---------- Generator result cards (Weather / Tavern / Treasure) ---------- */
+      .genCard{
+        margin-top:10px; padding:12px; border:1px solid var(--border); border-radius:8px; background:#0d1318;
+        font-size:13px; line-height:1.5;
+      }
+      .genCard .genTitle{ font-family:'Cinzel',serif; color:var(--accent-bright); font-size:16px; margin-bottom:4px; }
+      .genCard .genBody{ color:var(--text); margin-bottom:6px; }
+      .genCard .genMechanic{ color:var(--accent-2); font-size:12px; margin-bottom:4px; }
+      .genCard .genMeta{ color:var(--text-dim); font-size:11px; font-style:italic; }
+      .genCard .genRow{ display:flex; gap:6px; margin-bottom:4px; }
+      .genCard .genRow b{ color:var(--accent-2); flex-shrink:0; }
+      .genCard ul{ margin:4px 0 4px 18px; padding:0; }
+      .genCard li{ margin-bottom:2px; }
+      #genHistoryEmpty{ font-size:12px; color:var(--text-dim); text-align:center; padding:8px 0; }
+      .genHistoryEntry{
+        padding:7px 0; border-bottom:1px solid rgba(255,255,255,0.04); font-size:12px; color:var(--text-dim);
+      }
+      .genHistoryEntry b{ color:var(--text); }
       .field{ margin-bottom:10px; }
       .field label{ display:block; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--text-dim); margin-bottom:5px; }
 
@@ -95,6 +291,41 @@
       .cardStats .statText.bloodied{ color:var(--danger); }
       .amtInput{ width:52px; padding:6px 6px; font-size:12px; text-align:center; flex-shrink:0; }
       .miniBtn{ width:auto; padding:6px 9px; font-size:11px; margin:0; flex-shrink:0; }
+
+      .condChips{ display:flex; flex-wrap:wrap; gap:4px; margin-top:7px; }
+      .condChips:empty{ display:none; }
+      .condChip{
+        display:inline-flex; align-items:center; gap:4px; font-size:10.5px; padding:2px 7px;
+        border-radius:10px; border:1px solid var(--border); background:#161d24; color:var(--text);
+        cursor:pointer; white-space:nowrap; max-width:100%; overflow:hidden; text-overflow:ellipsis;
+      }
+      .condChip:hover{ border-color:var(--danger); color:var(--danger); }
+      .condChip .icon{ font-size:11px; flex-shrink:0; }
+      .condPickerWrap:empty{ display:none; }
+      .condPicker{
+        display:grid; grid-template-columns:repeat(auto-fit, minmax(60px, 1fr)); gap:5px;
+        margin-top:8px; padding:8px; background:#161d24; border:1px solid var(--border); border-radius:8px;
+        max-width:100%; box-sizing:border-box;
+      }
+      .condPickerItem{
+        display:flex; flex-direction:column; align-items:center; gap:2px; text-align:center;
+        font-size:9px; line-height:1.15; padding:5px 2px; border-radius:6px; border:1px solid transparent;
+        background:#0d1318; color:var(--text-dim); cursor:pointer; min-width:0; overflow-wrap:break-word;
+      }
+      .condPickerItem .icon{ font-size:15px; }
+      .condPickerItem:hover{ border-color:var(--accent); color:var(--text); }
+      .condPickerItem.active{ border-color:var(--accent-2); color:var(--accent-2); background:rgba(90,200,192,0.12); }
+      .exhaustionRow{
+        grid-column:1 / -1; display:flex; align-items:center; justify-content:space-between;
+        padding-top:6px; margin-top:2px; border-top:1px solid var(--border); font-size:11px; color:var(--text-dim);
+      }
+      .exhaustionStepper{ display:flex; align-items:center; gap:7px; }
+      .exhaustionStepper button{
+        width:20px; height:20px; border-radius:5px; border:1px solid var(--border);
+        background:#0d1318; color:var(--text); cursor:pointer; font-size:12px; line-height:1;
+      }
+      .exhaustionStepper button:hover{ border-color:var(--accent); }
+      .exhaustionStepper .lvl{ min-width:14px; text-align:center; color:var(--accent-bright); font-weight:700; }
 
       .fxCard{
         background:#0d1318; border:1px solid var(--border); border-radius:8px;
@@ -182,6 +413,7 @@
   <body>
 
     <div id="connBar"><div id="connDot"></div><div id="connText">Connecting to TV display…</div></div>
+    <div id="fbBar"><div id="fbDot" class="pending"></div><div id="fbText">Connecting to campaign database…</div></div>
 
     <div id="noOpener">
       <h2>No TV Display Found</h2>
@@ -224,10 +456,222 @@
       </div>
 
       <div class="panel">
+        <h3>Dice <span class="sub">Rolls happen right here on your device — nothing shows on the TV unless you choose to log it</span></h3>
+        <div class="diceTypeGrid" id="rdDiceTypeGrid">
+          <button class="diceTypeBtn" data-sides="4">d4</button>
+          <button class="diceTypeBtn" data-sides="6">d6</button>
+          <button class="diceTypeBtn" data-sides="8">d8</button>
+          <button class="diceTypeBtn" data-sides="10">d10</button>
+          <button class="diceTypeBtn" data-sides="12">d12</button>
+          <button class="diceTypeBtn active" data-sides="20">d20</button>
+          <button class="diceTypeBtn" data-sides="100">d100</button>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label>Count</label>
+            <div class="diceStepper">
+              <button id="rdDiceCountMinus">−</button>
+              <span id="rdDiceCountVal">1</span>
+              <button id="rdDiceCountPlus">+</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>Modifier</label>
+            <div class="diceStepper">
+              <button id="rdDiceModMinus">−</button>
+              <span id="rdDiceModVal">+0</span>
+              <button id="rdDiceModPlus">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="advRow">
+          <button class="advBtn" id="rdAdvBtn" data-mode="adv">Advantage</button>
+          <button class="advBtn" id="rdDisBtn" data-mode="dis">Disadvantage</button>
+        </div>
+
+        <button class="btn primary rollBtn" id="rdRollBtn">🎲 Roll</button>
+
+        <div class="diceFaces" id="rdDiceFaces"></div>
+        <div class="diceResultBig" id="rdDiceResultBig"></div>
+        <div class="diceBreakdown" id="rdDiceBreakdown"></div>
+
+        <div class="toggle">
+          <label style="margin:0;font-size:13px;">Log this roll to Combat Log (visible on TV)</label>
+          <div class="switch" id="rdDiceLogToggle"></div>
+        </div>
+
+        <div class="divider"></div>
+        <div id="diceHistory"></div>
+        <button class="btn danger" id="rdDiceHistoryClearBtn">Clear Roll History</button>
+      </div>
+
+      <div class="panel">
+        <h3>Combat Log <span class="sub">Shared with the TV — visible to everyone at the table</span></h3>
+        <div id="logList"></div>
+        <div class="logAddRow">
+          <input type="text" id="logInput" placeholder="Add a log entry…">
+          <button class="btn primary" id="logAddBtn">Add</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Timers <span class="sub">Count down each round on Next Turn — shown on the TV for everyone</span></h3>
+        <div class="timerTypeGrid" id="timerTypeGrid">
+          <button class="diceTypeBtn active" data-type="countdown">⏳ Countdown</button>
+          <button class="diceTypeBtn" data-type="spell">✨ Spell</button>
+          <button class="diceTypeBtn" data-type="torch">🔥 Torch</button>
+          <button class="diceTypeBtn" data-type="potion">🧪 Potion</button>
+          <button class="diceTypeBtn" data-type="combat">⚔️ Combat</button>
+        </div>
+        <div class="row2">
+          <div class="field" style="flex:2;"><label>Label</label><input type="text" id="timerLabelInput" placeholder="e.g. Bless"></div>
+          <div class="field" id="timerRoundsField"><label>Rounds</label><input type="number" id="timerRoundsInput" min="1" value="3"></div>
+        </div>
+        <button class="btn primary" id="timerAddBtn">+ Start Timer</button>
+        <div class="divider"></div>
+        <div id="timerList"></div>
+      </div>
+
+      <div class="panel">
         <h3>Roster <span class="sub">Prep your party &amp; monsters ahead of time — saved on this device</span></h3>
         <input type="text" id="rosterFilter" placeholder="Filter by name…">
         <div id="rosterList"></div>
         <button class="btn primary" id="newCreatureBtn">+ New Character / Monster</button>
+      </div>
+
+      <div class="panel">
+        <h3>Monster Library <span class="sub">Live search of the 2024 D&amp;D SRD via Open5e — no PDFs, no browser</span></h3>
+        <input type="text" id="monsterSearchInput" placeholder="Search monsters… (e.g. goblin)">
+        <div id="monsterResults"></div>
+        <div id="monsterDetail"></div>
+      </div>
+
+      <div class="panel">
+        <h3>Encounter Builder <span class="sub">One click adds the whole group and rolls initiative</span></h3>
+        <div id="encounterTemplateList"></div>
+        <div class="divider"></div>
+        <div class="sub" style="margin-bottom:8px;">Build a custom encounter from a Monster Library search result:</div>
+        <div class="row2">
+          <div class="field" style="flex:2;"><label>Monster (search above first)</label><input type="text" id="encPickedName" readonly placeholder="Tap a search result above…"></div>
+          <div class="field"><label>Qty</label><input type="number" id="encPickedQty" min="1" value="1"></div>
+        </div>
+        <button class="btn" id="encAddToPendingBtn">+ Add to pending encounter</button>
+        <div id="encPendingList"></div>
+        <div class="row2">
+          <input type="text" id="encTemplateNameInput" placeholder="Name this encounter…">
+        </div>
+        <button class="btn primary" id="encSaveTemplateBtn">Save as Template</button>
+        <button class="btn danger" id="encDeployPendingBtn">⚔️ Add Pending Encounter to Initiative</button>
+      </div>
+
+      <div class="panel">
+        <h3>Campaign Database <span class="sub">NPCs, Cities, Quests &amp; Rumors — synced live to your campaign, searchable</span></h3>
+        <div class="cdbTabGrid" id="cdbTypeTabs">
+          <button class="diceTypeBtn active" data-type="all">All</button>
+          <button class="diceTypeBtn" data-type="npc">NPCs</button>
+          <button class="diceTypeBtn" data-type="city">Cities</button>
+          <button class="diceTypeBtn" data-type="quest">Quests</button>
+          <button class="diceTypeBtn" data-type="rumor">Rumors</button>
+        </div>
+        <input type="text" id="cdbSearchInput" placeholder="Search NPCs, cities, quests, rumors…">
+        <div id="cdbList"></div>
+        <button class="btn primary" id="cdbNewBtn">+ New Entry</button>
+      </div>
+
+      <div class="panel">
+        <h3>Plugins <span class="sub">Turn on the extra tools you want for this session</span></h3>
+        <div id="pluginToggleList">
+          <div class="pluginToggleRow" data-plugin="weather">
+            <span class="pluginIcon">🌦️</span>
+            <div class="pluginToggleText">
+              <div class="pluginToggleName">Weather Widget</div>
+              <div class="pluginToggleDesc">Roll current weather for your region</div>
+            </div>
+            <div class="switch" data-plugin-switch="weather"></div>
+          </div>
+          <div class="pluginToggleRow" data-plugin="tavern">
+            <span class="pluginIcon">🍺</span>
+            <div class="pluginToggleText">
+              <div class="pluginToggleName">Random Tavern</div>
+              <div class="pluginToggleDesc">Generate a tavern on the fly</div>
+            </div>
+            <div class="switch" data-plugin-switch="tavern"></div>
+          </div>
+          <div class="pluginToggleRow" data-plugin="treasure">
+            <span class="pluginIcon">💰</span>
+            <div class="pluginToggleText">
+              <div class="pluginToggleName">Treasure Generator</div>
+              <div class="pluginToggleDesc">Roll loot by tier</div>
+            </div>
+            <div class="switch" data-plugin-switch="treasure"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel pluginPanel" id="weatherPanel" style="display:none;">
+        <h3>🌦️ Weather <span class="sub">Rolls locally — log it if you want the table to see</span></h3>
+        <div class="row2">
+          <div class="field">
+            <label>Season</label>
+            <select id="weatherSeason">
+              <option value="spring">Spring</option>
+              <option value="summer">Summer</option>
+              <option value="autumn">Autumn</option>
+              <option value="winter">Winter</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Climate</label>
+            <select id="weatherClimate">
+              <option value="temperate">Temperate</option>
+              <option value="coastal">Coastal</option>
+              <option value="desert">Desert</option>
+              <option value="arctic">Arctic</option>
+              <option value="tropical">Tropical</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn primary" id="weatherRollBtn">🎲 Roll Weather</button>
+        <div id="weatherResult"></div>
+        <div class="toggle">
+          <label style="margin:0;font-size:13px;">Log to Combat Log (visible on TV)</label>
+          <div class="switch" id="weatherLogToggle"></div>
+        </div>
+      </div>
+
+      <div class="panel pluginPanel" id="tavernPanel" style="display:none;">
+        <h3>🍺 Random Tavern</h3>
+        <button class="btn primary" id="tavernRollBtn">🎲 Generate Tavern</button>
+        <div id="tavernResult"></div>
+        <div class="toggle">
+          <label style="margin:0;font-size:13px;">Log to Combat Log (visible on TV)</label>
+          <div class="switch" id="tavernLogToggle"></div>
+        </div>
+        <div class="divider"></div>
+        <div id="tavernHistory"></div>
+      </div>
+
+      <div class="panel pluginPanel" id="treasurePanel" style="display:none;">
+        <h3>💰 Treasure Generator</h3>
+        <div class="field">
+          <label>Tier</label>
+          <select id="treasureTier">
+            <option value="low">Low (CR 1–4)</option>
+            <option value="mid">Mid (CR 5–10)</option>
+            <option value="high">High (CR 11–16)</option>
+            <option value="epic">Epic (CR 17+)</option>
+          </select>
+        </div>
+        <button class="btn primary" id="treasureRollBtn">🎲 Roll Treasure</button>
+        <div id="treasureResult"></div>
+        <div class="toggle">
+          <label style="margin:0;font-size:13px;">Log to Combat Log (visible on TV)</label>
+          <div class="switch" id="treasureLogToggle"></div>
+        </div>
+        <div class="divider"></div>
+        <div id="treasureHistory"></div>
       </div>
 
       <div class="panel">
@@ -282,14 +726,34 @@
           <label>Feet per square</label>
           <input type="number" id="feetPerSquare" value="5" min="1" max="50">
         </div>
+        <div class="field">
+          <label>HUD size <span id="hudScaleLabel" style="color:var(--text);text-transform:none;letter-spacing:0;">100%</span></label>
+          <input type="range" id="hudScaleSlider" min="0.6" max="2.5" step="0.05" value="1">
+        </div>
+        <div class="field">
+          <label>Campaign ID <span class="sub">Everyone using the same ID shares the same campaign database</span></label>
+          <input type="text" id="campaignIdInput" placeholder="default">
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Session Save <span class="sub">One button — widget positions, encounter, notes, HP, initiative, conditions, everything</span></h3>
+        <button class="btn primary" id="sessionSaveBtn">☁ Save Session to Cloud</button>
+        <button class="btn danger" id="sessionLoadBtn">☁ Load Session from Cloud</button>
+        <div id="sessionSaveStatus" class="sub" style="margin-top:8px;"></div>
       </div>
 
     </div>
 
-    <!-- Quick Stats modal (HP / AC editing during combat) -->
+    <!-- Quick Edit modal (name / initiative / HP / AC editing during combat) -->
     <div class="modalOverlay" id="statsModal">
       <div class="modalBox">
-        <h2 id="statsModalTitle">Edit Stats</h2>
+        <h2 id="statsModalTitle">Edit Combatant</h2>
+        <div class="row2">
+          <div class="field" style="flex:2;"><label>Name</label><input type="text" id="statName"></div>
+          <div class="field"><label>Initiative</label><input type="number" id="statInit"></div>
+        </div>
+        <div class="divider"></div>
         <div class="row2">
           <div class="field"><label>Max HP</label><input type="number" id="statMaxHp"></div>
           <div class="field"><label>Current HP</label><input type="number" id="statHp"></div>
@@ -301,6 +765,70 @@
         <div class="modalFooter">
           <button class="btn" id="statsCancelBtn">Cancel</button>
           <button class="btn primary" id="statsSaveBtn">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Spellcasting modal (concentration / spell slots / prepared spells) -->
+    <div class="modalOverlay" id="spellModal">
+      <div class="modalBox">
+        <h2 id="spellModalTitle">Spellcasting</h2>
+
+        <h3 style="margin:0 0 8px;color:var(--text);font-size:13px;text-transform:uppercase;letter-spacing:.05em;">Concentration</h3>
+        <div class="row2">
+          <div class="field" style="flex:2;"><label>Spell</label><input type="text" id="concSpellInput" placeholder="e.g. Bless"></div>
+          <div class="field"><label>Rounds</label><input type="number" id="concRoundsInput" min="1" value="10"></div>
+        </div>
+        <div class="modalFooter" style="justify-content:flex-start;margin-top:0;margin-bottom:16px;">
+          <button class="btn primary" id="concStartBtn">Start</button>
+          <button class="btn danger" id="concClearBtn">Clear</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <h3 style="margin:0 0 8px;color:var(--text);font-size:13px;text-transform:uppercase;letter-spacing:.05em;">Spell Slots</h3>
+        <div id="spellSlotGrid"></div>
+
+        <div class="divider"></div>
+
+        <h3 style="margin:0 0 8px;color:var(--text);font-size:13px;text-transform:uppercase;letter-spacing:.05em;">Prepared Spells</h3>
+        <div id="preparedSpellsList"></div>
+        <div class="logAddRow">
+          <input type="text" id="preparedSpellInput" placeholder="Add a prepared spell…">
+          <button class="btn primary" id="preparedSpellAddBtn">Add</button>
+        </div>
+
+        <div class="modalFooter">
+          <button class="btn primary" id="spellModalCloseBtn">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Campaign Database entry modal (NPC / City / Quest / Rumor) -->
+    <div class="modalOverlay" id="cdbModal">
+      <div class="modalBox">
+        <h2 id="cdbModalTitle">New Entry</h2>
+        <div class="row2">
+          <div class="field" style="flex:2;"><label>Title</label><input type="text" id="cdbTitleInput"></div>
+          <div class="field">
+            <label>Type</label>
+            <select id="cdbTypeSelect">
+              <option value="npc">NPC</option>
+              <option value="city">City</option>
+              <option value="quest">Quest</option>
+              <option value="rumor">Rumor</option>
+            </select>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>Status</label><input type="text" id="cdbStatusInput" placeholder="e.g. Alive, Active, Unconfirmed…"></div>
+          <div class="field"><label>Location</label><input type="text" id="cdbLocationInput" placeholder="Where relevant"></div>
+        </div>
+        <div class="field"><label>Notes</label><textarea id="cdbBodyInput" rows="6" style="width:100%;"></textarea></div>
+        <div class="modalFooter">
+          <button class="btn danger" id="cdbDeleteBtn" style="display:none;">Delete</button>
+          <button class="btn" id="cdbCancelBtn">Cancel</button>
+          <button class="btn primary" id="cdbSaveBtn">Save</button>
         </div>
       </div>
     </div>
@@ -386,6 +914,10 @@
       </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js" defer></script>
+    <script src="js/firebase-config.js" defer></script>
     <script>
       (function(){
         const noOpener = document.getElementById('noOpener');
@@ -403,6 +935,67 @@
 
         let lastSnapshot = null;
         let liveTimer = null;
+
+        // ---- Firebase (campaign database) ----
+        // Config lives in js/firebase-config.js (gitignored) — see js/firebase-config.example.js
+        // Loaded with `defer` so a slow/offline connection can't block the TV<->Controller
+        // handshake above — Firebase only finishes initializing once the page is fully ready.
+        let firebaseConfig = null;
+        const fbDot = document.getElementById('fbDot');
+        const fbText = document.getElementById('fbText');
+        let db = null;
+        let fbUser = null;
+        const CAMPAIGN_KEY = 'blackstoneCampaignId_v1';
+        let campaignId = 'default';
+        try{ campaignId = localStorage.getItem(CAMPAIGN_KEY) || 'default'; }catch(err){}
+
+        function campaignRef(collectionName){
+          return db.collection('campaigns').doc(campaignId).collection(collectionName);
+        }
+
+        function setFbStatus(state, text){
+          fbDot.classList.remove('live', 'pending');
+          if(state) fbDot.classList.add(state);
+          fbText.textContent = text;
+        }
+
+        function initFirebase(){
+          firebaseConfig = window.FIREBASE_CONFIG;
+          if(!firebaseConfig){
+            setFbStatus('', 'js/firebase-config.js missing — copy js/firebase-config.example.js and fill it in');
+            return;
+          }
+          try{
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            firebase.auth().signInAnonymously().catch(err => {
+              setFbStatus('', 'Firebase auth failed: ' + err.message);
+            });
+            firebase.auth().onAuthStateChanged(user => {
+              fbUser = user;
+              if(!user){ setFbStatus('', 'Not signed in to campaign database'); return; }
+              connectToCampaign();
+            });
+          }catch(err){
+            setFbStatus('', 'Firebase init failed: ' + err.message);
+          }
+        }
+        window.addEventListener('DOMContentLoaded', initFirebase);
+
+        function connectToCampaign(){
+          if(!db || !fbUser) return;
+          setFbStatus('pending', `Connecting to campaign "${campaignId}"…`);
+          // round-trip write + read against the current campaign to prove the connection works end-to-end
+          db.collection('campaigns').doc(campaignId).set({
+            lastConnectedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            lastConnectedBy: fbUser.uid
+          }, { merge:true }).then(() => {
+            setFbStatus('live', `Connected to campaign "${campaignId}"`);
+          }).catch(err => {
+            setFbStatus('', 'Firebase connected but write failed: ' + err.message);
+          });
+          if(typeof startCampaignDbListener === 'function') startCampaignDbListener();
+        }
 
         function send(action, payload){
           try{
@@ -462,6 +1055,26 @@
                     bloodied: c.hp !== null && c.hp !== undefined && c.maxHp && c.hp <= c.maxHp/2 };
         }
 
+        const CONTROLLER_CONDITIONS = [
+          { id:'blinded', label:'Blinded', icon:'🙈' },
+          { id:'charmed', label:'Charmed', icon:'💞' },
+          { id:'concentrating', label:'Concentrating', icon:'🔮' },
+          { id:'deafened', label:'Deafened', icon:'🔇' },
+          { id:'frightened', label:'Frightened', icon:'😱' },
+          { id:'grappled', label:'Grappled', icon:'🤝' },
+          { id:'incapacitated', label:'Incapacitated', icon:'💫' },
+          { id:'invisible', label:'Invisible', icon:'👻' },
+          { id:'paralyzed', label:'Paralyzed', icon:'🧊' },
+          { id:'petrified', label:'Petrified', icon:'🗿' },
+          { id:'poisoned', label:'Poisoned', icon:'☠️' },
+          { id:'prone', label:'Prone', icon:'⬇️' },
+          { id:'restrained', label:'Restrained', icon:'🕸️' },
+          { id:'stunned', label:'Stunned', icon:'🌀' },
+          { id:'unconscious', label:'Unconscious', icon:'😵' }
+        ];
+        function controllerConditionInfo(id){ return CONTROLLER_CONDITIONS.find(c => c.id === id); }
+        let condPickerOpenId = null; // combatant id whose condition picker is open — local to this device
+
         function renderCombatantList(s){
           const list = document.getElementById('combatantList');
 
@@ -489,7 +1102,9 @@
                 <div class="cardTop">
                   <div class="initNum"></div>
                   <div class="name"></div>
-                  <button class="iconBtn statBtn" title="Edit HP / AC">⚙</button>
+                  <button class="iconBtn condBtn" title="Conditions">🩹</button>
+                  <button class="iconBtn spellBtn" title="Spellcasting">🔮</button>
+                  <button class="iconBtn statBtn" title="Edit name / initiative / HP / AC">⚙</button>
                   <button class="iconBtn removeBtn" title="Remove">✕</button>
                 </div>
                 <div class="cardStats">
@@ -498,10 +1113,18 @@
                   <button class="btn miniBtn dmgBtn">−HP</button>
                   <button class="btn miniBtn healBtn">+HP</button>
                 </div>
+                <div class="condChips"></div>
+                <div class="condPickerWrap"></div>
+                <div class="concLine"></div>
               `;
               // wire listeners ONCE, when the card is created — never re-attached on re-render
               el.querySelector('.removeBtn').addEventListener('click', () => send('removeCombatant', { id: c.id }));
               el.querySelector('.statBtn').addEventListener('click', () => openStatsModal(c.id));
+              el.querySelector('.spellBtn').addEventListener('click', () => openSpellModal(c.id));
+              el.querySelector('.condBtn').addEventListener('click', () => {
+                condPickerOpenId = condPickerOpenId === c.id ? null : c.id;
+                if(lastSnapshot) renderCombatantList(lastSnapshot);
+              });
               el.querySelector('.dmgBtn').addEventListener('click', () => {
                 const amt = parseFloat(el.querySelector('.amtInput').value) || 0;
                 if(amt > 0) send('applyDamage', { id: c.id, amount: amt });
@@ -523,6 +1146,67 @@
             const statSpan = el.querySelector('.statText');
             statSpan.textContent = st.text;
             statSpan.classList.toggle('bloodied', st.bloodied);
+            const concLine = el.querySelector('.concLine');
+            if(c.concentrating){
+              concLine.textContent = `🔮 ${c.concentrationSpell || 'Concentrating'} — ${c.concentrationRounds} rd${c.concentrationRounds === 1 ? '' : 's'}`;
+              concLine.style.display = '';
+            } else {
+              concLine.textContent = '';
+              concLine.style.display = 'none';
+            }
+
+            const conditions = c.conditions || [];
+            const exhaustion = c.exhaustion || 0;
+            const chipsEl = el.querySelector('.condChips');
+            chipsEl.innerHTML = [
+              ...conditions.map(id => {
+                const info = controllerConditionInfo(id);
+                if(!info) return '';
+                return `<span class="condChip" data-cond="${id}" title="Tap to remove"><span class="icon">${info.icon}</span>${info.label}</span>`;
+              }),
+              exhaustion > 0
+                ? `<span class="condChip" data-cond="exhaustion" title="Tap to clear"><span class="icon">⚠️</span>Exhaustion ${exhaustion}</span>`
+                : ''
+            ].filter(Boolean).join('');
+            chipsEl.querySelectorAll('.condChip').forEach(chip => {
+              chip.addEventListener('click', () => {
+                const cond = chip.dataset.cond;
+                if(cond === 'exhaustion') send('setExhaustion', { id: c.id, value: 0 });
+                else send('toggleCondition', { id: c.id, cond });
+              });
+            });
+
+            const pickerWrap = el.querySelector('.condPickerWrap');
+            if(condPickerOpenId === c.id){
+              pickerWrap.innerHTML = `
+                <div class="condPicker">
+                  ${CONTROLLER_CONDITIONS.map(cond => `
+                    <div class="condPickerItem${conditions.includes(cond.id) ? ' active' : ''}" data-cond="${cond.id}">
+                      <span class="icon">${cond.icon}</span><span>${cond.label}</span>
+                    </div>
+                  `).join('')}
+                  <div class="exhaustionRow">
+                    <span>⚠️ Exhaustion</span>
+                    <div class="exhaustionStepper">
+                      <button data-dir="-1">−</button>
+                      <span class="lvl">${exhaustion}</span>
+                      <button data-dir="1">+</button>
+                    </div>
+                  </div>
+                </div>
+              `;
+              pickerWrap.querySelectorAll('.condPickerItem').forEach(item => {
+                item.addEventListener('click', () => send('toggleCondition', { id: c.id, cond: item.dataset.cond }));
+              });
+              pickerWrap.querySelectorAll('.exhaustionStepper button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                  const dir = parseInt(btn.dataset.dir);
+                  send('setExhaustion', { id: c.id, value: Math.max(0, Math.min(6, exhaustion + dir)) });
+                });
+              });
+            } else {
+              pickerWrap.innerHTML = '';
+            }
           });
         }
 
@@ -585,6 +1269,46 @@
           // Feet per square (don't clobber while user is typing)
           const fpsInput = document.getElementById('feetPerSquare');
           if(document.activeElement !== fpsInput) fpsInput.value = s.feetPerSquare;
+
+          // HUD size (don't clobber while user is dragging the slider)
+          const hudSlider = document.getElementById('hudScaleSlider');
+          if(document.activeElement !== hudSlider){
+            const hs = typeof s.hudScale === 'number' ? s.hudScale : 1;
+            hudSlider.value = hs;
+            document.getElementById('hudScaleLabel').textContent = Math.round(hs * 100) + '%';
+          }
+
+          // Combat log (shared with the TV)
+          const logListEl = document.getElementById('logList');
+          const log = s.combatLog || [];
+          if(!log.length){
+            logListEl.innerHTML = '<div id="logEmpty">No log entries yet.</div>';
+          } else {
+            logListEl.innerHTML = log.slice().reverse().map(e => `
+              <div class="logEntry">
+                <span class="logTime">${e.time}</span>
+                <span class="logText">${escapeHtml(e.text)}</span>
+              </div>
+            `).join('');
+          }
+
+          renderTimerList(s);
+
+          // Session cloud save/load status
+          const cs = s.cloudSaveState;
+          const statusEl = document.getElementById('sessionSaveStatus');
+          if(cs && cs.at){
+            const when = new Date(cs.at).toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+            statusEl.textContent = `${cs.message} (${when})`;
+            statusEl.style.color = cs.status === 'error' ? 'var(--danger)' : 'var(--accent-2)';
+          }
+
+          // keep an open Spellcasting modal's live-updating sections fresh (slots/prepared list
+          // can change from rapid button taps; concentration inputs are left alone while editing)
+          if(spellModal.classList.contains('open') && currentEditingCombatant()){
+            renderSpellSlotGrid();
+            renderPreparedSpells();
+          }
         }
 
         // ---- Turn / quick-add controls ----
@@ -653,14 +1377,107 @@
           if(!isNaN(v) && v > 0) send('setFeetPerSquare', { value: v });
         });
 
-        // ---- Quick Stats modal (HP / AC editing during combat) ----
+        document.getElementById('hudScaleSlider').addEventListener('input', function(){
+          const v = parseFloat(this.value);
+          document.getElementById('hudScaleLabel').textContent = Math.round(v * 100) + '%';
+          if(!isNaN(v)) send('setHudScale', { value: v });
+        });
+
+        const campaignIdInput = document.getElementById('campaignIdInput');
+        campaignIdInput.value = campaignId;
+        campaignIdInput.addEventListener('change', function(){
+          const v = this.value.trim() || 'default';
+          this.value = v;
+          campaignId = v;
+          try{ localStorage.setItem(CAMPAIGN_KEY, v); }catch(err){}
+          connectToCampaign();
+          if(typeof startCampaignDbListener === 'function') startCampaignDbListener();
+        });
+
+        document.getElementById('sessionSaveBtn').addEventListener('click', () => {
+          document.getElementById('sessionSaveStatus').textContent = 'Saving…';
+          send('saveSessionToCloud', { campaignId });
+        });
+        document.getElementById('sessionLoadBtn').addEventListener('click', () => {
+          if(!confirm('Load the last cloud save? This replaces everything currently on the TV — initiative, HP, conditions, timers, map settings, widget positions — with whatever was last saved to the cloud for campaign "' + campaignId + '".')) return;
+          document.getElementById('sessionSaveStatus').textContent = 'Loading…';
+          send('loadSessionFromCloud', { campaignId });
+        });
+
+        function submitRemoteLogEntry(){
+          const input = document.getElementById('logInput');
+          const text = input.value.trim();
+          if(!text) return;
+          send('addLogEntry', { text });
+          input.value = '';
+          input.focus();
+        }
+        document.getElementById('logAddBtn').addEventListener('click', submitRemoteLogEntry);
+        document.getElementById('logInput').addEventListener('keydown', e => { if(e.key === 'Enter') submitRemoteLogEntry(); });
+
+        // ---- Timers ----
+        let timerType = 'countdown';
+        const TIMER_ICONS = { countdown:'⏳', spell:'✨', torch:'🔥', potion:'🧪', combat:'⚔️' };
+        const timerTypeGridEl = document.getElementById('timerTypeGrid');
+        const timerRoundsFieldEl = document.getElementById('timerRoundsField');
+        timerTypeGridEl.querySelectorAll('.diceTypeBtn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            timerType = btn.dataset.type;
+            timerTypeGridEl.querySelectorAll('.diceTypeBtn').forEach(b => b.classList.toggle('active', b === btn));
+            timerRoundsFieldEl.style.display = timerType === 'combat' ? 'none' : '';
+          });
+        });
+        document.getElementById('timerAddBtn').addEventListener('click', () => {
+          const labelInput = document.getElementById('timerLabelInput');
+          const roundsInput = document.getElementById('timerRoundsInput');
+          const label = labelInput.value.trim();
+          const rounds = parseInt(roundsInput.value, 10) || 3;
+          send('addTimer', { type: timerType, label, rounds });
+          labelInput.value = '';
+          labelInput.focus();
+        });
+
+        function renderTimerList(s){
+          const listEl = document.getElementById('timerList');
+          const list = s.timers || [];
+          if(!list.length){
+            listEl.innerHTML = '<div id="timerListEmpty">No timers running.</div>';
+            return;
+          }
+          listEl.innerHTML = list.map(t => {
+            const icon = TIMER_ICONS[t.type] || '⏳';
+            const expired = t.direction === 'down' && t.value === 0;
+            const valueText = t.direction === 'up'
+              ? `${t.value} rd${t.value === 1 ? '' : 's'}`
+              : `${t.value}${t.total ? ' / ' + t.total : ''} rd${t.value === 1 ? '' : 's'}`;
+            return `
+              <div class="timerRow${expired ? ' expired' : ''}${t.paused ? ' paused' : ''}" data-id="${t.id}">
+                <span class="timerRowIcon">${icon}</span>
+                <span class="timerRowLabel">${escapeHtml(t.label)}</span>
+                <span class="timerRowValue">${expired ? 'Expired' : valueText}</span>
+                <button class="iconBtn timerPauseBtn" title="${t.paused ? 'Resume' : 'Pause'}">${t.paused ? '▶' : '⏸'}</button>
+                <button class="iconBtn timerRemoveBtn" title="Remove">✕</button>
+              </div>
+            `;
+          }).join('');
+          listEl.querySelectorAll('.timerPauseBtn').forEach(btn => {
+            btn.addEventListener('click', () => send('toggleTimerPause', { id: parseInt(btn.closest('.timerRow').dataset.id) }));
+          });
+          listEl.querySelectorAll('.timerRemoveBtn').forEach(btn => {
+            btn.addEventListener('click', () => send('removeTimer', { id: parseInt(btn.closest('.timerRow').dataset.id) }));
+          });
+        }
+
+        // ---- Quick Edit modal (name / initiative / HP / AC editing during combat) ----
         const statsModal = document.getElementById('statsModal');
         let statsEditingId = null;
         function openStatsModal(id){
           const c = lastSnapshot && lastSnapshot.combatants.find(x => x.id === id);
           if(!c) return;
           statsEditingId = id;
-          document.getElementById('statsModalTitle').textContent = 'Edit Stats — ' + c.name;
+          document.getElementById('statsModalTitle').textContent = 'Edit Combatant';
+          document.getElementById('statName').value = c.name;
+          document.getElementById('statInit').value = c.init;
           document.getElementById('statMaxHp').value = c.maxHp !== null && c.maxHp !== undefined ? c.maxHp : '';
           document.getElementById('statHp').value = c.hp !== null && c.hp !== undefined ? c.hp : '';
           document.getElementById('statTempHp').value = c.tempHp || 0;
@@ -670,12 +1487,29 @@
         document.getElementById('statsCancelBtn').addEventListener('click', () => statsModal.classList.remove('open'));
         document.getElementById('statsSaveBtn').addEventListener('click', () => {
           if(statsEditingId === null) return;
+          const nameInput = document.getElementById('statName');
+          const initInput = document.getElementById('statInit');
+          const name = nameInput.value.trim();
+          const init = parseFloat(initInput.value);
+          if(!name){
+            nameInput.style.borderColor = 'var(--danger)';
+            nameInput.focus();
+            setTimeout(() => { nameInput.style.borderColor = ''; }, 1800);
+            return;
+          }
+          if(isNaN(init)){
+            initInput.style.borderColor = 'var(--danger)';
+            initInput.focus();
+            setTimeout(() => { initInput.style.borderColor = ''; }, 1800);
+            return;
+          }
           const maxHpRaw = document.getElementById('statMaxHp').value;
           const hpRaw = document.getElementById('statHp').value;
           const tempRaw = document.getElementById('statTempHp').value;
           const acRaw = document.getElementById('statAc').value;
           send('setCombatantStats', {
             id: statsEditingId,
+            name, init,
             maxHp: maxHpRaw === '' ? null : parseFloat(maxHpRaw),
             hp: hpRaw === '' ? null : parseFloat(hpRaw),
             tempHp: tempRaw === '' ? 0 : parseFloat(tempRaw),
@@ -683,6 +1517,112 @@
           });
           statsModal.classList.remove('open');
         });
+
+        // ---- Spellcasting modal (concentration / spell slots / prepared spells) ----
+        const spellModal = document.getElementById('spellModal');
+        let spellEditingId = null;
+
+        function currentEditingCombatant(){
+          return lastSnapshot && lastSnapshot.combatants.find(x => x.id === spellEditingId);
+        }
+
+        function renderSpellSlotGrid(){
+          const c = currentEditingCombatant();
+          if(!c) return;
+          const grid = document.getElementById('spellSlotGrid');
+          let html = '';
+          for(let lvl = 1; lvl <= 9; lvl++){
+            const s = (c.spellSlots && c.spellSlots[lvl]) || { max:0, used:0 };
+            html += `
+              <div class="slotRow" data-level="${lvl}">
+                <span class="slotLvl">Lvl ${lvl}</span>
+                <div class="diceStepper">
+                  <button class="slotUsedMinus">−</button>
+                  <span class="slotUsedVal">${s.used}</span>
+                  <button class="slotUsedPlus">+</button>
+                </div>
+                <span class="slotSep">/</span>
+                <input type="number" class="slotMaxInput" min="0" max="20" value="${s.max}">
+              </div>
+            `;
+          }
+          grid.innerHTML = html;
+          grid.querySelectorAll('.slotRow').forEach(row => {
+            const level = parseInt(row.dataset.level);
+            const s = (c.spellSlots && c.spellSlots[level]) || { max:0, used:0 };
+            row.querySelector('.slotUsedMinus').addEventListener('click', () => {
+              send('setSpellSlot', { id: c.id, level, used: Math.max(0, s.used - 1) });
+            });
+            row.querySelector('.slotUsedPlus').addEventListener('click', () => {
+              send('setSpellSlot', { id: c.id, level, used: Math.min(s.max, s.used + 1) });
+            });
+            row.querySelector('.slotMaxInput').addEventListener('change', function(){
+              const max = Math.max(0, parseInt(this.value, 10) || 0);
+              send('setSpellSlot', { id: c.id, level, max });
+            });
+          });
+        }
+
+        function renderPreparedSpells(){
+          const c = currentEditingCombatant();
+          if(!c) return;
+          const list = document.getElementById('preparedSpellsList');
+          const spells = c.preparedSpells || [];
+          if(!spells.length){
+            list.innerHTML = '<div id="preparedSpellsEmpty">No prepared spells yet.</div>';
+            return;
+          }
+          list.innerHTML = spells.map(sp => `
+            <div class="preparedRow${sp.used ? ' used' : ''}" data-id="${sp.id}">
+              <input type="checkbox" class="preparedCheck" ${sp.used ? 'checked' : ''}>
+              <span class="preparedName">${escapeHtml(sp.name)}</span>
+              <button class="repRemove">✕</button>
+            </div>
+          `).join('');
+          list.querySelectorAll('.preparedRow').forEach(row => {
+            const spellId = row.dataset.id;
+            row.querySelector('.preparedCheck').addEventListener('change', () => {
+              send('togglePreparedSpell', { id: c.id, spellId });
+            });
+            row.querySelector('.repRemove').addEventListener('click', () => {
+              send('removePreparedSpell', { id: c.id, spellId });
+            });
+          });
+        }
+
+        function openSpellModal(id){
+          const c = lastSnapshot && lastSnapshot.combatants.find(x => x.id === id);
+          if(!c) return;
+          spellEditingId = id;
+          document.getElementById('spellModalTitle').textContent = 'Spellcasting — ' + c.name;
+          document.getElementById('concSpellInput').value = c.concentrationSpell || '';
+          document.getElementById('concRoundsInput').value = c.concentrationRounds || 10;
+          renderSpellSlotGrid();
+          renderPreparedSpells();
+          spellModal.classList.add('open');
+        }
+        document.getElementById('spellModalCloseBtn').addEventListener('click', () => spellModal.classList.remove('open'));
+        document.getElementById('concStartBtn').addEventListener('click', () => {
+          if(spellEditingId === null) return;
+          const spellName = document.getElementById('concSpellInput').value.trim();
+          const rounds = parseInt(document.getElementById('concRoundsInput').value, 10) || 10;
+          send('setConcentration', { id: spellEditingId, spellName, rounds });
+        });
+        document.getElementById('concClearBtn').addEventListener('click', () => {
+          if(spellEditingId === null) return;
+          send('clearConcentration', { id: spellEditingId });
+        });
+        function submitPreparedSpell(){
+          if(spellEditingId === null) return;
+          const input = document.getElementById('preparedSpellInput');
+          const name = input.value.trim();
+          if(!name) return;
+          send('addPreparedSpell', { id: spellEditingId, name });
+          input.value = '';
+          input.focus();
+        }
+        document.getElementById('preparedSpellAddBtn').addEventListener('click', submitPreparedSpell);
+        document.getElementById('preparedSpellInput').addEventListener('keydown', e => { if(e.key === 'Enter') submitPreparedSpell(); });
 
         // =====================================================================
         // ROSTER — persistent character/monster library (saved locally on this
@@ -1073,8 +2013,907 @@
           });
         }
 
+        // ---- Dice roller (rolls locally on this device — a "secret roll" pad for the DM) ----
+        const DICE_KEY = 'blackstoneRemoteDice_v1';
+        let rdDiceType = 20, rdDiceCount = 1, rdDiceModifier = 0, rdDiceAdvMode = 'normal';
+        let rdLogRolls = false;
+        let rdRollHistory = [];
+        let rdRollNextId = 1;
+        let rdAnimTimer = null;
+        const RD_HISTORY_MAX = 100;
+
+        const rdTypeGridEl = document.getElementById('rdDiceTypeGrid');
+        const rdCountValEl = document.getElementById('rdDiceCountVal');
+        const rdModValEl = document.getElementById('rdDiceModVal');
+        const rdAdvBtnEl = document.getElementById('rdAdvBtn');
+        const rdDisBtnEl = document.getElementById('rdDisBtn');
+        const rdFacesEl = document.getElementById('rdDiceFaces');
+        const rdResultBigEl = document.getElementById('rdDiceResultBig');
+        const rdBreakdownEl = document.getElementById('rdDiceBreakdown');
+        const rdLogToggleEl = document.getElementById('rdDiceLogToggle');
+        const rdHistoryEl = document.getElementById('diceHistory');
+        const rdRollBtnEl = document.getElementById('rdRollBtn');
+
+        function rdRollDie(sides){ return 1 + Math.floor(Math.random() * sides); }
+        function rdAdvDisAllowed(){ return rdDiceType === 20 && rdDiceCount === 1; }
+        function rdFormatTime(d){ return d.toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit', second:'2-digit' }); }
+
+        function rdSaveState(){
+          try{
+            localStorage.setItem(DICE_KEY, JSON.stringify({
+              diceType: rdDiceType, diceCount: rdDiceCount, diceModifier: rdDiceModifier,
+              diceAdvMode: rdDiceAdvMode, logRolls: rdLogRolls,
+              rollHistory: rdRollHistory, rollNextId: rdRollNextId
+            }));
+          }catch(err){}
+        }
+        function rdLoadState(){
+          let data;
+          try{ data = JSON.parse(localStorage.getItem(DICE_KEY)); }catch(err){}
+          if(!data) return;
+          rdDiceType = [4,6,8,10,12,20,100].includes(data.diceType) ? data.diceType : 20;
+          rdDiceCount = typeof data.diceCount === 'number' ? Math.max(1, Math.min(20, data.diceCount)) : 1;
+          rdDiceModifier = typeof data.diceModifier === 'number' ? Math.max(-20, Math.min(20, data.diceModifier)) : 0;
+          rdDiceAdvMode = ['normal','adv','dis'].includes(data.diceAdvMode) ? data.diceAdvMode : 'normal';
+          rdLogRolls = !!data.logRolls;
+          rdRollHistory = Array.isArray(data.rollHistory) ? data.rollHistory : [];
+          rdRollNextId = data.rollNextId || (rdRollHistory.length ? Math.max(...rdRollHistory.map(e => e.id || 0)) + 1 : 1);
+        }
+
+        function rdUpdateControlsUI(){
+          rdTypeGridEl.querySelectorAll('.diceTypeBtn').forEach(btn => {
+            btn.classList.toggle('active', parseInt(btn.dataset.sides) === rdDiceType);
+          });
+          rdCountValEl.textContent = rdDiceCount;
+          rdModValEl.textContent = (rdDiceModifier > 0 ? '+' : '') + rdDiceModifier;
+          const allowed = rdAdvDisAllowed();
+          rdAdvBtnEl.disabled = !allowed;
+          rdDisBtnEl.disabled = !allowed;
+          rdAdvBtnEl.classList.toggle('active', allowed && rdDiceAdvMode === 'adv');
+          rdDisBtnEl.classList.toggle('active', allowed && rdDiceAdvMode === 'dis');
+          rdLogToggleEl.classList.toggle('on', rdLogRolls);
+        }
+
+        rdTypeGridEl.querySelectorAll('.diceTypeBtn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            rdDiceType = parseInt(btn.dataset.sides);
+            if(!rdAdvDisAllowed()) rdDiceAdvMode = 'normal';
+            rdUpdateControlsUI(); rdSaveState();
+          });
+        });
+        document.getElementById('rdDiceCountMinus').addEventListener('click', () => {
+          rdDiceCount = Math.max(1, rdDiceCount - 1);
+          if(!rdAdvDisAllowed()) rdDiceAdvMode = 'normal';
+          rdUpdateControlsUI(); rdSaveState();
+        });
+        document.getElementById('rdDiceCountPlus').addEventListener('click', () => {
+          rdDiceCount = Math.min(20, rdDiceCount + 1);
+          if(!rdAdvDisAllowed()) rdDiceAdvMode = 'normal';
+          rdUpdateControlsUI(); rdSaveState();
+        });
+        document.getElementById('rdDiceModMinus').addEventListener('click', () => {
+          rdDiceModifier = Math.max(-20, rdDiceModifier - 1);
+          rdUpdateControlsUI(); rdSaveState();
+        });
+        document.getElementById('rdDiceModPlus').addEventListener('click', () => {
+          rdDiceModifier = Math.min(20, rdDiceModifier + 1);
+          rdUpdateControlsUI(); rdSaveState();
+        });
+        rdAdvBtnEl.addEventListener('click', () => {
+          if(!rdAdvDisAllowed()) return;
+          rdDiceAdvMode = rdDiceAdvMode === 'adv' ? 'normal' : 'adv';
+          rdUpdateControlsUI(); rdSaveState();
+        });
+        rdDisBtnEl.addEventListener('click', () => {
+          if(!rdAdvDisAllowed()) return;
+          rdDiceAdvMode = rdDiceAdvMode === 'dis' ? 'normal' : 'dis';
+          rdUpdateControlsUI(); rdSaveState();
+        });
+        rdLogToggleEl.addEventListener('click', () => {
+          rdLogRolls = !rdLogRolls;
+          rdUpdateControlsUI(); rdSaveState();
+        });
+
+        function rdComputeRoll(){
+          const dice = [];
+          let usedTotal = 0;
+          if(rdAdvDisAllowed() && rdDiceAdvMode !== 'normal'){
+            const a = rdRollDie(20), b = rdRollDie(20);
+            const use = rdDiceAdvMode === 'adv' ? Math.max(a, b) : Math.min(a, b);
+            let marked = false;
+            [a, b].forEach(v => {
+              const isUsed = !marked && v === use;
+              if(isUsed) marked = true;
+              dice.push({ sides:20, value:v, used:isUsed });
+            });
+            usedTotal = use;
+          } else {
+            for(let i = 0; i < rdDiceCount; i++){
+              const v = rdRollDie(rdDiceType);
+              dice.push({ sides:rdDiceType, value:v, used:true });
+              usedTotal += v;
+            }
+          }
+          return { dice, modifier:rdDiceModifier, total: usedTotal + rdDiceModifier, advMode: rdAdvDisAllowed() ? rdDiceAdvMode : 'normal' };
+        }
+        function rdFormatLabel(result){
+          let label = (rdDiceCount > 1 ? rdDiceCount : '') + 'd' + rdDiceType;
+          if(result.advMode === 'adv') label += ' (adv)';
+          else if(result.advMode === 'dis') label += ' (dis)';
+          if(result.modifier) label += (result.modifier > 0 ? '+' : '') + result.modifier;
+          return label;
+        }
+        function rdFormatBreakdown(result){
+          let s = '[' + result.dice.map(d => d.value).join(', ') + ']';
+          if(result.modifier) s += ' ' + (result.modifier > 0 ? '+' : '') + result.modifier;
+          return s;
+        }
+        function rdBuildFaceEl(value, cls){
+          const el = document.createElement('div');
+          el.className = 'dieFace' + (cls ? ' ' + cls : '');
+          el.textContent = value;
+          return el;
+        }
+        let rdRollingFaceEls = [];
+        function rdCreateRollingFaces(count, sides){
+          rdFacesEl.innerHTML = '';
+          rdRollingFaceEls = [];
+          for(let i = 0; i < count; i++){
+            const el = rdBuildFaceEl(rdRollDie(sides), 'rolling');
+            rdFacesEl.appendChild(el);
+            rdRollingFaceEls.push(el);
+          }
+        }
+        function rdTickRollingFaces(sides){
+          rdRollingFaceEls.forEach(el => { el.textContent = rdRollDie(sides); });
+        }
+        function rdRenderSettledFaces(result){
+          rdFacesEl.innerHTML = '';
+          rdRollingFaceEls = [];
+          result.dice.forEach(d => {
+            let cls = 'settled';
+            if(d.sides === 20 && d.used && d.value === 20) cls += ' crit20';
+            if(d.sides === 20 && d.used && d.value === 1) cls += ' crit1';
+            if(!d.used) cls += ' unused';
+            rdFacesEl.appendChild(rdBuildFaceEl(d.value, cls.trim()));
+          });
+        }
+        function rdRenderHistory(){
+          if(!rdRollHistory.length){
+            rdHistoryEl.innerHTML = '<div id="diceHistoryEmpty">No rolls yet.</div>';
+            return;
+          }
+          rdHistoryEl.innerHTML = rdRollHistory.slice().reverse().map(e => `
+            <div class="diceHistoryEntry">
+              <span class="dhTime">${e.time}</span>
+              <span class="dhText">${escapeHtml(e.text)}</span>
+            </div>
+          `).join('');
+        }
+
+        function rdRollNow(){
+          if(rdAnimTimer){ clearInterval(rdAnimTimer); rdAnimTimer = null; }
+          const result = rdComputeRoll();
+          rdResultBigEl.textContent = '';
+          rdResultBigEl.className = 'diceResultBig';
+          rdBreakdownEl.textContent = '';
+          rdRollBtnEl.disabled = true;
+          rdRollBtnEl.textContent = '🎲 Rolling…';
+
+          rdCreateRollingFaces(result.dice.length, rdDiceType);
+          let ticks = 0;
+          const maxTicks = 10;
+          rdAnimTimer = setInterval(() => {
+            ticks++;
+            rdTickRollingFaces(rdDiceType);
+            if(ticks >= maxTicks){
+              clearInterval(rdAnimTimer);
+              rdAnimTimer = null;
+              rdFinishRoll(result);
+            }
+          }, 60);
+        }
+        function rdFinishRoll(result){
+          rdRenderSettledFaces(result);
+          rdRollBtnEl.disabled = false;
+          rdRollBtnEl.textContent = '🎲 Roll';
+          const isCrit20 = result.dice.some(d => d.sides === 20 && d.used && d.value === 20) && rdDiceCount === 1;
+          const isCrit1 = result.dice.some(d => d.sides === 20 && d.used && d.value === 1) && rdDiceCount === 1;
+          rdResultBigEl.textContent = result.total;
+          rdResultBigEl.className = 'diceResultBig' + (isCrit20 ? ' crit20' : isCrit1 ? ' crit1' : '');
+          rdBreakdownEl.textContent = rdFormatBreakdown(result);
+
+          const text = `🎲 ${rdFormatLabel(result)}: ${rdFormatBreakdown(result)} = ${result.total}`;
+          rdRollHistory.push({ id: rdRollNextId++, time: rdFormatTime(new Date()), text });
+          if(rdRollHistory.length > RD_HISTORY_MAX) rdRollHistory.splice(0, rdRollHistory.length - RD_HISTORY_MAX);
+          rdRenderHistory();
+          rdSaveState();
+          if(rdLogRolls) send('addLogEntry', { text });
+        }
+
+        rdRollBtnEl.addEventListener('click', rdRollNow);
+        document.getElementById('rdDiceHistoryClearBtn').addEventListener('click', () => {
+          rdRollHistory = [];
+          rdRenderHistory();
+          rdSaveState();
+        });
+
+        rdLoadState();
+        rdUpdateControlsUI();
+        rdRenderHistory();
+
+        // ---- Monster Library (2024 D&D SRD via the Open5e v2 API) ----
+        const MONSTER_API_BASE = 'https://api.open5e.com';
+        let monsterIndex = [];
+        let monsterIndexLoaded = false;
+        let monsterIndexLoading = false;
+        const monsterDetailCache = {};
+        let encPickedMonster = null;
+
+        function fetchAllPages(url, acc){
+          acc = acc || [];
+          return fetch(url).then(r => r.json()).then(data => {
+            const results = acc.concat(data.results || []);
+            if(data.next) return fetchAllPages(data.next, results);
+            return results;
+          });
+        }
+        function loadMonsterIndex(){
+          if(monsterIndexLoaded || monsterIndexLoading) return;
+          monsterIndexLoading = true;
+          fetchAllPages(`${MONSTER_API_BASE}/v2/creatures/?document__key__in=srd-2024&fields=key,name`)
+            .then(results => {
+              monsterIndex = results.map(m => ({ index: m.key, name: m.name }));
+              monsterIndexLoaded = true;
+              monsterIndexLoading = false;
+            })
+            .catch(() => {
+              monsterIndexLoading = false;
+              document.getElementById('monsterResults').innerHTML =
+                '<div id="monsterSearchEmpty">Couldn\'t reach the Monster API — check your internet connection.</div>';
+            });
+        }
+        loadMonsterIndex();
+
+        function extractAC(m){ return typeof m.armor_class === 'number' ? m.armor_class : null; }
+        function extractSpeed(m){
+          if(!m.speed || typeof m.speed !== 'object') return '—';
+          const unit = m.speed.unit || 'feet';
+          return Object.entries(m.speed)
+            .filter(([k]) => k !== 'unit')
+            .map(([k, v]) => (k === 'walk' ? `${v} ${unit}` : `${k} ${v} ${unit}`))
+            .join(', ');
+        }
+        function fetchMonsterDetail(index){
+          if(monsterDetailCache[index]) return Promise.resolve(monsterDetailCache[index]);
+          return fetch(`${MONSTER_API_BASE}/v2/creatures/${index}/`)
+            .then(r => { if(!r.ok) throw new Error('not found'); return r.json(); })
+            .then(m => { monsterDetailCache[index] = m; return m; });
+        }
+
+        function renderMonsterResults(query){
+          const resultsEl = document.getElementById('monsterResults');
+          if(!monsterIndexLoaded){
+            resultsEl.innerHTML = '<div id="monsterSearchLoading">Loading monster index…</div>';
+            loadMonsterIndex();
+            setTimeout(() => { if(monsterIndexLoaded) renderMonsterResults(query); }, 800);
+            return;
+          }
+          const q = query.trim().toLowerCase();
+          if(!q){ resultsEl.innerHTML = ''; return; }
+          const matches = monsterIndex.filter(m => m.name.toLowerCase().includes(q)).slice(0, 8);
+          if(!matches.length){
+            resultsEl.innerHTML = '<div id="monsterSearchEmpty">No matches.</div>';
+            return;
+          }
+          resultsEl.innerHTML = matches.map(m => `
+            <div class="monsterResultRow" data-index="${m.index}">
+              <span>${escapeHtml(m.name)}</span>
+              <span class="mrMeta">tap for stat block</span>
+            </div>
+          `).join('');
+          resultsEl.querySelectorAll('.monsterResultRow').forEach(row => {
+            row.addEventListener('click', () => openMonsterDetail(row.dataset.index));
+          });
+        }
+        document.getElementById('monsterSearchInput').addEventListener('input', function(){
+          renderMonsterResults(this.value);
+        });
+
+        function renderMonsterStatBlockHtml(m){
+          const ac = extractAC(m);
+          const hp = typeof m.hit_points === 'number' ? m.hit_points : '—';
+          const hitDice = m.hit_dice || '';
+          const speed = extractSpeed(m);
+          const traits = Array.isArray(m.traits) ? m.traits : [];
+          const allActions = Array.isArray(m.actions) ? m.actions : [];
+          const actions = allActions.filter(a => a.action_type === 'ACTION');
+          const bonusActions = allActions.filter(a => a.action_type === 'BONUS_ACTION');
+          const reactions = allActions.filter(a => a.action_type === 'REACTION');
+          const legendary = allActions.filter(a => a.action_type === 'LEGENDARY_ACTION');
+          const cr = m.challenge_rating !== undefined ? m.challenge_rating : '?';
+          const xp = m.experience_points !== undefined ? m.experience_points : '?';
+          const typeName = (m.type && m.type.name) || '';
+          const sizeName = (m.size && m.size.name) || '';
+          const dex = m.ability_scores ? m.ability_scores.dexterity : undefined;
+          const section = (title, items) => items.length ? `
+            <div class="mSection"><b>${title}</b>${items.map(a => `<div class="mEntry"><b>${escapeHtml(a.name)}.</b> ${escapeHtml(a.desc || '')}</div>`).join('')}</div>
+          ` : '';
+          return `
+            <div class="monsterStatBlock" data-dex="${dex !== undefined ? dex : ''}">
+              <h4>${escapeHtml(m.name)}</h4>
+              <div class="mMeta">${escapeHtml(sizeName)} ${escapeHtml(typeName)}, ${escapeHtml(m.alignment || '')}</div>
+              <div class="mStatsRow"><b>AC</b> ${ac !== null ? ac : '—'} &nbsp;&nbsp; <b>HP</b> ${hp}${hitDice ? ' (' + escapeHtml(hitDice) + ')' : ''} &nbsp;&nbsp; <b>Speed</b> ${escapeHtml(speed)}</div>
+              <div class="mStatsRow"><b>CR</b> ${cr} &nbsp;&nbsp; <b>XP</b> ${xp}</div>
+              ${section('Traits', traits)}
+              ${section('Actions', actions)}
+              ${section('Bonus Actions', bonusActions)}
+              ${section('Reactions', reactions)}
+              ${section('Legendary Actions', legendary)}
+              <button class="btn primary" id="monsterAddBtn">+ Add to Initiative (roll init)</button>
+            </div>
+          `;
+        }
+        function openMonsterDetail(index){
+          const detailEl = document.getElementById('monsterDetail');
+          detailEl.innerHTML = '<div id="monsterSearchLoading">Loading stat block…</div>';
+          fetchMonsterDetail(index).then(m => {
+            detailEl.innerHTML = renderMonsterStatBlockHtml(m);
+            document.getElementById('monsterAddBtn').addEventListener('click', () => addMonstersBatch([{ monster:m, qty:1 }]));
+            encPickedMonster = m;
+            document.getElementById('encPickedName').value = m.name;
+          }).catch(() => {
+            detailEl.innerHTML = '<div id="monsterSearchEmpty">Could not load that monster — check your connection and try again.</div>';
+          });
+        }
+
+        function rollMonsterInit(dex){
+          const mod = Math.floor(((typeof dex === 'number' ? dex : 10) - 10) / 2);
+          return (1 + Math.floor(Math.random() * 20)) + mod;
+        }
+        function buildMonsterCombatantPayload(monster, name){
+          const allActions = Array.isArray(monster.actions) ? monster.actions : [];
+          const notesParts = allActions
+            .filter(a => a.action_type === 'ACTION' || a.action_type === 'LEGENDARY_ACTION')
+            .map(a => `${a.name}: ${a.desc || ''}`);
+          const dex = monster.ability_scores ? monster.ability_scores.dexterity : undefined;
+          return {
+            name,
+            init: rollMonsterInit(dex),
+            hp: typeof monster.hit_points === 'number' ? monster.hit_points : null,
+            maxHp: typeof monster.hit_points === 'number' ? monster.hit_points : null,
+            ac: extractAC(monster),
+            notes: notesParts.join(' | ').slice(0, 600)
+          };
+        }
+        function addMonstersBatch(entries){
+          const usedNames = new Set((lastSnapshot ? lastSnapshot.combatants : []).map(c => c.name));
+          const added = [];
+          entries.forEach(({ monster, qty }) => {
+            for(let i = 0; i < qty; i++){
+              let name = monster.name;
+              if(usedNames.has(name)){
+                let n = 2;
+                while(usedNames.has(`${monster.name} ${n}`)) n++;
+                name = `${monster.name} ${n}`;
+              }
+              usedNames.add(name);
+              send('addCombatant', buildMonsterCombatantPayload(monster, name));
+              added.push(name);
+            }
+          });
+          return added;
+        }
+
+        // ---- Encounter Builder ----
+        const ENCOUNTER_TEMPLATE_KEY = 'blackstoneEncounterTemplates_v1';
+        // Built-ins resolve by NAME against the live srd-2024 index (not a hardcoded slug),
+        // so they can't silently break if Open5e's key format ever changes.
+        const BUILTIN_ENCOUNTER_TEMPLATES = [
+          { name:'Bandit Camp', builtin:true, entries:[{ name:'Bandit', qty:4 }, { name:'Bandit Captain', qty:1 }] },
+          { name:'Goblin Ambush', builtin:true, entries:[{ name:'Goblin', qty:4 }] },
+          { name:'Skeleton Patrol', builtin:true, entries:[{ name:'Skeleton', qty:4 }] },
+          { name:'Wolf Pack', builtin:true, entries:[{ name:'Wolf', qty:3 }] },
+          { name:'Zombie Horde', builtin:true, entries:[{ name:'Zombie', qty:5 }] }
+        ];
+        let customEncounterTemplates = [];
+        function loadEncounterTemplates(){
+          try{ customEncounterTemplates = JSON.parse(localStorage.getItem(ENCOUNTER_TEMPLATE_KEY)) || []; }catch(err){ customEncounterTemplates = []; }
+        }
+        function saveEncounterTemplates(){
+          try{ localStorage.setItem(ENCOUNTER_TEMPLATE_KEY, JSON.stringify(customEncounterTemplates)); }catch(err){}
+        }
+        function renderEncounterTemplateList(){
+          const el = document.getElementById('encounterTemplateList');
+          const all = [...BUILTIN_ENCOUNTER_TEMPLATES, ...customEncounterTemplates];
+          if(!all.length){ el.innerHTML = '<div id="encPendingEmpty">No encounter templates yet.</div>'; return; }
+          el.innerHTML = all.map((t, i) => `
+            <button class="encTemplateBtn" data-idx="${i}">
+              <span>${escapeHtml(t.name)}${t.builtin ? '' : ' <span class="etRemove" data-remove-idx="' + (i - BUILTIN_ENCOUNTER_TEMPLATES.length) + '">✕ remove</span>'}</span>
+              <span class="etComp">${t.entries.map(e => `${e.qty}x ${e.name}`).join(', ')}</span>
+            </button>
+          `).join('');
+          el.querySelectorAll('.encTemplateBtn').forEach(btn => {
+            btn.addEventListener('click', ev => {
+              if(ev.target.classList.contains('etRemove')){
+                ev.stopPropagation();
+                customEncounterTemplates.splice(parseInt(ev.target.dataset.removeIdx), 1);
+                saveEncounterTemplates();
+                renderEncounterTemplateList();
+                return;
+              }
+              deployEncounterTemplate(all[parseInt(btn.dataset.idx)]);
+            });
+          });
+        }
+        function resolveTemplateEntry(entry){
+          if(entry.index){
+            return fetchMonsterDetail(entry.index)
+              .then(m => ({ monster: Object.assign({}, m, { name: entry.name || m.name }), qty: entry.qty }))
+              .catch(() => null);
+          }
+          const match = monsterIndex.find(m => m.name.toLowerCase() === (entry.name || '').toLowerCase());
+          if(!match) return Promise.resolve(null);
+          return fetchMonsterDetail(match.index)
+            .then(m => ({ monster: Object.assign({}, m, { name: entry.name }), qty: entry.qty }))
+            .catch(() => null);
+        }
+        function deployEncounterTemplate(template){
+          const ready = monsterIndexLoaded ? Promise.resolve() : new Promise(resolve => {
+            const check = () => { if(monsterIndexLoaded) resolve(); else setTimeout(check, 200); };
+            check();
+          });
+          ready
+            .then(() => Promise.all(template.entries.map(resolveTemplateEntry)))
+            .then(results => {
+              const valid = results.filter(Boolean);
+              addMonstersBatch(valid);
+              const missing = template.entries.length - valid.length;
+              if(missing > 0){
+                send('addLogEntry', { text: `⚠️ ${missing} monster${missing === 1 ? '' : 's'} from "${template.name}" could not be found in the SRD API.` });
+              }
+            });
+        }
+
+        let pendingEncounter = [];
+        function renderPendingEncounter(){
+          const el = document.getElementById('encPendingList');
+          if(!pendingEncounter.length){
+            el.innerHTML = '<div id="encPendingEmpty">No monsters added yet — search above, tap a result, then "Add to pending encounter".</div>';
+            return;
+          }
+          el.innerHTML = pendingEncounter.map((e, i) => `
+            <div class="encPendingRow" data-idx="${i}">
+              <span class="epName">${escapeHtml(e.name)}</span>
+              <span class="epQty">×${e.qty}</span>
+              <button class="repRemove">✕</button>
+            </div>
+          `).join('');
+          el.querySelectorAll('.encPendingRow').forEach(row => {
+            row.querySelector('.repRemove').addEventListener('click', () => {
+              pendingEncounter.splice(parseInt(row.dataset.idx), 1);
+              renderPendingEncounter();
+            });
+          });
+        }
+        document.getElementById('encAddToPendingBtn').addEventListener('click', () => {
+          if(!encPickedMonster) return;
+          const qty = Math.max(1, parseInt(document.getElementById('encPickedQty').value, 10) || 1);
+          const existing = pendingEncounter.find(e => e.index === encPickedMonster.index);
+          if(existing) existing.qty += qty;
+          else pendingEncounter.push({ index: encPickedMonster.index, name: encPickedMonster.name, qty, monster: encPickedMonster });
+          renderPendingEncounter();
+          document.getElementById('encPickedQty').value = 1;
+        });
+        document.getElementById('encDeployPendingBtn').addEventListener('click', () => {
+          if(!pendingEncounter.length) return;
+          addMonstersBatch(pendingEncounter.map(e => ({ monster: e.monster, qty: e.qty })));
+          pendingEncounter = [];
+          renderPendingEncounter();
+        });
+        document.getElementById('encSaveTemplateBtn').addEventListener('click', () => {
+          if(!pendingEncounter.length) return;
+          const nameInput = document.getElementById('encTemplateNameInput');
+          const name = nameInput.value.trim();
+          if(!name) return;
+          customEncounterTemplates.push({ name, entries: pendingEncounter.map(e => ({ index:e.index, name:e.name, qty:e.qty })) });
+          saveEncounterTemplates();
+          renderEncounterTemplateList();
+          pendingEncounter = [];
+          renderPendingEncounter();
+          nameInput.value = '';
+        });
+
+        loadEncounterTemplates();
+        renderEncounterTemplateList();
+        renderPendingEncounter();
+
+        // ---- Campaign Database (NPCs / Cities / Quests / Rumors) ----
+        let cdbEntries = [];
+        let cdbType = 'all';
+        let cdbEditingId = null;
+        let cdbUnsub = null;
+
+        function startCampaignDbListener(){
+          if(!db) return;
+          if(cdbUnsub){ cdbUnsub(); cdbUnsub = null; }
+          cdbUnsub = campaignRef('entries').onSnapshot(snap => {
+            cdbEntries = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+            renderCdbList();
+          }, err => {
+            document.getElementById('cdbList').innerHTML = '<div id="cdbListEmpty">Could not load campaign database: ' + escapeHtml(err.message) + '</div>';
+          });
+        }
+
+        document.getElementById('cdbTypeTabs').querySelectorAll('.diceTypeBtn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            cdbType = btn.dataset.type;
+            document.getElementById('cdbTypeTabs').querySelectorAll('.diceTypeBtn').forEach(b => b.classList.toggle('active', b === btn));
+            renderCdbList();
+          });
+        });
+        document.getElementById('cdbSearchInput').addEventListener('input', renderCdbList);
+
+        const CDB_TYPE_LABEL = { npc:'NPC', city:'City', quest:'Quest', rumor:'Rumor' };
+        function renderCdbList(){
+          const listEl = document.getElementById('cdbList');
+          const q = document.getElementById('cdbSearchInput').value.trim().toLowerCase();
+          let items = cdbEntries.slice();
+          if(cdbType !== 'all') items = items.filter(e => e.type === cdbType);
+          if(q){
+            items = items.filter(e =>
+              (e.title || '').toLowerCase().includes(q) ||
+              (e.body || '').toLowerCase().includes(q) ||
+              (e.location || '').toLowerCase().includes(q) ||
+              (e.status || '').toLowerCase().includes(q)
+            );
+          }
+          items.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+          if(!items.length){
+            listEl.innerHTML = '<div id="cdbListEmpty">No entries yet — tap "+ New Entry" to add one.</div>';
+            return;
+          }
+          listEl.innerHTML = items.map(e => `
+            <div class="cdbEntry" data-id="${e.id}">
+              <div class="cdbTop">
+                <span class="cdbTypeBadge">${CDB_TYPE_LABEL[e.type] || e.type || '?'}</span>
+                <span class="cdbTitle">${escapeHtml(e.title || '(untitled)')}</span>
+                ${e.status ? `<span class="cdbStatus">${escapeHtml(e.status)}</span>` : ''}
+              </div>
+              ${e.body ? `<div class="cdbSnippet">${escapeHtml(e.body)}</div>` : ''}
+            </div>
+          `).join('');
+          listEl.querySelectorAll('.cdbEntry').forEach(row => {
+            row.addEventListener('click', () => openCdbModal(row.dataset.id));
+          });
+        }
+
+        const cdbModal = document.getElementById('cdbModal');
+        function openCdbModal(id){
+          cdbEditingId = id || null;
+          const entry = id ? cdbEntries.find(e => e.id === id) : null;
+          document.getElementById('cdbModalTitle').textContent = entry ? 'Edit Entry' : 'New Entry';
+          document.getElementById('cdbTitleInput').value = entry ? (entry.title || '') : '';
+          document.getElementById('cdbTypeSelect').value = entry ? (entry.type || 'npc') : (cdbType !== 'all' ? cdbType : 'npc');
+          document.getElementById('cdbStatusInput').value = entry ? (entry.status || '') : '';
+          document.getElementById('cdbLocationInput').value = entry ? (entry.location || '') : '';
+          document.getElementById('cdbBodyInput').value = entry ? (entry.body || '') : '';
+          document.getElementById('cdbDeleteBtn').style.display = entry ? '' : 'none';
+          cdbModal.classList.add('open');
+        }
+        document.getElementById('cdbNewBtn').addEventListener('click', () => openCdbModal(null));
+        document.getElementById('cdbCancelBtn').addEventListener('click', () => cdbModal.classList.remove('open'));
+        document.getElementById('cdbSaveBtn').addEventListener('click', () => {
+          if(!db){ alert('Not connected to Firebase yet — try again in a moment.'); return; }
+          const title = document.getElementById('cdbTitleInput').value.trim();
+          if(!title) return;
+          const payload = {
+            title,
+            type: document.getElementById('cdbTypeSelect').value,
+            status: document.getElementById('cdbStatusInput').value.trim(),
+            location: document.getElementById('cdbLocationInput').value.trim(),
+            body: document.getElementById('cdbBodyInput').value.trim(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          };
+          const coll = campaignRef('entries');
+          const p = cdbEditingId
+            ? coll.doc(cdbEditingId).set(payload, { merge:true })
+            : coll.add(Object.assign({ createdAt: firebase.firestore.FieldValue.serverTimestamp() }, payload));
+          p.then(() => cdbModal.classList.remove('open')).catch(err => alert('Save failed: ' + err.message));
+        });
+        document.getElementById('cdbDeleteBtn').addEventListener('click', () => {
+          if(!cdbEditingId) return;
+          if(!confirm('Delete this entry? This cannot be undone.')) return;
+          campaignRef('entries').doc(cdbEditingId).delete()
+            .then(() => cdbModal.classList.remove('open'))
+            .catch(err => alert('Delete failed: ' + err.message));
+        });
+
         loadRoster();
         renderRosterList();
+
+        // ---- Plugins (toggle which extra tools are visible) ----
+        const PLUGIN_KEY = 'blackstonePluginsEnabled_v1';
+        const PLUGIN_IDS = ['weather', 'tavern', 'treasure'];
+        let pluginsEnabled = {};
+        function loadPluginPrefs(){
+          try{ pluginsEnabled = JSON.parse(localStorage.getItem(PLUGIN_KEY)) || {}; }catch(err){ pluginsEnabled = {}; }
+        }
+        function savePluginPrefs(){
+          try{ localStorage.setItem(PLUGIN_KEY, JSON.stringify(pluginsEnabled)); }catch(err){}
+        }
+        function applyPluginVisibility(){
+          PLUGIN_IDS.forEach(id => {
+            const panel = document.getElementById(id + 'Panel');
+            if(panel) panel.style.display = pluginsEnabled[id] ? '' : 'none';
+            const sw = document.querySelector(`[data-plugin-switch="${id}"]`);
+            if(sw) sw.classList.toggle('on', !!pluginsEnabled[id]);
+          });
+        }
+        document.querySelectorAll('.pluginToggleRow').forEach(row => {
+          row.addEventListener('click', () => {
+            const id = row.dataset.plugin;
+            pluginsEnabled[id] = !pluginsEnabled[id];
+            savePluginPrefs();
+            applyPluginVisibility();
+          });
+        });
+        loadPluginPrefs();
+        applyPluginVisibility();
+
+        function pickRandom(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+        function genLogToggleWire(id){
+          const el = document.getElementById(id);
+          el.addEventListener('click', () => el.classList.toggle('on'));
+        }
+
+        // ---- Weather Widget ----
+        const WEATHER_CONDITIONS = {
+          temperate: [
+            { label:'Clear skies', desc:'Bright sun, a light breeze. Good traveling weather.', mechanic:'' },
+            { label:'Overcast', desc:'Grey clouds roll in, the light goes flat and dull.', mechanic:'' },
+            { label:'Light rain', desc:'A steady drizzle soaks the roads and cloaks alike.', mechanic:'Disadvantage on Wisdom (Perception) checks that rely on hearing.' },
+            { label:'Heavy rain', desc:'Sheets of rain turn the ground to mud and visibility to grey.', mechanic:'Heavily obscured beyond 60 ft.; difficult terrain on unpaved ground.' },
+            { label:'Thunderstorm', desc:'Lightning splits the sky and thunder rattles windows for miles.', mechanic:'As heavy rain, plus a chance of lightning striking exposed high ground.' },
+            { label:'Fog', desc:'A thick fog rolls in, muffling sound and swallowing landmarks.', mechanic:'Heavily obscured beyond 30 ft.' },
+            { label:'Gusty winds', desc:'Strong winds whip dust and leaves through the air.', mechanic:'Disadvantage on ranged attacks with light or improvised ammunition.' },
+            { label:'Perfect day', desc:'Mild, sunny, and calm — the kind of day bards write songs about.', mechanic:'' }
+          ],
+          coastal: [
+            { label:'Sea breeze', desc:'A cool, salty wind blows steadily off the water.', mechanic:'' },
+            { label:'Rolling fog bank', desc:'Fog creeps in off the water and swallows the shoreline.', mechanic:'Heavily obscured beyond 30 ft. near the coast.' },
+            { label:'Squall', desc:'A sudden, violent burst of wind and rain sweeps in from the sea.', mechanic:'Ships must succeed on a check or be blown off course.' },
+            { label:'Humid haze', desc:'Thick, sticky air presses down, making everything feel heavier.', mechanic:'Forced marches risk exhaustion more readily than usual.' },
+            { label:'Clear coastal morning', desc:'Gulls wheel over calm water under a bright sky.', mechanic:'' },
+            { label:'High tide storm', desc:'Storm surge floods low-lying streets and docks.', mechanic:'Low-lying areas become difficult terrain or impassable.' }
+          ],
+          desert: [
+            { label:'Scorching heat', desc:'The sun beats down without mercy; the air shimmers.', mechanic:'Risk of exhaustion without adequate water and shade.' },
+            { label:'Cold desert night', desc:'Temperatures plummet once the sun sets.', mechanic:'Risk of exhaustion without warm shelter.' },
+            { label:'Sandstorm', desc:'A wall of stinging sand rolls across the dunes.', mechanic:'Heavily obscured beyond 10 ft.; disadvantage on Perception and ranged attacks.' },
+            { label:'Dry and still', desc:'Not a cloud in sight, the air is bone dry but bearable.', mechanic:'' },
+            { label:'Mirage-hazy', desc:'Heat distorts the horizon into shimmering, deceptive shapes.', mechanic:'Survival checks to navigate are made with disadvantage.' }
+          ],
+          arctic: [
+            { label:'Biting cold', desc:'The wind cuts through cloaks like knives.', mechanic:'Risk of exhaustion without warm clothing and shelter.' },
+            { label:'Blizzard', desc:'Howling wind and driving snow erase the horizon entirely.', mechanic:'Heavily obscured beyond 10 ft.; difficult terrain; risk of exhaustion.' },
+            { label:'Clear and frigid', desc:'A brilliant, cloudless sky over a deadly cold landscape.', mechanic:'Risk of exhaustion without warm clothing and shelter.' },
+            { label:'Light snowfall', desc:'Soft snow drifts down, dusting the ground in white.', mechanic:'' },
+            { label:'Ice fog', desc:'Freezing fog coats every surface in a layer of rime.', mechanic:'Heavily obscured beyond 30 ft.; footing becomes difficult terrain.' }
+          ],
+          tropical: [
+            { label:'Sweltering heat', desc:'Thick, wet heat hangs in the air beneath the canopy.', mechanic:'Risk of exhaustion without adequate water and rest.' },
+            { label:'Torrential downpour', desc:'Rain hammers down in sudden, drenching sheets.', mechanic:'Heavily obscured beyond 60 ft.; difficult terrain on unpaved ground.' },
+            { label:'Humid stillness', desc:'The air is heavy and unmoving; insects drone constantly.', mechanic:'' },
+            { label:'Tropical storm', desc:'Wind lashes the trees and rain comes in sideways.', mechanic:'Disadvantage on ranged attacks; risk of falling debris.' },
+            { label:'Brief clear spell', desc:'The clouds part for a rare hour of sun.', mechanic:'' }
+          ]
+        };
+        const WEATHER_SEASON_NOTE = {
+          spring: 'Mild temperatures with a chance of sudden showers.',
+          summer: 'Warmer and drier than usual for the region.',
+          autumn: 'Cooling temperatures and shifting winds.',
+          winter: 'Colder than usual, with precipitation more likely to turn to snow or sleet.'
+        };
+        function renderWeatherResult(season, climate, pick){
+          document.getElementById('weatherResult').innerHTML = `
+            <div class="genCard">
+              <div class="genTitle">${escapeHtml(pick.label)}</div>
+              <div class="genBody">${escapeHtml(pick.desc)}</div>
+              ${pick.mechanic ? `<div class="genMechanic">⚙ ${escapeHtml(pick.mechanic)}</div>` : ''}
+              <div class="genMeta">${escapeHtml(WEATHER_SEASON_NOTE[season] || '')}</div>
+            </div>
+          `;
+        }
+        document.getElementById('weatherRollBtn').addEventListener('click', () => {
+          const season = document.getElementById('weatherSeason').value;
+          const climate = document.getElementById('weatherClimate').value;
+          const table = WEATHER_CONDITIONS[climate] || WEATHER_CONDITIONS.temperate;
+          const pick = pickRandom(table);
+          renderWeatherResult(season, climate, pick);
+          if(document.getElementById('weatherLogToggle').classList.contains('on')){
+            send('addLogEntry', { text: `🌦️ Weather: ${pick.label} — ${pick.desc}` });
+          }
+          try{ localStorage.setItem('blackstoneLastWeather_v1', JSON.stringify({ season, climate, pick })); }catch(err){}
+        });
+        genLogToggleWire('weatherLogToggle');
+        try{
+          const lastWeather = JSON.parse(localStorage.getItem('blackstoneLastWeather_v1'));
+          if(lastWeather){
+            document.getElementById('weatherSeason').value = lastWeather.season;
+            document.getElementById('weatherClimate').value = lastWeather.climate;
+            renderWeatherResult(lastWeather.season, lastWeather.climate, lastWeather.pick);
+          }
+        }catch(err){}
+
+        // ---- Random Tavern ----
+        const TAVERN_ADJECTIVES = ['Gilded','Rusty','Weary','Laughing','Drunken','Silver','Broken','Sleepy','Crooked','Golden','Salty','Howling','Merry','Wandering','Black','Prancing'];
+        const TAVERN_NOUNS = ['Griffon','Anchor','Boar','Kettle','Lantern','Stag','Tankard','Raven','Wheel','Dragon','Crown','Wench','Barrel','Owl','Compass','Mermaid'];
+        const TAVERN_ATMOSPHERES = [
+          'A haze of pipe smoke hangs near the rafters, and a fiddler plays in the corner.',
+          'The common room is nearly empty, just a few regulars nursing their drinks in silence.',
+          'Packed shoulder to shoulder tonight — some kind of local festival has the whole town out.',
+          'A fire crackles in a huge stone hearth, and the smell of roasting meat fills the air.',
+          'Sawdust covers the floor to soak up spilled ale, and the walls are hung with old weapons.',
+          'The place is dim and a little rough around the edges, but the ale is cheap.',
+          'Bright lanterns and polished wood — clearly a favorite of the well-to-do merchants in town.',
+          'A dice game in the corner has gotten loud enough to draw the barkeep\u2019s glare.'
+        ];
+        const TAVERN_KEEPERS = [
+          'a gruff dwarf with a braided beard and a permanent scowl',
+          'a cheerful halfling who remembers every regular\u2019s name and order',
+          'a scarred half-orc who used to be a mercenary, and still keeps an axe behind the bar',
+          'an elderly woman who\u2019s run the place for forty years and has a story for everything',
+          'a sharp-eyed tiefling who watches the door more than the taps',
+          'a young man who inherited the place and is clearly in over his head',
+          'a retired adventurer who traded the sword for a bar rag, mostly'
+        ];
+        const TAVERN_DRINKS = [
+          'a spiced amber ale brewed in-house',
+          'a cheap, watery beer that\u2019s somehow still popular',
+          'a fiery house whiskey the locals dare travelers to try',
+          'a sweet honey mead served warm',
+          'a dark, bitter stout with a loyal following',
+          'a surprisingly good spiced wine, imported at some expense',
+          'a mysterious green liqueur the barkeep won\u2019t name'
+        ];
+        const TAVERN_HOOKS = [
+          'A weathered notice board by the door has a reward posted for a missing merchant.',
+          'A hooded figure in the corner keeps glancing at the door, clearly waiting for someone.',
+          'Two patrons are arguing in hushed tones about strange lights seen over the old ruins.',
+          'A traveling merchant is loudly trying to sell "authentic" dragon scales to anyone who\u2019ll listen.',
+          'The barkeep mentions, almost in passing, that the cellar has been making odd noises at night.',
+          'A drunk regular insists they saw the mayor sneaking out of town at midnight.',
+          'A bard is collecting rumors for a new song and will trade drinks for a good story.',
+          'Nothing unusual tonight — just good drink and better company.'
+        ];
+        const TAVERN_HISTORY_KEY = 'blackstoneTavernHistory_v1';
+        let tavernHistory = [];
+        function loadTavernHistory(){
+          try{ tavernHistory = JSON.parse(localStorage.getItem(TAVERN_HISTORY_KEY)) || []; }catch(err){ tavernHistory = []; }
+        }
+        function saveTavernHistory(){
+          try{ localStorage.setItem(TAVERN_HISTORY_KEY, JSON.stringify(tavernHistory.slice(-30))); }catch(err){}
+        }
+        function renderTavernResult(t){
+          document.getElementById('tavernResult').innerHTML = `
+            <div class="genCard">
+              <div class="genTitle">${escapeHtml(t.name)}</div>
+              <div class="genBody">${escapeHtml(t.atmosphere)}</div>
+              <div class="genRow"><b>Keeper:</b> <span>${escapeHtml(t.keeper)}</span></div>
+              <div class="genRow"><b>House drink:</b> <span>${escapeHtml(t.drink)}</span></div>
+              <div class="genMechanic">🎣 ${escapeHtml(t.hook)}</div>
+            </div>
+          `;
+        }
+        function renderTavernHistory(){
+          const el = document.getElementById('tavernHistory');
+          if(!tavernHistory.length){ el.innerHTML = '<div id="genHistoryEmpty">No taverns generated yet.</div>'; return; }
+          el.innerHTML = tavernHistory.slice().reverse().map(t => `
+            <div class="genHistoryEntry"><b>${escapeHtml(t.name)}</b> — ${escapeHtml(t.atmosphere)}</div>
+          `).join('');
+        }
+        document.getElementById('tavernRollBtn').addEventListener('click', () => {
+          const t = {
+            name: `The ${pickRandom(TAVERN_ADJECTIVES)} ${pickRandom(TAVERN_NOUNS)}`,
+            atmosphere: pickRandom(TAVERN_ATMOSPHERES),
+            keeper: pickRandom(TAVERN_KEEPERS),
+            drink: pickRandom(TAVERN_DRINKS),
+            hook: pickRandom(TAVERN_HOOKS)
+          };
+          renderTavernResult(t);
+          tavernHistory.push(t);
+          saveTavernHistory();
+          renderTavernHistory();
+          if(document.getElementById('tavernLogToggle').classList.contains('on')){
+            send('addLogEntry', { text: `🍺 ${t.name}: ${t.atmosphere}` });
+          }
+        });
+        genLogToggleWire('tavernLogToggle');
+        loadTavernHistory();
+        renderTavernHistory();
+
+        // ---- Treasure Generator ----
+        const TREASURE_TIERS = {
+          low:  { goldMin:10,   goldMax:60,   gemsMin:0, gemsMax:1, magicChance:0.10 },
+          mid:  { goldMin:100,  goldMax:400,  gemsMin:1, gemsMax:3, magicChance:0.30 },
+          high: { goldMin:500,  goldMax:2000, gemsMin:2, gemsMax:4, magicChance:0.55 },
+          epic: { goldMin:2000, goldMax:8000, gemsMin:3, gemsMax:6, magicChance:0.80 }
+        };
+        const TREASURE_VALUABLES = [
+          'a small pouch of assorted gemstones',
+          'a finely wrought silver mirror',
+          'an ornate jeweled dagger (non-magical, but valuable)',
+          'a set of carved ivory dice',
+          'a silk tapestry depicting a forgotten battle',
+          'a gold-inlaid holy symbol of an unknown faith',
+          'a collection of old, foreign coins',
+          'a delicate music box that still plays',
+          'a bundle of fine furs',
+          'an antique spyglass with a cracked lens',
+          'a jeweled hair comb',
+          'a small chest of aromatic spices',
+          'a signet ring bearing an unfamiliar crest',
+          'a set of masterwork lockpicks',
+          'a bottle of exceptionally fine, aged wine'
+        ];
+        const TREASURE_MAGIC_HINTS = [
+          'a ring that feels faintly warm to the touch',
+          'a cloak that never seems to gather dust',
+          'a dagger that hums quietly when drawn',
+          'a pair of boots that feel lighter than they should',
+          'an amulet that occasionally glows faintly at night',
+          'a wand, as yet unidentified',
+          'a potion in an unlabeled vial, contents unknown',
+          'a book that seems to whisper if held in silence too long',
+          'a small statuette that seems to watch the room',
+          'a coin that always lands the same way when flipped'
+        ];
+        const TREASURE_HISTORY_KEY = 'blackstoneTreasureHistory_v1';
+        let treasureHistory = [];
+        function loadTreasureHistory(){
+          try{ treasureHistory = JSON.parse(localStorage.getItem(TREASURE_HISTORY_KEY)) || []; }catch(err){ treasureHistory = []; }
+        }
+        function saveTreasureHistory(){
+          try{ localStorage.setItem(TREASURE_HISTORY_KEY, JSON.stringify(treasureHistory.slice(-30))); }catch(err){}
+        }
+        function renderTreasureResult(t){
+          document.getElementById('treasureResult').innerHTML = `
+            <div class="genCard">
+              <div class="genTitle">${t.gold} gp</div>
+              ${t.valuables.length ? `<ul>${t.valuables.map(v => `<li>${escapeHtml(v)}</li>`).join('')}</ul>` : ''}
+              ${t.magicItem ? `<div class="genMechanic">✨ Unidentified: ${escapeHtml(t.magicItem)}</div>` : ''}
+            </div>
+          `;
+        }
+        function renderTreasureHistory(){
+          const el = document.getElementById('treasureHistory');
+          if(!treasureHistory.length){ el.innerHTML = '<div id="genHistoryEmpty">No treasure rolled yet.</div>'; return; }
+          el.innerHTML = treasureHistory.slice().reverse().map(t => `
+            <div class="genHistoryEntry"><b>${t.gold} gp</b> — ${t.valuables.length} item${t.valuables.length === 1 ? '' : 's'}${t.magicItem ? ', 1 unidentified' : ''}</div>
+          `).join('');
+        }
+        document.getElementById('treasureRollBtn').addEventListener('click', () => {
+          const tierKey = document.getElementById('treasureTier').value;
+          const tier = TREASURE_TIERS[tierKey] || TREASURE_TIERS.low;
+          const gold = Math.floor(tier.goldMin + Math.random() * (tier.goldMax - tier.goldMin));
+          const gemCount = Math.floor(tier.gemsMin + Math.random() * (tier.gemsMax - tier.gemsMin + 1));
+          const valuables = [];
+          for(let i = 0; i < gemCount; i++) valuables.push(pickRandom(TREASURE_VALUABLES));
+          const magicItem = Math.random() < tier.magicChance ? pickRandom(TREASURE_MAGIC_HINTS) : null;
+          const t = { tierKey, gold, valuables, magicItem };
+          renderTreasureResult(t);
+          treasureHistory.push(t);
+          saveTreasureHistory();
+          renderTreasureHistory();
+          if(document.getElementById('treasureLogToggle').classList.contains('on')){
+            const itemsText = valuables.length ? ` plus ${valuables.join(', ')}` : '';
+            send('addLogEntry', { text: `💰 Treasure found: ${gold} gp${itemsText}${magicItem ? `, and ${magicItem} (unidentified)` : ''}` });
+          }
+        });
+        genLogToggleWire('treasureLogToggle');
+        loadTreasureHistory();
+        renderTreasureHistory();
 
         // Let the TV know we're ready to receive state
         try{ if(window.blackstoneDesktop) window.blackstoneDesktop.requestState(); else window.opener.postMessage({ source:'blackstoneRemote', type:'ready' }, '*'); }catch(err){}

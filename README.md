@@ -7,7 +7,8 @@ This desktop version turns the existing TV display into a transparent, always-on
 1. Install Node.js LTS.
 2. Open a terminal in this folder.
 3. Run `npm install`.
-4. Run `npm start`.
+4. Run `npm install matter-js pixi.js`.
+5. Run `npm start`.
 
 The controller opens on the primary display. The transparent overlay opens on the first non-primary display, or the primary display if only one monitor is connected.
 

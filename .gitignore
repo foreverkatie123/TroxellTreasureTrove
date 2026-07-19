@@ -34,3 +34,33 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Dependencies
+node_modules/
+
+# Firebase / secrets - copy js/firebase-config.example.js to js/firebase-config.js
+# and fill in your own project's config; the real file is never committed.
+js/firebase-config.js
+.env
+.env.*
+*.pem
+*.key
+serviceAccountKey*.json
+firebase-debug.log
+.firebase/
+
+# Electron build output
+dist/
+out/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# source folders
+src/dataconnect-generated/
