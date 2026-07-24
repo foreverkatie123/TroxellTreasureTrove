@@ -244,6 +244,15 @@
       <!-- CORE -->
       <div class="tabPanel active" data-panel="core">
         <div class="section">
+          <h3>Ruleset</h3>
+          <div class="chipRow" id="rulesetChips">
+            <button class="chip" data-ruleset="2024">2024 Rules (live from Open5e)</button>
+            <button class="chip" data-ruleset="2014">2014 Rules (built in)</button>
+          </div>
+          <p class="infoText" id="rulesetStatus" style="margin-top:8px;"></p>
+        </div>
+
+        <div class="section">
           <h3>Identity</h3>
           <div class="row2">
             <div><label>Character name</label><input type="text" id="fName" placeholder="Kaelith"></div>
@@ -251,7 +260,11 @@
           </div>
           <div class="row2">
             <div><label>Class</label><select id="fClass"><option value="">— choose —</option></select></div>
-            <div><label>Subclass</label><select id="fSubclass"><option value="">— pick class first —</option></select></div>
+            <div>
+              <label>Subclass</label>
+              <select id="fSubclass"><option value="">— pick class first —</option></select>
+              <input type="text" id="fSubclassText" class="hidden" placeholder="Type your subclass (2024 subclass lists aren't fetched live)">
+            </div>
           </div>
           <div class="row2">
             <div><label>Race</label><select id="fRace"><option value="">— choose —</option></select></div>
@@ -261,27 +274,30 @@
 
         <div class="section hidden" id="raceInfoSection">
           <h3 id="raceInfoTitle">Race traits</h3>
-          <p class="infoText" id="raceInfoText"></p>
+          <div class="infoText" id="raceInfoText"></div>
         </div>
 
         <div class="section hidden" id="bgInfoSection">
           <h3 id="bgInfoTitle">Background</h3>
-          <div class="bgGrid">
-            <div><div class="bgLabel">Skill proficiencies</div><div id="bgSkills"></div></div>
-            <div><div class="bgLabel">Languages</div><div id="bgLanguages"></div></div>
-            <div><div class="bgLabel">Tool proficiencies</div><div id="bgTools"></div></div>
-            <div><div class="bgLabel">Starting equipment</div><div id="bgEquipment" style="font-size:11.5px;"></div></div>
+          <div id="bgInfo2014">
+            <div class="bgGrid">
+              <div><div class="bgLabel">Skill proficiencies</div><div id="bgSkills"></div></div>
+              <div><div class="bgLabel">Languages</div><div id="bgLanguages"></div></div>
+              <div><div class="bgLabel">Tool proficiencies</div><div id="bgTools"></div></div>
+              <div><div class="bgLabel">Starting equipment</div><div id="bgEquipment" style="font-size:11.5px;"></div></div>
+            </div>
+            <div class="bgFeature">
+              <div class="bgFeatName" id="bgFeatureName"></div>
+              <div class="infoText" id="bgFeatureDesc"></div>
+            </div>
+            <div class="bgPersonality">
+              <div><b>Trait: </b><span id="bgTrait"></span></div>
+              <div><b>Ideal: </b><span id="bgIdeal"></span></div>
+              <div><b>Bond: </b><span id="bgBond"></span></div>
+              <div><b>Flaw: </b><span id="bgFlaw"></span></div>
+            </div>
           </div>
-          <div class="bgFeature">
-            <div class="bgFeatName" id="bgFeatureName"></div>
-            <div class="infoText" id="bgFeatureDesc"></div>
-          </div>
-          <div class="bgPersonality">
-            <div><b>Trait: </b><span id="bgTrait"></span></div>
-            <div><b>Ideal: </b><span id="bgIdeal"></span></div>
-            <div><b>Bond: </b><span id="bgBond"></span></div>
-            <div><b>Flaw: </b><span id="bgFlaw"></span></div>
-          </div>
+          <div id="bgInfoLive" class="infoText hidden"></div>
         </div>
 
         <div class="section">
@@ -390,6 +406,7 @@
           <h3 id="classFeaturesTitle">Class features</h3>
           <div id="classFeaturesList"></div>
           <p class="infoText" id="classFeaturesNext" style="margin-top:8px;"></p>
+          <div id="classFeaturesLive" class="infoText hidden"></div>
         </div>
 
         <div class="section">
@@ -511,6 +528,133 @@
       let editingCharId = null;
       let sheet = null; // in-memory working copy of the character currently being edited
 
+      // ---- Ruleset (2014 vs 2024) ----
+      // Core class math (hit dice, save proficiencies, spell slot progression) barely
+      // changed between editions, so DND.CLASS_HIT_DIE / CLASS_SAVE_PROFS / SPELL_SLOTS /
+      // etc. are reused for both rulesets. What DID change materially — subclass lists,
+      // class feature text, races/species, backgrounds, feats — comes from the built-in
+      // 2014 tables OR live from Open5e's 2024 SRD, depending on this toggle.
+      let ruleset = '2024'; // 'srd' (2014) or 'srd-2024', stored as the short label here
+      const RULESET_DOC_KEY = { '2014':'srd', '2024':'srd-2024' };
+      const OPEN5E_BASE = 'https://api.open5e.com';
+      const liveIndexCache = {};  // `${ruleset}:${endpoint}` -> [{key,name}]
+      const liveDetailCache = {}; // `${ruleset}:${endpoint}:${key}` -> full API object
+      let liveRaceKeyByName = {};
+      let liveBackgroundKeyByName = {};
+      let liveFeatList = [];
+
+      function fetchAllPages(url, acc){
+        acc = acc || [];
+        return fetch(url).then(r => r.json()).then(data => {
+          const results = acc.concat(data.results || []);
+          if(data.next) return fetchAllPages(data.next, results);
+          return results;
+        });
+      }
+      function loadLiveIndex(endpoint){
+        const cacheKey = `${ruleset}:${endpoint}`;
+        if(liveIndexCache[cacheKey]) return Promise.resolve(liveIndexCache[cacheKey]);
+        const docKey = RULESET_DOC_KEY[ruleset];
+        return fetchAllPages(`${OPEN5E_BASE}/v2/${endpoint}/?document__key__in=${docKey}&fields=key,name`)
+          .then(results => {
+            const list = results.map(r => ({ key:r.key, name:r.name }));
+            liveIndexCache[cacheKey] = list;
+            return list;
+          });
+      }
+      function fetchLiveDetail(endpoint, key){
+        const cacheKey = `${ruleset}:${endpoint}:${key}`;
+        if(liveDetailCache[cacheKey]) return Promise.resolve(liveDetailCache[cacheKey]);
+        return fetch(`${OPEN5E_BASE}/v2/${endpoint}/${key}/`)
+          .then(r => { if(!r.ok) throw new Error('not found'); return r.json(); })
+          .then(d => { liveDetailCache[cacheKey] = d; return d; });
+      }
+      // Best-effort renderer for live API detail objects — the exact field names for
+      // Open5e's 2024 race/background/class detail responses weren't verified against
+      // a live request, so this tries several plausible shapes rather than assuming one.
+      function renderGenericDetailHtml(obj, viewUrl){
+        const parts = [];
+        const tryText = (val) => { if(typeof val === 'string' && val.trim()) parts.push(`<p style="margin:0 0 8px;">${escapeHtml(val)}</p>`); };
+        const tryList = (label, arr) => {
+          if(!Array.isArray(arr) || !arr.length) return;
+          parts.push(`<div class="bgFeatName">${escapeHtml(label)}</div>`);
+          arr.forEach(item => {
+            if(typeof item === 'string'){ parts.push(`<p style="margin:0 0 6px;">${escapeHtml(item)}</p>`); return; }
+            if(item && typeof item === 'object'){
+              const name = item.name || item.title || '';
+              const desc = item.desc || item.description || item.benefit || '';
+              parts.push(`<p style="margin:0 0 8px;">${name ? `<b>${escapeHtml(name)}</b>: ` : ''}${escapeHtml(String(desc))}</p>`);
+            }
+          });
+        };
+        if(obj){
+          tryText(obj.desc);
+          tryText(obj.description);
+          tryList('Benefits', obj.benefits);
+          tryList('Traits', obj.traits);
+          tryList('Features', obj.features);
+          tryList('Archetypes', obj.archetypes || obj.subclasses);
+        }
+        if(!parts.length){
+          parts.push(`<p>No structured description came back from Open5e for this entry.</p>`);
+        }
+        if(viewUrl) parts.push(`<p style="margin-top:8px;"><a href="${viewUrl}" target="_blank" style="color:var(--accent-2);">View full details on open5e.com →</a></p>`);
+        return parts.join('');
+      }
+
+      function setRulesetChipUI(){
+        document.getElementById('rulesetChips').querySelectorAll('.chip').forEach(c => c.classList.toggle('selected', c.dataset.ruleset === ruleset));
+        document.getElementById('fSubclass').classList.toggle('hidden', ruleset !== '2014');
+        document.getElementById('fSubclassText').classList.toggle('hidden', ruleset === '2014');
+      }
+
+      function refreshRulesetDropdowns(){
+        setRulesetChipUI();
+        if(ruleset === '2014'){
+          populateSelect(document.getElementById('fRace'), Object.keys(DND.RACE_TRAITS), '— choose —');
+          populateSelect(document.getElementById('fBackground'), Object.keys(DND.BACKGROUNDS), '— choose —');
+          document.getElementById('featPicker').innerHTML = '<option value="">— choose a feat to add —</option>' +
+            DND.FEATS.map((f,i) => `<option value="${i}">${escapeHtml(f.name)}</option>`).join('');
+          document.getElementById('rulesetStatus').textContent = 'Using the built-in 2014 rules — no internet needed.';
+          renderAll();
+          return;
+        }
+        document.getElementById('rulesetStatus').textContent = 'Fetching 2024 races, backgrounds, and feats from Open5e…';
+        document.getElementById('fRace').innerHTML = '<option value="">Loading…</option>';
+        document.getElementById('fBackground').innerHTML = '<option value="">Loading…</option>';
+        document.getElementById('featPicker').innerHTML = '<option value="">Loading…</option>';
+        Promise.all([
+          loadLiveIndex('races').then(list => {
+            liveRaceKeyByName = Object.fromEntries(list.map(r => [r.name, r.key]));
+            populateSelect(document.getElementById('fRace'), list.map(r => r.name), '— choose —');
+          }),
+          loadLiveIndex('backgrounds').then(list => {
+            liveBackgroundKeyByName = Object.fromEntries(list.map(r => [r.name, r.key]));
+            populateSelect(document.getElementById('fBackground'), list.map(r => r.name), '— choose —');
+          }),
+          loadLiveIndex('feats').then(list => {
+            liveFeatList = list;
+            document.getElementById('featPicker').innerHTML = '<option value="">— choose a feat to add —</option>' +
+              list.map((f,i) => `<option value="live:${i}">${escapeHtml(f.name)}</option>`).join('');
+          })
+        ]).then(() => {
+          document.getElementById('rulesetStatus').textContent = '2024 SRD content loaded from Open5e.';
+          renderAll();
+        }).catch(err => {
+          document.getElementById('rulesetStatus').textContent =
+            'Could not reach Open5e (' + err.message + ') — try 2014 rules instead, or check your connection.';
+          renderAll();
+        });
+      }
+      document.getElementById('rulesetChips').querySelectorAll('.chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          if(chip.dataset.ruleset === ruleset) return;
+          ruleset = chip.dataset.ruleset;
+          if(sheet) sheet.ruleset = ruleset;
+          refreshRulesetDropdowns();
+        });
+      });
+
       function show(id){
         ['screenLoading','signInScreen','joinScreen','charListScreen','charSheetScreen'].forEach(s => {
           document.getElementById(s).classList.toggle('hidden', s !== id);
@@ -547,6 +691,7 @@
 
       document.getElementById('googleSignInBtn').addEventListener('click', () => {
         const provider = new firebase.auth.GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' }); // always ask which account, never silently reuse a cached one
         firebase.auth().signInWithPopup(provider).catch(err => alert('Sign-in failed: ' + err.message));
       });
       function signOut(){
@@ -620,7 +765,7 @@
         return {
           ownerId: currentUser.uid,
           ownerName: currentUser.displayName || currentUser.email || 'Player',
-          name, level: 1, class:'', subclass:'', race:'', background:'',
+          name, level: 1, class:'', subclass:'', race:'', background:'', ruleset:'2024',
           stats: { str:10, dex:10, con:10, int:10, wis:10, cha:10 },
           hp_current:10, hp_max:10, ac:10, speed:30, gold:0,
           skillProf: {}, saveProf: {},
@@ -741,6 +886,7 @@
         renderAll();
       });
       document.getElementById('fSubclass').addEventListener('change', function(){ sheet.subclass = this.value; });
+      document.getElementById('fSubclassText').addEventListener('input', function(){ sheet.subclass = this.value; });
       document.getElementById('fRace').addEventListener('change', function(){ sheet.race = this.value; renderCore(); });
       document.getElementById('fBackground').addEventListener('change', function(){
         sheet.background = this.value;
@@ -765,38 +911,81 @@
         document.getElementById('fName').value = sheet.name || '';
         document.getElementById('fLevel').value = sheet.level || 1;
         document.getElementById('fClass').value = sheet.class || '';
-        populateSelect(document.getElementById('fSubclass'), DND.SUBCLASSES[sheet.class] || [], sheet.class ? '— choose —' : '— pick class first —');
-        document.getElementById('fSubclass').value = sheet.subclass || '';
+        if(ruleset === '2014'){
+          populateSelect(document.getElementById('fSubclass'), DND.SUBCLASSES[sheet.class] || [], sheet.class ? '— choose —' : '— pick class first —');
+          document.getElementById('fSubclass').value = sheet.subclass || '';
+        } else {
+          document.getElementById('fSubclassText').value = sheet.subclass || '';
+        }
         document.getElementById('fRace').value = sheet.race || '';
         document.getElementById('fBackground').value = sheet.background || '';
 
         DND.ABILITIES.forEach(ab => { document.getElementById(`ab_${ab}`).value = sheet.stats[ab] ?? 10; });
 
         const raceSection = document.getElementById('raceInfoSection');
-        if(sheet.race && DND.RACE_TRAITS[sheet.race]){
-          raceSection.classList.remove('hidden');
-          document.getElementById('raceInfoTitle').textContent = `${sheet.race} traits`;
-          document.getElementById('raceInfoText').textContent = DND.RACE_TRAITS[sheet.race];
-        } else raceSection.classList.add('hidden');
-
         const bgSection = document.getElementById('bgInfoSection');
-        const bg = DND.BACKGROUNDS[sheet.background];
-        if(bg){
-          bgSection.classList.remove('hidden');
-          document.getElementById('bgInfoTitle').textContent = `${sheet.background} background`;
-          document.getElementById('bgSkills').textContent = bg.skills.join(', ');
-          document.getElementById('bgLanguages').textContent = bg.languages;
-          document.getElementById('bgTools').textContent = bg.tools;
-          document.getElementById('bgEquipment').textContent = bg.equipment;
-          document.getElementById('bgFeatureName').textContent = bg.feature;
-          document.getElementById('bgFeatureDesc').textContent = bg.featureDesc;
-          document.getElementById('bgTrait').textContent = bg.trait;
-          document.getElementById('bgIdeal').textContent = bg.ideal;
-          document.getElementById('bgBond').textContent = bg.bond;
-          document.getElementById('bgFlaw').textContent = bg.flaw;
-        } else bgSection.classList.add('hidden');
+
+        if(ruleset === '2014'){
+          if(sheet.race && DND.RACE_TRAITS[sheet.race]){
+            raceSection.classList.remove('hidden');
+            document.getElementById('raceInfoTitle').textContent = `${sheet.race} traits`;
+            document.getElementById('raceInfoText').textContent = DND.RACE_TRAITS[sheet.race];
+          } else raceSection.classList.add('hidden');
+
+          document.getElementById('bgInfo2014').classList.remove('hidden');
+          document.getElementById('bgInfoLive').classList.add('hidden');
+          const bg = DND.BACKGROUNDS[sheet.background];
+          if(bg){
+            bgSection.classList.remove('hidden');
+            document.getElementById('bgInfoTitle').textContent = `${sheet.background} background`;
+            document.getElementById('bgSkills').textContent = bg.skills.join(', ');
+            document.getElementById('bgLanguages').textContent = bg.languages;
+            document.getElementById('bgTools').textContent = bg.tools;
+            document.getElementById('bgEquipment').textContent = bg.equipment;
+            document.getElementById('bgFeatureName').textContent = bg.feature;
+            document.getElementById('bgFeatureDesc').textContent = bg.featureDesc;
+            document.getElementById('bgTrait').textContent = bg.trait;
+            document.getElementById('bgIdeal').textContent = bg.ideal;
+            document.getElementById('bgBond').textContent = bg.bond;
+            document.getElementById('bgFlaw').textContent = bg.flaw;
+          } else bgSection.classList.add('hidden');
+        } else {
+          renderLiveRaceInfo(raceSection);
+          document.getElementById('bgInfo2014').classList.add('hidden');
+          document.getElementById('bgInfoLive').classList.remove('hidden');
+          renderLiveBackgroundInfo(bgSection);
+        }
 
         renderDerived();
+      }
+      function renderLiveRaceInfo(section){
+        if(!sheet.race){ section.classList.add('hidden'); return; }
+        const key = liveRaceKeyByName[sheet.race];
+        section.classList.remove('hidden');
+        document.getElementById('raceInfoTitle').textContent = `${sheet.race} (2024 SRD)`;
+        if(!key){ document.getElementById('raceInfoText').innerHTML = '<p>Loading…</p>'; return; }
+        document.getElementById('raceInfoText').innerHTML = '<p>Loading…</p>';
+        fetchLiveDetail('races', key).then(d => {
+          document.getElementById('raceInfoText').innerHTML = renderGenericDetailHtml(d, `https://open5e.com/races/${key}`);
+        }).catch(err => {
+          document.getElementById('raceInfoText').innerHTML =
+            `<p>Could not load details (${escapeHtml(err.message)}). <a href="https://open5e.com/races/${key}" target="_blank" style="color:var(--accent-2);">View on open5e.com →</a></p>`;
+        });
+      }
+      function renderLiveBackgroundInfo(section){
+        if(!sheet.background){ section.classList.add('hidden'); return; }
+        const key = liveBackgroundKeyByName[sheet.background];
+        section.classList.remove('hidden');
+        document.getElementById('bgInfoTitle').textContent = `${sheet.background} (2024 SRD)`;
+        const liveEl = document.getElementById('bgInfoLive');
+        if(!key){ liveEl.innerHTML = '<p>Loading…</p>'; return; }
+        liveEl.innerHTML = '<p>Loading…</p>';
+        fetchLiveDetail('backgrounds', key).then(d => {
+          liveEl.innerHTML = renderGenericDetailHtml(d, `https://open5e.com/backgrounds/${key}`);
+        }).catch(err => {
+          liveEl.innerHTML =
+            `<p>Could not load details (${escapeHtml(err.message)}). <a href="https://open5e.com/backgrounds/${key}" target="_blank" style="color:var(--accent-2);">View on open5e.com →</a></p>`;
+        });
       }
       function renderDerived(){
         DND.ABILITIES.forEach(ab => {
@@ -930,20 +1119,48 @@
       // ---- Render: Features tab ----
       function renderFeatures(){
         const featuresSection = document.getElementById('classFeaturesSection');
-        const featureList = DND.CLASS_FEATURES[sheet.class] || [];
-        if(sheet.class && featureList.length){
-          featuresSection.classList.remove('hidden');
-          document.getElementById('classFeaturesTitle').textContent = `${sheet.class} features · Level ${sheet.level}`;
-          const unlocked = featureList.filter(([l]) => l <= sheet.level);
-          document.getElementById('classFeaturesList').innerHTML = unlocked.length ? unlocked.map(([l,name,desc]) => `
-            <details>
-              <summary>${escapeHtml(name)}<span class="lvlTag">Lv ${l}</span></summary>
-              <p>${escapeHtml(desc)}</p>
-            </details>
-          `).join('') : '<p class="infoText">Increase your level to unlock features.</p>';
-          const next = featureList.find(([l]) => l > sheet.level);
-          document.getElementById('classFeaturesNext').textContent = next ? `Next: ${next[1]} at level ${next[0]}` : '';
-        } else featuresSection.classList.add('hidden');
+        const listEl = document.getElementById('classFeaturesList');
+        const nextEl = document.getElementById('classFeaturesNext');
+        const liveEl = document.getElementById('classFeaturesLive');
+
+        if(ruleset === '2014'){
+          liveEl.classList.add('hidden');
+          listEl.classList.remove('hidden');
+          nextEl.classList.remove('hidden');
+          const featureList = DND.CLASS_FEATURES[sheet.class] || [];
+          if(sheet.class && featureList.length){
+            featuresSection.classList.remove('hidden');
+            document.getElementById('classFeaturesTitle').textContent = `${sheet.class} features · Level ${sheet.level}`;
+            const unlocked = featureList.filter(([l]) => l <= sheet.level);
+            listEl.innerHTML = unlocked.length ? unlocked.map(([l,name,desc]) => `
+              <details>
+                <summary>${escapeHtml(name)}<span class="lvlTag">Lv ${l}</span></summary>
+                <p>${escapeHtml(desc)}</p>
+              </details>
+            `).join('') : '<p class="infoText">Increase your level to unlock features.</p>';
+            const next = featureList.find(([l]) => l > sheet.level);
+            nextEl.textContent = next ? `Next: ${next[1]} at level ${next[0]}` : '';
+          } else featuresSection.classList.add('hidden');
+        } else {
+          listEl.classList.add('hidden');
+          nextEl.classList.add('hidden');
+          liveEl.classList.remove('hidden');
+          if(!sheet.class){ featuresSection.classList.add('hidden'); }
+          else {
+            featuresSection.classList.remove('hidden');
+            document.getElementById('classFeaturesTitle').textContent = `${sheet.class} (2024 SRD)`;
+            liveEl.innerHTML = '<p>Loading…</p>';
+            loadLiveIndex('classes').then(list => {
+              const match = list.find(c => c.name === sheet.class);
+              if(!match){ liveEl.innerHTML = '<p>Could not find this class in the 2024 SRD list.</p>'; return; }
+              return fetchLiveDetail('classes', match.key).then(d => {
+                liveEl.innerHTML = renderGenericDetailHtml(d, `https://open5e.com/classes/${match.key}`);
+              });
+            }).catch(err => {
+              liveEl.innerHTML = `<p>Could not load class features (${escapeHtml(err.message)}).</p>`;
+            });
+          }
+        }
 
         renderFeatList();
 
@@ -975,10 +1192,10 @@
         });
       }
       document.getElementById('featPicker').addEventListener('change', function(){
-        const idx = this.value;
+        const val = this.value;
         const wrap = document.getElementById('featAsiChoiceWrap');
-        if(idx === ''){ wrap.classList.add('hidden'); return; }
-        const feat = DND.FEATS[idx];
+        if(val === '' || val.indexOf('live:') === 0){ wrap.classList.add('hidden'); return; }
+        const feat = DND.FEATS[val];
         if(feat.asi && feat.asi.choose.length > 1){
           wrap.classList.remove('hidden');
           document.getElementById('featAsiPrompt').textContent = `Choose ability score to increase by ${feat.asi.amount}:`;
@@ -996,9 +1213,31 @@
         }
       });
       document.getElementById('featAddBtn').addEventListener('click', () => {
-        const idx = document.getElementById('featPicker').value;
-        if(idx === '') return;
-        const feat = DND.FEATS[idx];
+        const val = document.getElementById('featPicker').value;
+        if(val === '') return;
+
+        if(val.indexOf('live:') === 0){
+          // 2024 live feat: fetch its description from Open5e, add as-is (no automatic
+          // ASI application — the API's ability-score-grant shape wasn't confirmed, so
+          // bump your own ability score on the Core tab if this feat grants one).
+          const featRef = liveFeatList[parseInt(val.slice(5), 10)];
+          if(!featRef) return;
+          const btn = document.getElementById('featAddBtn');
+          btn.disabled = true;
+          fetchLiveDetail('feats', featRef.key).then(d => {
+            const desc = (d && (d.desc || d.description || d.benefit)) || 'See open5e.com for the full description.';
+            sheet.feats.push({ name: featRef.name, desc: String(desc) });
+          }).catch(() => {
+            sheet.feats.push({ name: featRef.name, desc: 'Could not load description from Open5e — check open5e.com.' });
+          }).then(() => {
+            btn.disabled = false;
+            document.getElementById('featPicker').value = '';
+            renderAll();
+          });
+          return;
+        }
+
+        const feat = DND.FEATS[val];
         let ability = null;
         if(feat.asi){
           if(feat.asi.choose.length === 1){
@@ -1176,13 +1415,15 @@
           spells: Array.isArray(c.spells) ? [...c.spells] : [],
           inventory: Array.isArray(c.inventory) ? [...c.inventory] : []
         });
-        renderAll();
+        ruleset = sheet.ruleset === '2014' ? '2014' : '2024';
         document.getElementById('sheetTabBar').querySelector('[data-tab="core"]').click();
         show('charSheetScreen');
+        refreshRulesetDropdowns(); // populates race/background/feat options for this ruleset, then calls renderAll()
       }
 
       document.getElementById('sheetSaveBtn').addEventListener('click', () => {
         if(!editingCharId) return;
+        sheet.ruleset = ruleset;
         sheet.name = document.getElementById('fName').value.trim() || 'Unnamed';
         sheet.hp_current = parseInt(document.getElementById('fHpCurrent').value, 10) || 0;
         sheet.hp_max = parseInt(document.getElementById('fHpMax').value, 10) || 0;

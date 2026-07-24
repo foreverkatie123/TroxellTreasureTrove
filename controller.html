@@ -788,15 +788,18 @@
 
       <div class="panel">
         <h3>Campaigns <span class="sub">Switch games — each has its own database, notes, and cloud save slot</span></h3>
-        <div class="statusLine" id="campaignCurrentLabel">Current: </div>
+        <div class="statusLine" id="campaignCurrentLabel">Current: default</div>
         <div class="row2">
           <div class="field" style="flex:2;"><label>Campaign name</label><input type="text" id="campaignNameInput" placeholder="e.g. The Sunken Spire"></div>
-          <div class="field"><label>Code</label><input type="text" id="campaignIdInput" placeholder=""></div>
+          <div class="field"><label>Code</label><input type="text" id="campaignIdInput" placeholder="default"></div>
         </div>
         <button class="btn primary" id="campaignSwitchBtn">Switch / Create Campaign</button>
         <div class="sub" style="margin-top:8px;">This is also the code your players use to join from their character page — switching it does not change what's live on the TV. Use Session Save/Load below for that.</div>
         <div class="divider"></div>
-        <div class="sub" style="margin-bottom:6px;">Recent campaigns:</div>
+        <div class="sub" style="margin-bottom:6px;">Your campaigns <span id="myCampaignsHint" style="text-transform:none;letter-spacing:0;"></span>:</div>
+        <div id="myCampaignsList"></div>
+        <div class="divider"></div>
+        <div class="sub" style="margin-bottom:6px;">Recent on this device:</div>
         <div id="recentCampaignsList"></div>
       </div>
 
@@ -1036,7 +1039,12 @@
         let fbUser = null;
         const CAMPAIGN_KEY = 'blackstoneCampaignId_v1';
         let campaignId = 'default';
-        try{ campaignId = localStorage.getItem(CAMPAIGN_KEY) || 'default'; }catch(err){}
+        let campaignIdWasSaved = false;
+        try{
+          const saved = localStorage.getItem(CAMPAIGN_KEY);
+          if(saved){ campaignId = saved; campaignIdWasSaved = true; }
+        }catch(err){}
+        let myCampaignsCache = [];
 
         function campaignRef(collectionName){
           return db.collection('campaigns').doc(campaignId).collection(collectionName);
@@ -1070,8 +1078,20 @@
               signInBtn.classList.add('hidden');
               userRow.classList.remove('hidden');
               document.getElementById('fbUserPhoto').src = user.photoURL || '';
-              document.getElementById('fbUserName').textContent = user.displayName || user.email || 'DM';
-              connectToCampaign();
+              document.getElementById('fbUserName').textContent = user.displayName || user.email;
+              discoverMyCampaigns().then(list => {
+                myCampaignsCache = list;
+                renderMyCampaigns(list);
+                // If this device has no saved campaign preference yet, adopt the most
+                // recently used campaign this account actually owns instead of silently
+                // defaulting to the literal string "default".
+                if(!campaignIdWasSaved && list.length){
+                  const best = list.slice().sort((a,b) => campaignSortKey(b) - campaignSortKey(a))[0];
+                  switchCampaign(best.id, best.name || '');
+                } else {
+                  connectToCampaign();
+                }
+              });
             });
           }catch(err){
             setFbStatus('', 'Firebase init failed: ' + err.message);
@@ -1082,6 +1102,7 @@
         document.getElementById('fbSignInBtn').addEventListener('click', () => {
           if(!firebaseConfig){ return; }
           const provider = new firebase.auth.GoogleAuthProvider();
+          provider.setCustomParameters({ prompt: 'select_account' }); // always ask which account, never silently reuse a cached one
           firebase.auth().signInWithPopup(provider).catch(err => {
             setFbStatus('', 'Sign-in failed: ' + err.message);
           });
@@ -1523,6 +1544,35 @@
           const label = campaignNames[campaignId] ? `${campaignNames[campaignId]} (${campaignId})` : campaignId;
           document.getElementById('campaignCurrentLabel').textContent = 'Current: ' + label;
         }
+        function campaignSortKey(c){
+          return (c.lastConnectedAt && c.lastConnectedAt.toMillis) ? c.lastConnectedAt.toMillis() : 0;
+        }
+        function discoverMyCampaigns(){
+          if(!db || !fbUser) return Promise.resolve([]);
+          return db.collection('campaigns').where('ownerId', '==', fbUser.uid).get()
+            .then(snap => snap.docs.map(d => Object.assign({ id: d.id }, d.data())))
+            .catch(() => []);
+        }
+        function renderMyCampaigns(list){
+          const el = document.getElementById('myCampaignsList');
+          const hint = document.getElementById('myCampaignsHint');
+          if(!list || !list.length){
+            hint.textContent = '';
+            el.innerHTML = '<div id="recentCampaignsEmpty">None found yet under this account — switch to or create one above.</div>';
+            return;
+          }
+          hint.textContent = `(${list.length})`;
+          const sorted = list.slice().sort((a, b) => campaignSortKey(b) - campaignSortKey(a));
+          el.innerHTML = sorted.map(c => `
+            <div class="campaignEntry ${c.id === campaignId ? 'current' : ''}" data-id="${escapeHtml(c.id)}" data-name="${escapeHtml(c.name || '')}">
+              <span class="ceName">${escapeHtml(c.name || c.id)}</span>
+              <span class="ceCode">${escapeHtml(c.id)}</span>
+            </div>
+          `).join('');
+          el.querySelectorAll('.campaignEntry').forEach(row => {
+            row.addEventListener('click', () => switchCampaign(row.dataset.id, row.dataset.name));
+          });
+        }
         function rememberRecentCampaign(id){
           recentCampaignIds = [id, ...recentCampaignIds.filter(x => x !== id)].slice(0, 10);
           try{ localStorage.setItem(RECENT_CAMPAIGNS_KEY, JSON.stringify(recentCampaignIds)); }catch(err){}
@@ -1548,6 +1598,7 @@
           id = (id || '').trim() || 'default';
           name = (name || '').trim();
           campaignId = id;
+          campaignIdWasSaved = true;
           campaignIdInput.value = id;
           campaignNameInput.value = name;
           if(name) campaignNames[id] = name;
@@ -1558,6 +1609,7 @@
           rememberRecentCampaign(id);
           updateCampaignCurrentLabel();
           renderRecentCampaigns();
+          renderMyCampaigns(myCampaignsCache);
           connectToCampaign();
         }
         document.getElementById('campaignSwitchBtn').addEventListener('click', () => {

@@ -13,6 +13,11 @@ let overlayInteractive = false;
 // over a local-only HTTP server sidesteps that with no other changes needed —
 // Firebase auto-trusts "localhost" for auth without any console configuration.
 let localServerPort = null;
+// Fixed rather than OS-assigned: Firebase Auth's signed-in session is scoped to the
+// exact origin (http://localhost:PORT). A random port every launch means a brand-new,
+// empty-storage origin each time — nothing to persist a sign-in into. Keeping this
+// stable is what makes "stay signed in across restarts" actually work.
+const PREFERRED_LOCAL_PORT = 47871;
 const MIME_TYPES = {
   '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
   '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg',
@@ -36,15 +41,28 @@ function startLocalServer() {
         res.end(data);
       });
     });
+    let fallbackTried = false;
+    server.on('error', (err) => {
+      if (err.code === 'EADDRINUSE' && !fallbackTried) {
+        // Preferred port taken (e.g. a previous instance didn't shut down cleanly).
+        // Fall back to a random port so the app still starts — sign-in just won't
+        // persist across restarts this session, same as before this fix.
+        fallbackTried = true;
+        console.warn(`Port ${PREFERRED_LOCAL_PORT} is in use — falling back to a random port. Sign-in won't persist across restarts until that port is free again.`);
+        server.listen(0, 'localhost');
+      } else {
+        reject(err);
+      }
+    });
     // bind to loopback only — this never needs to be reachable from other devices.
     // Using the hostname "localhost" (not 127.0.0.1) both here and in loadURL below
     // matters: Firebase Auth auto-trusts the literal domain "localhost" for sign-in,
     // and that only lines up if the app is actually navigated to that same hostname.
-    server.listen(0, 'localhost', () => {
+    server.on('listening', () => {
       localServerPort = server.address().port;
       resolve(localServerPort);
     });
-    server.on('error', reject);
+    server.listen(PREFERRED_LOCAL_PORT, 'localhost');
   });
 }
 
