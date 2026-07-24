@@ -1,89 +1,1220 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Welcome to Firebase Hosting</title>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Character — Troxell Treasure Trove</title>
+<style>
+  :root{
+    --bg:#0a0e13; --panel:#121a21; --border:#2a3944;
+    --accent:#4fb8c9; --accent-bright:#7ad4e0; --accent-2:#5ac8c0;
+    --text:#d9e1e6; --text-dim:#7c8a94; --danger:#d1605a;
+  }
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap');
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; min-height:100vh; background:var(--bg); color:var(--text);
+    font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    display:flex; flex-direction:column; align-items:center; padding:24px 16px 60px;
+  }
+  h1{ font-family:'Cinzel',serif; color:var(--accent-bright); font-size:22px; margin:0 0 4px; text-align:center; }
+  .sub{ color:var(--text-dim); font-size:13px; text-align:center; margin-bottom:24px; }
+  .wrap{ width:100%; max-width:640px; }
+  .panel{
+    background:var(--panel); border:1px solid var(--border); border-radius:12px;
+    padding:20px; margin-bottom:16px;
+  }
+  .btn{
+    display:block; width:100%; padding:12px; border-radius:8px; border:1px solid var(--border);
+    background:#0d1318; color:var(--text); font-size:14px; font-weight:600; cursor:pointer;
+    text-align:center; margin-top:10px;
+  }
+  .btn:hover{ border-color:var(--accent); }
+  .btn.primary{ background:var(--accent); border-color:var(--accent); color:#06171a; }
+  .btn.primary:hover{ background:var(--accent-bright); border-color:var(--accent-bright); }
+  .btn.danger{ color:var(--danger); border-color:var(--danger); background:none; }
+  .btn.google{ display:flex; align-items:center; justify-content:center; gap:10px; }
+  .btn.google svg{ width:18px; height:18px; flex-shrink:0; }
+  .btn.small{ display:inline-block; width:auto; padding:7px 12px; font-size:12px; margin-top:0; }
+  input[type=text], input[type=number], select, textarea{
+    width:100%; padding:10px; border-radius:8px; border:1px solid var(--border);
+    background:#0d1318; color:var(--text); font-size:14px; margin-top:4px; font-family:inherit;
+  }
+  textarea{ resize:vertical; min-height:60px; }
+  label{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-dim); display:block; margin-top:12px; }
+  label:first-child{ margin-top:0; }
+  .userRow{ display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+  .userRow img{ width:36px; height:36px; border-radius:50%; }
+  .userRow .uName{ font-weight:600; font-size:14px; flex:1; }
+  .linkBtn{ background:none; border:none; color:var(--text-dim); font-size:12px; cursor:pointer; text-decoration:underline; padding:0; }
+  .linkBtn:hover{ color:var(--accent-2); }
+  .charCard{
+    background:#0d1318; border:1px solid var(--border); border-radius:10px;
+    padding:14px; margin-bottom:10px; cursor:pointer;
+  }
+  .charCard:hover{ border-color:var(--accent); }
+  .charCard .cName{ font-family:'Cinzel',serif; font-size:16px; color:var(--accent-bright); }
+  .charCard .cMeta{ font-size:12px; color:var(--text-dim); margin-top:2px; }
+  .emptyState{ color:var(--text-dim); font-size:13px; text-align:center; padding:16px 0; }
+  .row2{ display:flex; gap:10px; }
+  .row2 > div{ flex:1; }
+  .row3{ display:flex; gap:10px; }
+  .row3 > div{ flex:1; }
+  .backLink{ color:var(--accent-2); font-size:13px; cursor:pointer; margin-bottom:14px; display:inline-block; }
+  .backLink:hover{ text-decoration:underline; }
+  .banner{
+    font-size:12px; padding:10px 12px; border-radius:8px; margin-bottom:16px;
+    background:rgba(90,200,192,0.1); border:1px solid rgba(90,200,192,0.35); color:var(--accent-2);
+  }
+  .banner.warn{ background:rgba(209,96,90,0.1); border-color:rgba(209,96,90,0.35); color:var(--danger); }
+  .footNote{ color:var(--text-dim); font-size:11px; text-align:center; margin-top:24px; }
+  #screenLoading{ color:var(--text-dim); font-size:13px; text-align:center; padding:40px 0; }
+  .hidden{ display:none !important; }
 
-    <!-- update the version number as needed -->
-    <script defer src="/__/firebase/12.16.0/firebase-app-compat.js"></script>
-    <!-- include only the Firebase features as you need -->
-    <script defer src="/__/firebase/12.16.0/firebase-auth-compat.js"></script>
-    <script defer src="/__/firebase/12.16.0/firebase-database-compat.js"></script>
-    <script defer src="/__/firebase/12.16.0/firebase-firestore-compat.js"></script>
-    <script defer src="/__/firebase/12.16.0/firebase-functions-compat.js"></script>
-    <script defer src="/__/firebase/12.16.0/firebase-messaging-compat.js"></script>
-    <script defer src="/__/firebase/12.16.0/firebase-storage-compat.js"></script>
-    <script defer src="/__/firebase/12.16.0/firebase-analytics-compat.js"></script>
-    <script defer src="/__/firebase/12.16.0/firebase-remote-config-compat.js"></script>
-    <script defer src="/__/firebase/12.16.0/firebase-performance-compat.js"></script>
-    <!-- 
-      initialize the SDK after all desired features are loaded, set useEmulator to false
-      to avoid connecting the SDK to running emulators.
-    -->
-    <script defer src="/__/firebase/init.js?useEmulator=true"></script>
+  /* ---- Character sheet ---- */
+  .sheetHeader{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; }
+  .sheetHeader .sheetTitle{ font-family:'Cinzel',serif; color:var(--accent-bright); font-size:18px; }
+  .sheetHeader .sheetSub{ color:var(--text-dim); font-size:12px; margin-top:2px; }
+  .sheetActions{ display:flex; gap:8px; flex-shrink:0; }
+  .tabBar{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:10px; }
+  .tabBtn{
+    padding:6px 11px; font-size:11px; border-radius:6px; border:1px solid var(--border);
+    background:#0d1318; color:var(--text-dim); cursor:pointer; text-transform:uppercase; letter-spacing:.05em;
+  }
+  .tabBtn.active{ border-color:var(--accent-2); color:var(--accent-2); }
+  .tabPanel{ display:none; }
+  .tabPanel.active{ display:block; }
+  .section{ background:#0d1318; border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:12px; }
+  .section h3{ margin:0 0 10px; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-dim); }
+  .infoText{ color:var(--text-dim); font-size:12.5px; line-height:1.6; }
 
-    <style media="screen">
-      body { background: #ECEFF1; color: rgba(0,0,0,0.87); font-family: Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
-      #message { background: white; max-width: 360px; margin: 100px auto 16px; padding: 32px 24px; border-radius: 3px; }
-      #message h2 { color: #ffa100; font-weight: bold; font-size: 16px; margin: 0 0 8px; }
-      #message h1 { font-size: 22px; font-weight: 300; color: rgba(0,0,0,0.6); margin: 0 0 16px;}
-      #message p { line-height: 140%; margin: 16px 0 24px; font-size: 14px; }
-      #message a { display: block; text-align: center; background: #039be5; text-transform: uppercase; text-decoration: none; color: white; padding: 16px; border-radius: 4px; }
-      #message, #message a { box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); }
-      #load { color: rgba(0,0,0,0.4); text-align: center; font-size: 13px; }
-      @media (max-width: 600px) {
-        body, #message { margin-top: 0; background: white; box-shadow: none; }
-        body { border-top: 16px solid #ffa100; }
-      }
-    </style>
-  </head>
-  <body>
-    <div id="message">
-      <h2>Welcome</h2>
-      <h1>Firebase Hosting Setup Complete</h1>
-      <p>You're seeing this because you've successfully setup Firebase Hosting. Now it's time to go build something extraordinary!</p>
-      <a target="_blank" href="https://firebase.google.com/docs/hosting/">Open Hosting Documentation</a>
+  .abilityGrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .abilityBox{ background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:8px; text-align:center; }
+  .abilityBox label{ margin:0 0 4px; }
+  .abilityBox input{ text-align:center; padding:6px; font-size:15px; margin-top:0; }
+  .abilityBox .abMod{ color:var(--accent-2); font-size:12px; margin-top:4px; }
+  .derivedRow{ display:flex; gap:14px; margin-top:12px; padding-top:12px; border-top:1px solid var(--border); font-size:12px; color:var(--text-dim); flex-wrap:wrap; }
+  .derivedRow b{ color:var(--text); }
+
+  .bgGrid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:12.5px; }
+  .bgGrid .bgLabel{ color:var(--text-dim); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; margin-bottom:2px; }
+  .bgFeature{ margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
+  .bgFeature .bgFeatName{ color:var(--accent-2); font-size:11px; font-weight:600; margin-bottom:3px; }
+  .bgPersonality{ margin-top:10px; padding-top:10px; border-top:1px solid var(--border); display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:11.5px; }
+  .bgPersonality b{ color:var(--text-dim); }
+
+  .hpBar{ width:100%; height:8px; background:var(--panel); border-radius:4px; overflow:hidden; margin-bottom:10px; }
+  .hpBar > div{ height:100%; transition:width .2s; }
+  .hpRow{ display:flex; align-items:center; gap:10px; }
+  .hpRow button{ width:34px; height:34px; border-radius:8px; border:1px solid var(--border); background:var(--panel); color:var(--text); font-size:16px; cursor:pointer; flex-shrink:0; }
+  .hpRow .hpNums{ flex:1; display:flex; align-items:center; justify-content:center; gap:6px; }
+  .hpRow .hpNums input{ width:64px; text-align:center; margin-top:0; }
+
+  .statBoxRow{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .statBox{ background:#0d1318; border:1px solid var(--border); border-radius:10px; padding:10px; text-align:center; }
+  .statBox label{ margin:0 0 4px; }
+  .statBox input{ text-align:center; font-size:18px; font-weight:700; padding:6px; margin-top:0; }
+  .statBox .staticVal{ font-size:18px; font-weight:700; color:var(--text); padding:6px 0; }
+
+  .dieRow{ display:flex; align-items:center; justify-content:space-between; }
+  .dieRow .dieVal{ font-size:16px; font-weight:700; color:var(--text); }
+  .dieRow .dieVal span{ font-size:12px; font-weight:400; color:var(--text-dim); }
+
+  .deathRow{ display:flex; gap:24px; }
+  .deathCol .deathLabel{ font-size:10.5px; color:var(--text-dim); text-transform:uppercase; margin-bottom:6px; }
+  .deathDots{ display:flex; gap:6px; }
+  .deathDot{ width:18px; height:18px; border-radius:50%; border:1px solid var(--border); background:var(--panel); cursor:pointer; }
+  .deathDot.success.on{ background:#3fae5c; border-color:#3fae5c; }
+  .deathDot.fail.on{ background:var(--danger); border-color:var(--danger); }
+
+  .saveGrid{ display:grid; grid-template-columns:1fr 1fr; gap:4px; }
+  .saveRow, .skillRow{ display:flex; align-items:center; gap:8px; padding:5px 2px; }
+  .profDot{ width:14px; height:14px; border-radius:50%; border:1px solid var(--border); background:var(--panel); cursor:pointer; flex-shrink:0; font-size:0; }
+  .profDot.tier1{ background:var(--accent-2); border-color:var(--accent-2); }
+  .profDot.tier2{ background:var(--accent-bright); border-color:var(--accent-bright); box-shadow:0 0 0 2px rgba(122,212,224,0.25); }
+  .saveRow .abbr, .skillRow .abbr{ font-size:10.5px; color:var(--text-dim); text-transform:uppercase; width:26px; flex-shrink:0; }
+  .saveRow .lbl, .skillRow .lbl{ flex:1; font-size:13px; }
+  .saveRow .bonus, .skillRow .bonus{ font-size:13px; font-weight:600; color:var(--text); width:32px; text-align:right; flex-shrink:0; }
+
+  .chipRow{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .chip{
+    padding:5px 10px; border-radius:14px; font-size:11.5px; border:1px solid var(--border);
+    background:var(--panel); color:var(--text-dim); cursor:pointer;
+  }
+  .chip.selected{ background:var(--accent-2); border-color:var(--accent-2); color:#06171a; font-weight:600; }
+  .chip.disabled{ opacity:.4; cursor:not-allowed; }
+
+  details{ border-bottom:1px solid var(--border); padding:8px 0; }
+  details:last-child{ border-bottom:none; }
+  details summary{ cursor:pointer; font-size:13px; color:var(--text); list-style:none; display:flex; align-items:center; justify-content:space-between; }
+  details summary::-webkit-details-marker{ display:none; }
+  details summary .lvlTag{ font-size:10.5px; color:var(--text-dim); margin-left:8px; }
+  details p{ color:var(--text-dim); font-size:12.5px; line-height:1.6; margin:8px 0 0; }
+
+  .featCard{ background:#0d1318; border:1px solid var(--border); border-radius:8px; padding:10px; margin-bottom:8px; }
+  .featCard .featTop{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+  .featCard .featName{ font-size:13px; font-weight:600; color:var(--text); }
+  .featCard .featDesc{ font-size:12px; color:var(--text-dim); margin-top:4px; line-height:1.5; }
+  .removeX{ background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:14px; flex-shrink:0; }
+  .removeX:hover{ color:var(--danger); }
+
+  .capRow{ display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px; color:var(--text-dim); margin-top:8px; }
+  .capRow b{ color:var(--text); }
+  .capRow.over b{ color:#e0a83f; }
+
+  .listRow{ display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border); font-size:13px; }
+  .listRow:last-child{ border-bottom:none; }
+  .listRow .rowMain{ flex:1; color:var(--text); }
+  .listRow .rowMeta{ color:var(--text-dim); font-size:11px; }
+
+  .addRow{ display:flex; gap:6px; margin-top:10px; }
+  .addRow input, .addRow select{ margin-top:0; }
+  .addRow .addName{ flex:2; }
+  .addRow .addLevel{ flex:1; }
+  .addRow .addQty{ width:56px; flex-shrink:0; }
+  .addRow button{ flex-shrink:0; width:auto; padding:9px 12px; margin-top:0; }
+</style>
+</head>
+<body>
+
+  <h1>My Character</h1>
+  <div class="sub">Troxell Treasure Trove</div>
+
+  <div class="wrap">
+    <div id="screenLoading">Loading…</div>
+
+    <!-- Sign-in screen -->
+    <div id="signInScreen" class="panel hidden">
+      <p style="margin-top:0;color:var(--text-dim);font-size:13px;">Sign in to create and manage your character. Ask your DM for your campaign's code once you're signed in.</p>
+      <button class="btn google" id="googleSignInBtn">
+        <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.5 6 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l5.7-5.7C34.5 6.9 29.5 5 24 5c-7.8 0-14.5 4.4-17.7 10.7z"/><path fill="#4CAF50" d="M24 44c5.3 0 10.1-1.8 13.8-5l-6.4-5.4C29.3 35.4 26.8 36 24 36c-5.2 0-9.6-3.1-11.3-7.6l-6.5 5C9.4 39.5 16.1 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.4-2.3 4.4-4.2 5.9l6.4 5.4C40.3 36.5 44 30.8 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
+        Sign in with Google
+      </button>
     </div>
-    <p id="load">Firebase SDK Loading&hellip;</p>
 
-    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        const loadEl = document.querySelector('#load');
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-        // // The Firebase SDK is initialized and available here!
-        //
-        // firebase.auth().onAuthStateChanged(user => { });
-        // firebase.database().ref('/path/to/ref').on('value', snapshot => { });
-        // firebase.firestore().doc('/foo/bar').get().then(() => { });
-        // firebase.functions().httpsCallable('yourFunction')().then(() => { });
-        // firebase.messaging().requestPermission().then(() => { });
-        // firebase.storage().ref('/path/to/ref').getDownloadURL().then(() => { });
-        // firebase.analytics(); // call to activate
-        // firebase.analytics().logEvent('tutorial_completed');
-        // firebase.performance(); // call to activate
-        //
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
+    <!-- Join campaign screen -->
+    <div id="joinScreen" class="panel hidden">
+      <div class="userRow">
+        <img id="joinUserPhoto" src="" alt="">
+        <span class="uName" id="joinUserName"></span>
+        <button class="linkBtn" id="signOutBtn1">Sign out</button>
+      </div>
+      <label>Campaign code</label>
+      <input type="text" id="campaignCodeInput" placeholder="Ask your DM for this">
+      <button class="btn primary" id="joinCampaignBtn">Join Campaign</button>
+    </div>
 
-        try {
-          let app = firebase.app();
-          let features = [
-            'auth', 
-            'database', 
-            'firestore',
-            'functions',
-            'messaging', 
-            'storage', 
-            'analytics', 
-            'remoteConfig',
-            'performance',
-          ].filter(feature => typeof app[feature] === 'function');
-          loadEl.textContent = `Firebase SDK loaded with ${features.join(', ')}`;
-        } catch (e) {
-          console.error(e);
-          loadEl.textContent = 'Error loading the Firebase SDK, check the console.';
+    <!-- Character list screen -->
+    <div id="charListScreen" class="panel hidden">
+      <div class="userRow">
+        <img id="listUserPhoto" src="" alt="">
+        <span class="uName" id="listUserName"></span>
+        <button class="linkBtn" id="signOutBtn2">Sign out</button>
+      </div>
+      <div class="banner" id="campaignBanner"></div>
+      <div id="charList"></div>
+      <button class="btn primary" id="newCharBtn">+ New Character</button>
+      <button class="linkBtn" id="switchCampaignBtn" style="margin-top:14px;">Switch campaign</button>
+    </div>
+
+    <!-- Character sheet screen -->
+    <div id="charSheetScreen" class="panel hidden">
+      <span class="backLink" id="backToListBtn">← Back to characters</span>
+
+      <div class="sheetHeader">
+        <div>
+          <div class="sheetTitle" id="sheetHeaderName">New character</div>
+          <div class="sheetSub" id="sheetHeaderMeta"></div>
+        </div>
+        <div class="sheetActions">
+          <button class="btn primary small" id="sheetSaveBtn">Save</button>
+        </div>
+      </div>
+
+      <div class="tabBar" id="sheetTabBar">
+        <button class="tabBtn active" data-tab="core">Core</button>
+        <button class="tabBtn" data-tab="combat">Combat</button>
+        <button class="tabBtn" data-tab="skills">Skills</button>
+        <button class="tabBtn" data-tab="features">Features</button>
+        <button class="tabBtn" data-tab="spells">Spells</button>
+        <button class="tabBtn" data-tab="inventory">Inventory</button>
+        <button class="tabBtn" data-tab="notes">Notes</button>
+      </div>
+
+      <!-- CORE -->
+      <div class="tabPanel active" data-panel="core">
+        <div class="section">
+          <h3>Identity</h3>
+          <div class="row2">
+            <div><label>Character name</label><input type="text" id="fName" placeholder="Kaelith"></div>
+            <div><label>Level</label><input type="number" id="fLevel" min="1" max="20" value="1"></div>
+          </div>
+          <div class="row2">
+            <div><label>Class</label><select id="fClass"><option value="">— choose —</option></select></div>
+            <div><label>Subclass</label><select id="fSubclass"><option value="">— pick class first —</option></select></div>
+          </div>
+          <div class="row2">
+            <div><label>Race</label><select id="fRace"><option value="">— choose —</option></select></div>
+            <div><label>Background</label><select id="fBackground"><option value="">— choose —</option></select></div>
+          </div>
+        </div>
+
+        <div class="section hidden" id="raceInfoSection">
+          <h3 id="raceInfoTitle">Race traits</h3>
+          <p class="infoText" id="raceInfoText"></p>
+        </div>
+
+        <div class="section hidden" id="bgInfoSection">
+          <h3 id="bgInfoTitle">Background</h3>
+          <div class="bgGrid">
+            <div><div class="bgLabel">Skill proficiencies</div><div id="bgSkills"></div></div>
+            <div><div class="bgLabel">Languages</div><div id="bgLanguages"></div></div>
+            <div><div class="bgLabel">Tool proficiencies</div><div id="bgTools"></div></div>
+            <div><div class="bgLabel">Starting equipment</div><div id="bgEquipment" style="font-size:11.5px;"></div></div>
+          </div>
+          <div class="bgFeature">
+            <div class="bgFeatName" id="bgFeatureName"></div>
+            <div class="infoText" id="bgFeatureDesc"></div>
+          </div>
+          <div class="bgPersonality">
+            <div><b>Trait: </b><span id="bgTrait"></span></div>
+            <div><b>Ideal: </b><span id="bgIdeal"></span></div>
+            <div><b>Bond: </b><span id="bgBond"></span></div>
+            <div><b>Flaw: </b><span id="bgFlaw"></span></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Ability scores</h3>
+          <div class="abilityGrid" id="abilityGrid"></div>
+          <div class="derivedRow">
+            <div>Prof bonus: <b id="derivedPb"></b></div>
+            <div>Initiative: <b id="derivedInit"></b></div>
+            <div>Passive Perception: <b id="derivedPP"></b></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMBAT -->
+      <div class="tabPanel" data-panel="combat">
+        <div class="section">
+          <h3>Hit points</h3>
+          <div class="hpBar"><div id="hpBarFill" style="width:100%;background:#3fae5c;"></div></div>
+          <div class="hpRow">
+            <button id="hpMinusBtn">−</button>
+            <div class="hpNums">
+              <input type="number" id="fHpCurrent" value="10">
+              <span style="color:var(--text-dim);">/</span>
+              <input type="number" id="fHpMax" value="10">
+            </div>
+            <button id="hpPlusBtn">+</button>
+          </div>
+        </div>
+
+        <div class="statBoxRow">
+          <div class="statBox"><label>AC</label><input type="number" id="fAc" value="10"></div>
+          <div class="statBox"><label>Initiative</label><div class="staticVal" id="statInit">+0</div></div>
+          <div class="statBox"><label>Speed</label><input type="number" id="fSpeed" value="30"></div>
+        </div>
+
+        <div class="section">
+          <h3>Death saves</h3>
+          <div class="deathRow">
+            <div class="deathCol">
+              <div class="deathLabel">Successes</div>
+              <div class="deathDots" id="deathSuccessDots"></div>
+            </div>
+            <div class="deathCol">
+              <div class="deathLabel">Failures</div>
+              <div class="deathDots" id="deathFailDots"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section hidden" id="hitDiceSection">
+          <h3>Hit dice</h3>
+          <div class="dieRow">
+            <div class="dieVal" id="hitDiceVal">—</div>
+            <div class="sheetActions">
+              <button class="btn small" id="hitDiceSpendBtn">Spend</button>
+              <button class="btn small" id="hitDiceRestoreBtn">Restore</button>
+            </div>
+          </div>
+          <p class="infoText" style="margin-top:8px;">Regain half your total (rounded up) on a long rest.</p>
+        </div>
+
+        <div class="section hidden" id="classResourceSection">
+          <h3 id="classResourceLabel">Class Resource</h3>
+          <div class="dieRow">
+            <div class="dieVal" id="classResourceVal">—</div>
+            <div class="sheetActions">
+              <button class="btn small" id="classResourceUseBtn">Use</button>
+              <button class="btn small primary" id="classResourceResetBtn">Rest</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Gold</h3>
+          <input type="number" id="fGold" value="0" min="0">
+        </div>
+      </div>
+
+      <!-- SKILLS -->
+      <div class="tabPanel" data-panel="skills">
+        <div class="section">
+          <h3>Saving throws</h3>
+          <div class="saveGrid" id="saveGrid"></div>
+        </div>
+
+        <div class="section hidden" id="classSkillSection">
+          <h3 id="classSkillTitle">Class skill proficiencies</h3>
+          <p class="infoText" id="classSkillHint"></p>
+          <div class="chipRow" id="classSkillChips"></div>
+        </div>
+
+        <div class="section">
+          <h3>Skills <span style="text-transform:none;letter-spacing:0;">— tap to cycle: ○ none → ● proficient → ◐ expertise</span></h3>
+          <div id="skillList"></div>
+        </div>
+
+        <div class="section">
+          <h3>Proficiencies &amp; languages</h3>
+          <textarea id="fProficiencies" rows="4" placeholder="Armor, weapons, tools, languages…"></textarea>
+        </div>
+      </div>
+
+      <!-- FEATURES -->
+      <div class="tabPanel" data-panel="features">
+        <div class="section hidden" id="classFeaturesSection">
+          <h3 id="classFeaturesTitle">Class features</h3>
+          <div id="classFeaturesList"></div>
+          <p class="infoText" id="classFeaturesNext" style="margin-top:8px;"></p>
+        </div>
+
+        <div class="section">
+          <h3>Feats</h3>
+          <div id="featList"></div>
+          <div class="row2" style="margin-top:10px;">
+            <select id="featPicker"><option value="">— choose a feat to add —</option></select>
+          </div>
+          <div id="featAsiChoiceWrap" class="hidden" style="margin-top:8px;">
+            <p class="infoText" id="featAsiPrompt"></p>
+            <div class="chipRow" id="featAsiChips"></div>
+          </div>
+          <button class="btn small" id="featAddBtn" style="margin-top:10px;">+ Add Feat</button>
+        </div>
+
+        <div class="section">
+          <h3>Personality</h3>
+          <div class="row2">
+            <div><label>Traits</label><textarea id="fTraits" rows="3" placeholder="Quirks, mannerisms…"></textarea></div>
+            <div><label>Ideals</label><textarea id="fIdeals" rows="3" placeholder="Beliefs, principles…"></textarea></div>
+          </div>
+          <div class="row2">
+            <div><label>Bonds</label><textarea id="fBonds" rows="3" placeholder="Loyalties, connections…"></textarea></div>
+            <div><label>Flaws</label><textarea id="fFlaws" rows="3" placeholder="Weaknesses, vices…"></textarea></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SPELLS -->
+      <div class="tabPanel" data-panel="spells">
+        <div class="banner hidden" id="nonCasterBanner">This class doesn't have spellcasting — unless a subclass or feat grants it.</div>
+
+        <div class="section hidden" id="spellcastingSection">
+          <h3>Spellcasting</h3>
+          <div class="statBoxRow">
+            <div class="statBox"><label>Ability</label><div class="staticVal" id="spellAbilityVal">—</div></div>
+            <div class="statBox"><label>Save DC</label><div class="staticVal" id="spellDcVal">—</div></div>
+            <div class="statBox"><label>Atk bonus</label><div class="staticVal" id="spellAtkVal">—</div></div>
+          </div>
+          <div class="capRow" id="spellCapRow"></div>
+        </div>
+
+        <div class="section hidden" id="spellSlotsSection">
+          <h3>Spell slots</h3>
+          <div class="infoText" id="spellSlotsRow"></div>
+        </div>
+
+        <div class="section">
+          <h3>Spells</h3>
+          <div id="spellList"></div>
+          <div class="addRow">
+            <input type="text" id="addSpellName" class="addName" placeholder="Spell name">
+            <select id="addSpellLevel" class="addLevel">
+              <option value="0">Cantrip</option>
+              <option value="1">Level 1</option><option value="2">Level 2</option><option value="3">Level 3</option>
+              <option value="4">Level 4</option><option value="5">Level 5</option><option value="6">Level 6</option>
+              <option value="7">Level 7</option><option value="8">Level 8</option><option value="9">Level 9</option>
+            </select>
+            <button class="btn small" id="addSpellBtn">+ Add</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- INVENTORY -->
+      <div class="tabPanel" data-panel="inventory">
+        <div class="section">
+          <h3>Inventory</h3>
+          <div id="invList"></div>
+          <div class="addRow">
+            <input type="text" id="addInvName" class="addName" placeholder="Item name">
+            <input type="number" id="addInvQty" class="addQty" value="1" min="1">
+            <button class="btn small" id="addInvBtn">+ Add</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- NOTES -->
+      <div class="tabPanel" data-panel="notes">
+        <div class="section">
+          <h3>Session notes</h3>
+          <textarea id="fNotes" rows="8" placeholder="Quest hooks, NPC names, important events…"></textarea>
+        </div>
+        <div class="section">
+          <h3>Appearance</h3>
+          <div class="row3">
+            <div><label>Age</label><input type="text" id="fAge"></div>
+            <div><label>Height</label><input type="text" id="fHeight"></div>
+            <div><label>Weight</label><input type="text" id="fWeight"></div>
+          </div>
+          <div class="row3">
+            <div><label>Eyes</label><input type="text" id="fEyes"></div>
+            <div><label>Skin</label><input type="text" id="fSkin"></div>
+            <div><label>Hair</label><input type="text" id="fHair"></div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn danger" id="sheetDeleteBtn" style="margin-top:6px;">Delete Character</button>
+    </div>
+
+    <div class="footNote">Signed in with Google. Your character is only visible to you and your DM.</div>
+  </div>
+
+  <!-- update the version number as needed, matching your project's other auto-generated pages -->
+  <script defer src="/__/firebase/12.16.0/firebase-app-compat.js"></script>
+  <script defer src="/__/firebase/12.16.0/firebase-auth-compat.js"></script>
+  <script defer src="/__/firebase/12.16.0/firebase-firestore-compat.js"></script>
+  <script defer src="/__/firebase/init.js"></script>
+
+  <script src="js/dnd-data.js"></script>
+  <script defer>
+    (function(){
+      const CAMPAIGN_KEY = 'blackstonePlayerCampaignId_v1';
+      let db = null;
+      let currentUser = null;
+      let campaignId = null;
+      let characters = [];
+      let charsUnsub = null;
+      let editingCharId = null;
+      let sheet = null; // in-memory working copy of the character currently being edited
+
+      function show(id){
+        ['screenLoading','signInScreen','joinScreen','charListScreen','charSheetScreen'].forEach(s => {
+          document.getElementById(s).classList.toggle('hidden', s !== id);
+        });
+      }
+      function escapeHtml(str){
+        return String(str == null ? '' : str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+      }
+
+      function initFirebase(){
+        // Firebase Hosting's auto-generated /__/firebase/init.js already calls
+        // firebase.initializeApp() for us with this project's config — no manual
+        // config object needed here (that's only required for the desktop app,
+        // which loads files locally instead of through Hosting).
+        db = firebase.firestore();
+        firebase.auth().onAuthStateChanged(user => {
+          currentUser = user;
+          if(!user){
+            show('signInScreen');
+            return;
+          }
+          let savedCampaign = null;
+          try{ savedCampaign = localStorage.getItem(CAMPAIGN_KEY); }catch(err){}
+          if(savedCampaign){
+            joinCampaign(savedCampaign);
+          }else{
+            document.getElementById('joinUserPhoto').src = user.photoURL || '';
+            document.getElementById('joinUserName').textContent = user.displayName || user.email || 'Player';
+            show('joinScreen');
+          }
+        });
+      }
+      window.addEventListener('DOMContentLoaded', initFirebase);
+
+      document.getElementById('googleSignInBtn').addEventListener('click', () => {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        firebase.auth().signInWithPopup(provider).catch(err => alert('Sign-in failed: ' + err.message));
+      });
+      function signOut(){
+        if(charsUnsub){ charsUnsub(); charsUnsub = null; }
+        try{ localStorage.removeItem(CAMPAIGN_KEY); }catch(err){}
+        firebase.auth().signOut();
+      }
+      document.getElementById('signOutBtn1').addEventListener('click', signOut);
+      document.getElementById('signOutBtn2').addEventListener('click', signOut);
+
+      function joinCampaign(id){
+        campaignId = (id || '').trim() || 'default';
+        try{ localStorage.setItem(CAMPAIGN_KEY, campaignId); }catch(err){}
+        document.getElementById('listUserPhoto').src = currentUser.photoURL || '';
+        document.getElementById('listUserName').textContent = currentUser.displayName || currentUser.email || 'Player';
+        document.getElementById('campaignBanner').textContent = `Campaign: ${campaignId}`;
+        show('charListScreen');
+        startCharListener();
+      }
+      document.getElementById('joinCampaignBtn').addEventListener('click', () => {
+        const v = document.getElementById('campaignCodeInput').value;
+        if(!v.trim()) return;
+        joinCampaign(v);
+      });
+      document.getElementById('switchCampaignBtn').addEventListener('click', () => {
+        if(charsUnsub){ charsUnsub(); charsUnsub = null; }
+        try{ localStorage.removeItem(CAMPAIGN_KEY); }catch(err){}
+        document.getElementById('campaignCodeInput').value = '';
+        document.getElementById('joinUserPhoto').src = currentUser.photoURL || '';
+        document.getElementById('joinUserName').textContent = currentUser.displayName || currentUser.email || 'Player';
+        show('joinScreen');
+      });
+
+      function charsRef(){
+        return db.collection('campaigns').doc(campaignId).collection('characters');
+      }
+      function startCharListener(){
+        if(charsUnsub){ charsUnsub(); charsUnsub = null; }
+        charsUnsub = charsRef().where('ownerId', '==', currentUser.uid).onSnapshot(snap => {
+          characters = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+          renderCharList();
+        }, err => {
+          document.getElementById('charList').innerHTML =
+            `<div class="emptyState">Could not load characters: ${escapeHtml(err.message)}</div>`;
+        });
+      }
+      function renderCharList(){
+        const el = document.getElementById('charList');
+        if(!characters.length){
+          el.innerHTML = '<div class="emptyState">No characters yet — create your first one below.</div>';
+          return;
+        }
+        el.innerHTML = characters.map(c => `
+          <div class="charCard" data-id="${c.id}">
+            <div class="cName">${escapeHtml(c.name || '(unnamed)')}</div>
+            <div class="cMeta">${escapeHtml(c.race || '')} ${escapeHtml(c.class || 'Class TBD')} — Level ${c.level || 1}</div>
+          </div>
+        `).join('');
+        el.querySelectorAll('.charCard').forEach(card => {
+          card.addEventListener('click', () => openCharSheet(card.dataset.id));
+        });
+      }
+      document.getElementById('newCharBtn').addEventListener('click', () => {
+        const name = prompt('Character name?');
+        if(!name || !name.trim()) return;
+        charsRef().add(blankCharacter(name.trim()))
+          .then(doc => openCharSheet(doc.id))
+          .catch(err => alert('Could not create character: ' + err.message));
+      });
+      function blankCharacter(name){
+        return {
+          ownerId: currentUser.uid,
+          ownerName: currentUser.displayName || currentUser.email || 'Player',
+          name, level: 1, class:'', subclass:'', race:'', background:'',
+          stats: { str:10, dex:10, con:10, int:10, wis:10, cha:10 },
+          hp_current:10, hp_max:10, ac:10, speed:30, gold:0,
+          skillProf: {}, saveProf: {},
+          proficiencies:'', feats: [], spells: [], inventory: [],
+          personality: { traits:'', ideals:'', bonds:'', flaws:'' },
+          appearance: { age:'', height:'', weight:'', eyes:'', skin:'', hair:'' },
+          deathSaves: { success:[false,false,false], fail:[false,false,false] },
+          resourceState: { hitDiceUsed:0, classResourceUsed:0 },
+          notes:'',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+      }
+
+      // ---- Character sheet ----
+
+      document.getElementById('backToListBtn').addEventListener('click', () => show('charListScreen'));
+
+      document.getElementById('sheetTabBar').querySelectorAll('.tabBtn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.getElementById('sheetTabBar').querySelectorAll('.tabBtn').forEach(b => b.classList.toggle('active', b === btn));
+          document.querySelectorAll('.tabPanel').forEach(p => p.classList.toggle('active', p.dataset.panel === btn.dataset.tab));
+        });
+      });
+
+      function getMod(score){ return Math.floor((score - 10) / 2); }
+      function modStr(n){ return n >= 0 ? `+${n}` : `${n}`; }
+      function profBonus(level){ return Math.ceil(level / 4) + 1; }
+      function cantripsKnownMax(cls, level){ return (DND.CANTRIPS_KNOWN[cls] && DND.CANTRIPS_KNOWN[cls][level-1]) ?? null; }
+      function spellsKnownMax(cls, level){ return (DND.SPELLS_KNOWN[cls] && DND.SPELLS_KNOWN[cls][level-1]) ?? null; }
+      function preparedMax(cls, level, mod){
+        if(!['Cleric','Druid','Paladin','Wizard'].includes(cls)) return null;
+        const effLevel = cls === 'Paladin' ? Math.floor(level/2) : level;
+        return Math.max(1, mod + effLevel);
+      }
+
+      function populateSelect(sel, options, placeholder){
+        sel.innerHTML = `<option value="">${placeholder}</option>` + options.map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join('');
+      }
+      populateSelect(document.getElementById('fClass'), Object.keys(DND.SUBCLASSES), '— choose —');
+      populateSelect(document.getElementById('fRace'), Object.keys(DND.RACE_TRAITS), '— choose —');
+      populateSelect(document.getElementById('fBackground'), Object.keys(DND.BACKGROUNDS), '— choose —');
+      document.getElementById('featPicker').innerHTML = '<option value="">— choose a feat to add —</option>' +
+        DND.FEATS.map((f,i) => `<option value="${i}">${escapeHtml(f.name)}</option>`).join('');
+
+      // Ability score boxes (built once)
+      const abilityGridEl = document.getElementById('abilityGrid');
+      abilityGridEl.innerHTML = DND.ABILITIES.map(ab => `
+        <div class="abilityBox">
+          <label>${ab}</label>
+          <input type="number" min="1" max="30" id="ab_${ab}" value="10">
+          <div class="abMod" id="abMod_${ab}">+0</div>
+        </div>
+      `).join('');
+      DND.ABILITIES.forEach(ab => {
+        document.getElementById(`ab_${ab}`).addEventListener('input', renderSkillsAndSaves);
+      });
+
+      // Saving throw rows (built once)
+      const saveGridEl = document.getElementById('saveGrid');
+      saveGridEl.innerHTML = DND.ABILITIES.map(ab => `
+        <div class="saveRow" data-ab="${ab}">
+          <button class="profDot" data-save="${ab}"></button>
+          <span class="abbr">${ab}</span>
+          <span class="lbl">${DND.ABILITY_LABELS[ab]}</span>
+          <span class="bonus" id="saveBonus_${ab}">+0</span>
+        </div>
+      `).join('');
+      saveGridEl.querySelectorAll('.profDot').forEach(dot => {
+        dot.addEventListener('click', () => {
+          const ab = dot.dataset.save;
+          sheet.saveProf[ab] = !sheet.saveProf[ab];
+          renderSkillsAndSaves();
+        });
+      });
+
+      // Skill rows (built once)
+      const skillListEl = document.getElementById('skillList');
+      skillListEl.innerHTML = DND.SKILLS.map(sk => `
+        <div class="skillRow" data-skill="${escapeHtml(sk.name)}">
+          <button class="profDot" data-skillDot="${escapeHtml(sk.name)}"></button>
+          <span class="abbr">${sk.ability}</span>
+          <span class="lbl">${escapeHtml(sk.name)}</span>
+          <span class="bonus" id="skillBonus_${sk.name.replace(/\s+/g,'')}">+0</span>
+        </div>
+      `).join('');
+      skillListEl.querySelectorAll('[data-skillDot]').forEach(dot => {
+        dot.addEventListener('click', () => {
+          const name = dot.dataset.skilldot;
+          sheet.skillProf[name] = ((sheet.skillProf[name] || 0) + 1) % 3;
+          renderSkillsAndSaves();
+        });
+      });
+
+      // Death save dots (built once)
+      function buildDeathDots(containerId, key){
+        const el = document.getElementById(containerId);
+        el.innerHTML = [0,1,2].map(i => `<button class="deathDot ${key}" data-idx="${i}"></button>`).join('');
+        el.querySelectorAll('.deathDot').forEach(dot => {
+          dot.addEventListener('click', () => {
+            const i = parseInt(dot.dataset.idx);
+            sheet.deathSaves[key][i] = !sheet.deathSaves[key][i];
+            renderCombat();
+          });
+        });
+      }
+      buildDeathDots('deathSuccessDots', 'success');
+      buildDeathDots('deathFailDots', 'fail');
+
+      // ---- Field change wiring: class / race / background ----
+      document.getElementById('fClass').addEventListener('change', function(){
+        const oldOptions = (DND.CLASS_SKILL_CHOICES[sheet.class] || {}).options || [];
+        oldOptions.forEach(s => { delete sheet.skillProf[s]; });
+        sheet.class = this.value;
+        sheet.subclass = '';
+        sheet.saveProf = {};
+        (DND.CLASS_SAVE_PROFS[sheet.class] || []).forEach(ab => { sheet.saveProf[ab] = true; });
+        renderAll();
+      });
+      document.getElementById('fSubclass').addEventListener('change', function(){ sheet.subclass = this.value; });
+      document.getElementById('fRace').addEventListener('change', function(){ sheet.race = this.value; renderCore(); });
+      document.getElementById('fBackground').addEventListener('change', function(){
+        sheet.background = this.value;
+        const bg = DND.BACKGROUNDS[sheet.background];
+        if(bg){
+          bg.skills.filter(s => DND.SKILLS.some(sk => sk.name === s)).forEach(s => {
+            if(!sheet.skillProf[s]) sheet.skillProf[s] = 1;
+          });
+          if(!sheet.proficiencies || !sheet.proficiencies.trim()){
+            sheet.proficiencies = [
+              bg.skills.length ? `Skills: ${bg.skills.join(', ')}` : '',
+              bg.tools !== 'None' ? `Tools: ${bg.tools}` : '',
+              bg.languages !== 'None' ? `Languages: ${bg.languages}` : '',
+            ].filter(Boolean).join('\n');
+          }
+        }
+        renderAll();
+      });
+
+      // ---- Render: Core tab ----
+      function renderCore(){
+        document.getElementById('fName').value = sheet.name || '';
+        document.getElementById('fLevel').value = sheet.level || 1;
+        document.getElementById('fClass').value = sheet.class || '';
+        populateSelect(document.getElementById('fSubclass'), DND.SUBCLASSES[sheet.class] || [], sheet.class ? '— choose —' : '— pick class first —');
+        document.getElementById('fSubclass').value = sheet.subclass || '';
+        document.getElementById('fRace').value = sheet.race || '';
+        document.getElementById('fBackground').value = sheet.background || '';
+
+        DND.ABILITIES.forEach(ab => { document.getElementById(`ab_${ab}`).value = sheet.stats[ab] ?? 10; });
+
+        const raceSection = document.getElementById('raceInfoSection');
+        if(sheet.race && DND.RACE_TRAITS[sheet.race]){
+          raceSection.classList.remove('hidden');
+          document.getElementById('raceInfoTitle').textContent = `${sheet.race} traits`;
+          document.getElementById('raceInfoText').textContent = DND.RACE_TRAITS[sheet.race];
+        } else raceSection.classList.add('hidden');
+
+        const bgSection = document.getElementById('bgInfoSection');
+        const bg = DND.BACKGROUNDS[sheet.background];
+        if(bg){
+          bgSection.classList.remove('hidden');
+          document.getElementById('bgInfoTitle').textContent = `${sheet.background} background`;
+          document.getElementById('bgSkills').textContent = bg.skills.join(', ');
+          document.getElementById('bgLanguages').textContent = bg.languages;
+          document.getElementById('bgTools').textContent = bg.tools;
+          document.getElementById('bgEquipment').textContent = bg.equipment;
+          document.getElementById('bgFeatureName').textContent = bg.feature;
+          document.getElementById('bgFeatureDesc').textContent = bg.featureDesc;
+          document.getElementById('bgTrait').textContent = bg.trait;
+          document.getElementById('bgIdeal').textContent = bg.ideal;
+          document.getElementById('bgBond').textContent = bg.bond;
+          document.getElementById('bgFlaw').textContent = bg.flaw;
+        } else bgSection.classList.add('hidden');
+
+        renderDerived();
+      }
+      function renderDerived(){
+        DND.ABILITIES.forEach(ab => {
+          const score = parseInt(document.getElementById(`ab_${ab}`).value, 10) || 10;
+          sheet.stats[ab] = score;
+          document.getElementById(`abMod_${ab}`).textContent = modStr(getMod(score));
+        });
+        const level = parseInt(document.getElementById('fLevel').value, 10) || 1;
+        sheet.level = level;
+        const pb = profBonus(level);
+        document.getElementById('derivedPb').textContent = modStr(pb);
+        document.getElementById('derivedInit').textContent = modStr(getMod(sheet.stats.dex));
+        const perceptionTier = sheet.skillProf['Perception'] || 0;
+        document.getElementById('derivedPP').textContent = 10 + getMod(sheet.stats.wis) + (perceptionTier >= 1 ? pb : 0);
+        document.getElementById('statInit').textContent = modStr(getMod(sheet.stats.dex));
+      }
+
+      // ---- Render: Combat tab ----
+      function renderCombat(){
+        document.getElementById('fHpCurrent').value = sheet.hp_current ?? 10;
+        document.getElementById('fHpMax').value = sheet.hp_max ?? 10;
+        document.getElementById('fAc').value = sheet.ac ?? 10;
+        document.getElementById('fSpeed').value = sheet.speed ?? 30;
+        document.getElementById('fGold').value = sheet.gold ?? 0;
+
+        const pct = sheet.hp_max ? Math.max(0, Math.min(100, (sheet.hp_current / sheet.hp_max) * 100)) : 100;
+        const color = pct > 50 ? '#3fae5c' : pct > 25 ? '#e0a83f' : 'var(--danger)';
+        const fill = document.getElementById('hpBarFill');
+        fill.style.width = pct + '%';
+        fill.style.background = color;
+
+        document.querySelectorAll('#deathSuccessDots .deathDot').forEach((d,i) => d.classList.toggle('on', !!sheet.deathSaves.success[i]));
+        document.querySelectorAll('#deathFailDots .deathDot').forEach((d,i) => d.classList.toggle('on', !!sheet.deathSaves.fail[i]));
+
+        const hitDie = DND.CLASS_HIT_DIE[sheet.class];
+        const hdSection = document.getElementById('hitDiceSection');
+        if(hitDie){
+          hdSection.classList.remove('hidden');
+          const max = sheet.level;
+          const used = Math.min(sheet.resourceState.hitDiceUsed, max);
+          document.getElementById('hitDiceVal').innerHTML = `${max-used}d${hitDie}<span> / ${max}</span>`;
+        } else hdSection.classList.add('hidden');
+
+        const res = DND.CLASS_RESOURCE[sheet.class];
+        const resSection = document.getElementById('classResourceSection');
+        if(res && res.max(sheet.level) > 0){
+          resSection.classList.remove('hidden');
+          document.getElementById('classResourceLabel').textContent = res.label;
+          const max = res.max(sheet.level);
+          const used = Math.min(sheet.resourceState.classResourceUsed, max);
+          document.getElementById('classResourceVal').innerHTML = `${max-used}<span> / ${max}</span>`;
+          document.getElementById('classResourceResetBtn').textContent = res.resetsOn === 'short' ? 'Short rest' : 'Long rest';
+        } else resSection.classList.add('hidden');
+      }
+      document.getElementById('hpMinusBtn').addEventListener('click', () => { sheet.hp_current = Math.max(0, (sheet.hp_current||0) - 1); renderCombat(); });
+      document.getElementById('hpPlusBtn').addEventListener('click', () => { sheet.hp_current = Math.min(sheet.hp_max||0, (sheet.hp_current||0) + 1); renderCombat(); });
+      document.getElementById('hitDiceSpendBtn').addEventListener('click', () => {
+        const max = sheet.level;
+        sheet.resourceState.hitDiceUsed = Math.min(max, sheet.resourceState.hitDiceUsed + 1);
+        renderCombat();
+      });
+      document.getElementById('hitDiceRestoreBtn').addEventListener('click', () => {
+        sheet.resourceState.hitDiceUsed = Math.max(0, sheet.resourceState.hitDiceUsed - 1);
+        renderCombat();
+      });
+      document.getElementById('classResourceUseBtn').addEventListener('click', () => {
+        const res = DND.CLASS_RESOURCE[sheet.class];
+        if(!res) return;
+        const max = res.max(sheet.level);
+        sheet.resourceState.classResourceUsed = Math.min(max, sheet.resourceState.classResourceUsed + 1);
+        renderCombat();
+      });
+      document.getElementById('classResourceResetBtn').addEventListener('click', () => {
+        sheet.resourceState.classResourceUsed = 0;
+        renderCombat();
+      });
+
+      // ---- Render: Skills tab ----
+      function renderSkillsAndSaves(){
+        // sync sheet.stats/level from the input fields FIRST — everything below
+        // reads sheet.stats directly, so it must be current before we compute bonuses
+        DND.ABILITIES.forEach(ab => { sheet.stats[ab] = parseInt(document.getElementById(`ab_${ab}`).value, 10) || 10; });
+        sheet.level = parseInt(document.getElementById('fLevel').value, 10) || 1;
+
+        const pb = profBonus(sheet.level);
+        DND.ABILITIES.forEach(ab => {
+          const dot = saveGridEl.querySelector(`[data-save="${ab}"]`);
+          dot.classList.toggle('tier1', !!sheet.saveProf[ab]);
+          document.getElementById(`saveBonus_${ab}`).textContent = modStr(getMod(sheet.stats[ab]) + (sheet.saveProf[ab] ? pb : 0));
+        });
+
+        const clsChoice = DND.CLASS_SKILL_CHOICES[sheet.class];
+        const classSkillSection = document.getElementById('classSkillSection');
+        if(clsChoice){
+          classSkillSection.classList.remove('hidden');
+          document.getElementById('classSkillTitle').textContent = `${sheet.class} skill proficiencies`;
+          const chosen = clsChoice.options.filter(s => (sheet.skillProf[s]||0) > 0);
+          const remaining = clsChoice.count - chosen.length;
+          document.getElementById('classSkillHint').textContent =
+            `Choose ${clsChoice.count} from your class list. ${remaining > 0 ? remaining + ' remaining' : 'Done ✓'}`;
+          const chipsEl = document.getElementById('classSkillChips');
+          chipsEl.innerHTML = clsChoice.options.map(s => {
+            const isChosen = (sheet.skillProf[s]||0) > 0;
+            const atLimit = chosen.length >= clsChoice.count && !isChosen;
+            return `<button class="chip ${isChosen?'selected':''} ${atLimit?'disabled':''}" data-clsSkill="${escapeHtml(s)}">${escapeHtml(s)}</button>`;
+          }).join('');
+          chipsEl.querySelectorAll('[data-clsSkill]').forEach(chip => {
+            chip.addEventListener('click', () => {
+              if(chip.classList.contains('disabled')) return;
+              const s = chip.dataset.clsskill || chip.getAttribute('data-clsSkill');
+              sheet.skillProf[s] = (sheet.skillProf[s]||0) > 0 ? 0 : 1;
+              renderSkillsAndSaves();
+            });
+          });
+        } else classSkillSection.classList.add('hidden');
+
+        DND.SKILLS.forEach(sk => {
+          const tier = sheet.skillProf[sk.name] || 0;
+          const bonus = getMod(sheet.stats[sk.ability]) + (tier === 1 ? pb : tier === 2 ? pb*2 : 0);
+          const dot = skillListEl.querySelector(`[data-skillDot="${sk.name}"]`);
+          dot.classList.remove('tier1','tier2');
+          if(tier === 1) dot.classList.add('tier1');
+          if(tier === 2) dot.classList.add('tier2');
+          document.getElementById(`skillBonus_${sk.name.replace(/\s+/g,'')}`).textContent = modStr(bonus);
+        });
+
+        document.getElementById('fProficiencies').value = sheet.proficiencies || '';
+        renderDerived();
+      }
+
+      // ---- Render: Features tab ----
+      function renderFeatures(){
+        const featuresSection = document.getElementById('classFeaturesSection');
+        const featureList = DND.CLASS_FEATURES[sheet.class] || [];
+        if(sheet.class && featureList.length){
+          featuresSection.classList.remove('hidden');
+          document.getElementById('classFeaturesTitle').textContent = `${sheet.class} features · Level ${sheet.level}`;
+          const unlocked = featureList.filter(([l]) => l <= sheet.level);
+          document.getElementById('classFeaturesList').innerHTML = unlocked.length ? unlocked.map(([l,name,desc]) => `
+            <details>
+              <summary>${escapeHtml(name)}<span class="lvlTag">Lv ${l}</span></summary>
+              <p>${escapeHtml(desc)}</p>
+            </details>
+          `).join('') : '<p class="infoText">Increase your level to unlock features.</p>';
+          const next = featureList.find(([l]) => l > sheet.level);
+          document.getElementById('classFeaturesNext').textContent = next ? `Next: ${next[1]} at level ${next[0]}` : '';
+        } else featuresSection.classList.add('hidden');
+
+        renderFeatList();
+
+        document.getElementById('fTraits').value = sheet.personality.traits || '';
+        document.getElementById('fIdeals').value = sheet.personality.ideals || '';
+        document.getElementById('fBonds').value = sheet.personality.bonds || '';
+        document.getElementById('fFlaws').value = sheet.personality.flaws || '';
+      }
+      function renderFeatList(){
+        const el = document.getElementById('featList');
+        if(!sheet.feats.length){
+          el.innerHTML = '<p class="infoText">No feats yet.</p>';
+          return;
+        }
+        el.innerHTML = sheet.feats.map((f,i) => `
+          <div class="featCard">
+            <div class="featTop">
+              <span class="featName">${escapeHtml(f.name)}</span>
+              <button class="removeX" data-removeFeat="${i}">✕</button>
+            </div>
+            <div class="featDesc">${escapeHtml(f.desc)}</div>
+          </div>
+        `).join('');
+        el.querySelectorAll('[data-removeFeat]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            sheet.feats.splice(parseInt(btn.dataset.removefeat), 1);
+            renderFeatList();
+          });
+        });
+      }
+      document.getElementById('featPicker').addEventListener('change', function(){
+        const idx = this.value;
+        const wrap = document.getElementById('featAsiChoiceWrap');
+        if(idx === ''){ wrap.classList.add('hidden'); return; }
+        const feat = DND.FEATS[idx];
+        if(feat.asi && feat.asi.choose.length > 1){
+          wrap.classList.remove('hidden');
+          document.getElementById('featAsiPrompt').textContent = `Choose ability score to increase by ${feat.asi.amount}:`;
+          document.getElementById('featAsiChips').innerHTML = feat.asi.choose.map(ab => `
+            <button class="chip" data-asiAbility="${ab}">${DND.ABILITY_LABELS[ab]} (${modStr(getMod(sheet.stats[ab]))})</button>
+          `).join('');
+          document.getElementById('featAsiChips').querySelectorAll('[data-asiAbility]').forEach(chip => {
+            chip.addEventListener('click', () => {
+              document.getElementById('featAsiChips').querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+              chip.classList.add('selected');
+            });
+          });
+        } else {
+          wrap.classList.add('hidden');
         }
       });
-    </script>
-  </body>
+      document.getElementById('featAddBtn').addEventListener('click', () => {
+        const idx = document.getElementById('featPicker').value;
+        if(idx === '') return;
+        const feat = DND.FEATS[idx];
+        let ability = null;
+        if(feat.asi){
+          if(feat.asi.choose.length === 1){
+            ability = feat.asi.choose[0];
+          } else {
+            const selected = document.getElementById('featAsiChips').querySelector('.chip.selected');
+            if(!selected){ alert('Choose an ability score for this feat first.'); return; }
+            ability = selected.dataset.asiability || selected.getAttribute('data-asiAbility');
+          }
+          sheet.stats[ability] = Math.min(20, (sheet.stats[ability]||10) + feat.asi.amount);
+        }
+        const label = ability ? `${feat.name} (+${feat.asi.amount} ${DND.ABILITY_LABELS[ability]})` : feat.name;
+        sheet.feats.push({ name: label, desc: feat.desc });
+        document.getElementById('featPicker').value = '';
+        document.getElementById('featAsiChoiceWrap').classList.add('hidden');
+        renderAll();
+      });
+
+      // ---- Render: Spells tab ----
+      function renderSpells(){
+        const cls = sheet.class;
+        const isNonCaster = DND.NON_CASTERS.has(cls);
+        document.getElementById('nonCasterBanner').classList.toggle('hidden', !(isNonCaster && cls));
+
+        const spellAbility = DND.SPELLCASTING_ABILITY[cls] || '';
+        const castSection = document.getElementById('spellcastingSection');
+        const pb = profBonus(sheet.level);
+        if(spellAbility){
+          castSection.classList.remove('hidden');
+          const mod = getMod(sheet.stats[spellAbility]);
+          document.getElementById('spellAbilityVal').textContent = spellAbility.toUpperCase();
+          document.getElementById('spellDcVal').textContent = 8 + pb + mod;
+          document.getElementById('spellAtkVal').textContent = modStr(pb + mod);
+        } else castSection.classList.add('hidden');
+
+        const cantripCount = sheet.spells.filter(s => s.level === 0).length;
+        const knownCount = sheet.spells.filter(s => s.level > 0).length;
+        const preparedCount = sheet.spells.filter(s => s.level > 0 && s.prepared).length;
+        const cantripCap = cantripsKnownMax(cls, sheet.level);
+        const knownCap = spellsKnownMax(cls, sheet.level);
+        const spellMod = spellAbility ? getMod(sheet.stats[spellAbility]) : 0;
+        const preparedCap = preparedMax(cls, sheet.level, spellMod);
+        const isKnownCaster = DND.KNOWN_CASTERS.has(cls);
+        const capParts = [];
+        if(cantripCap !== null) capParts.push(`Cantrips: <b>${cantripCount} / ${cantripCap}</b>`);
+        if(isKnownCaster && knownCap !== null) capParts.push(`Spells known: <b>${knownCount} / ${knownCap}</b>`);
+        if(!isKnownCaster && preparedCap !== null) capParts.push(`Prepared: <b>${preparedCount} / ${preparedCap}</b>`);
+        document.getElementById('spellCapRow').innerHTML = capParts.join(' &nbsp;·&nbsp; ');
+
+        const slotsSection = document.getElementById('spellSlotsSection');
+        const slots = isNonCaster ? null : (DND.HALF_CASTERS.has(cls) ? DND.SPELL_SLOTS[Math.max(1,Math.floor(sheet.level/2))] : DND.SPELL_SLOTS[sheet.level]);
+        if(slots){
+          slotsSection.classList.remove('hidden');
+          const parts = slots.map((c,i) => c > 0 ? `Lvl ${i+1}: <b>${c}</b>` : '').filter(Boolean);
+          document.getElementById('spellSlotsRow').innerHTML = parts.join(' &nbsp;·&nbsp; ') || 'No slots yet.';
+        } else slotsSection.classList.add('hidden');
+
+        renderSpellList();
+      }
+      function renderSpellList(){
+        const el = document.getElementById('spellList');
+        if(!sheet.spells.length){
+          el.innerHTML = '<p class="infoText">No spells added yet.</p>';
+          return;
+        }
+        const showPrepared = ['Cleric','Druid','Paladin','Wizard'].includes(sheet.class);
+        const sorted = sheet.spells.map((s,i) => ({...s, idx:i})).sort((a,b) => a.level - b.level || a.name.localeCompare(b.name));
+        el.innerHTML = sorted.map(s => `
+          <div class="listRow">
+            ${showPrepared && s.level > 0 ? `<button class="profDot ${s.prepared?'tier1':''}" data-prepSpell="${s.idx}"></button>` : ''}
+            <span class="rowMain">${escapeHtml(s.name)}</span>
+            <span class="rowMeta">${s.level === 0 ? 'Cantrip' : 'Lvl ' + s.level}</span>
+            <button class="removeX" data-removeSpell="${s.idx}">✕</button>
+          </div>
+        `).join('');
+        el.querySelectorAll('[data-prepSpell]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const i = parseInt(btn.dataset.prepspell);
+            sheet.spells[i].prepared = !sheet.spells[i].prepared;
+            renderSpells();
+          });
+        });
+        el.querySelectorAll('[data-removeSpell]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            sheet.spells.splice(parseInt(btn.dataset.removespell), 1);
+            renderSpells();
+          });
+        });
+      }
+      document.getElementById('addSpellBtn').addEventListener('click', () => {
+        const name = document.getElementById('addSpellName').value.trim();
+        if(!name) return;
+        const level = parseInt(document.getElementById('addSpellLevel').value, 10);
+        sheet.spells.push({ name, level, prepared: level === 0 });
+        document.getElementById('addSpellName').value = '';
+        renderSpells();
+      });
+
+      // ---- Render: Inventory tab ----
+      function renderInventory(){
+        const el = document.getElementById('invList');
+        if(!sheet.inventory.length){
+          el.innerHTML = '<p class="infoText">No items yet.</p>';
+          return;
+        }
+        el.innerHTML = sheet.inventory.map((it,i) => `
+          <div class="listRow">
+            <span class="rowMain">${it.quantity > 1 ? it.quantity + '× ' : ''}${escapeHtml(it.name)}</span>
+            <button class="removeX" data-removeInv="${i}">✕</button>
+          </div>
+        `).join('');
+        el.querySelectorAll('[data-removeInv]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            sheet.inventory.splice(parseInt(btn.dataset.removeinv), 1);
+            renderInventory();
+          });
+        });
+      }
+      document.getElementById('addInvBtn').addEventListener('click', () => {
+        const name = document.getElementById('addInvName').value.trim();
+        if(!name) return;
+        const qty = Math.max(1, parseInt(document.getElementById('addInvQty').value, 10) || 1);
+        sheet.inventory.push({ name, quantity: qty });
+        document.getElementById('addInvName').value = '';
+        document.getElementById('addInvQty').value = 1;
+        renderInventory();
+      });
+
+      // ---- Render: Notes tab ----
+      function renderNotes(){
+        document.getElementById('fNotes').value = sheet.notes || '';
+        document.getElementById('fAge').value = sheet.appearance.age || '';
+        document.getElementById('fHeight').value = sheet.appearance.height || '';
+        document.getElementById('fWeight').value = sheet.appearance.weight || '';
+        document.getElementById('fEyes').value = sheet.appearance.eyes || '';
+        document.getElementById('fSkin').value = sheet.appearance.skin || '';
+        document.getElementById('fHair').value = sheet.appearance.hair || '';
+      }
+
+      function renderHeader(){
+        document.getElementById('sheetHeaderName').textContent = sheet.name || 'New character';
+        const bits = [sheet.race, sheet.class, sheet.level > 1 ? `Lv ${sheet.level}` : (sheet.class ? 'Lv 1' : '')].filter(Boolean);
+        document.getElementById('sheetHeaderMeta').textContent = bits.join(' · ');
+      }
+
+      function renderAll(){
+        renderCore();
+        renderCombat();
+        renderSkillsAndSaves();
+        renderFeatures();
+        renderSpells();
+        renderInventory();
+        renderNotes();
+        renderHeader();
+      }
+
+      // live-update header/derived stats as name/level/stats change
+      ['fName'].forEach(id => document.getElementById(id).addEventListener('input', () => { sheet.name = document.getElementById('fName').value; renderHeader(); }));
+      document.getElementById('fLevel').addEventListener('input', () => { renderDerived(); renderCombat(); renderSkillsAndSaves(); renderFeatures(); renderSpells(); renderHeader(); });
+
+      function openCharSheet(id){
+        editingCharId = id;
+        const c = characters.find(x => x.id === id);
+        if(!c) return;
+        const blank = blankCharacter(c.name || '');
+        sheet = Object.assign({}, blank, c, {
+          stats: Object.assign({}, blank.stats, c.stats),
+          skillProf: Object.assign({}, c.skillProf),
+          saveProf: Object.assign({}, c.saveProf),
+          personality: Object.assign({}, blank.personality, c.personality),
+          appearance: Object.assign({}, blank.appearance, c.appearance),
+          deathSaves: c.deathSaves ? { success: [...c.deathSaves.success], fail: [...c.deathSaves.fail] } : blank.deathSaves,
+          resourceState: Object.assign({}, blank.resourceState, c.resourceState),
+          feats: Array.isArray(c.feats) ? [...c.feats] : [],
+          spells: Array.isArray(c.spells) ? [...c.spells] : [],
+          inventory: Array.isArray(c.inventory) ? [...c.inventory] : []
+        });
+        renderAll();
+        document.getElementById('sheetTabBar').querySelector('[data-tab="core"]').click();
+        show('charSheetScreen');
+      }
+
+      document.getElementById('sheetSaveBtn').addEventListener('click', () => {
+        if(!editingCharId) return;
+        sheet.name = document.getElementById('fName').value.trim() || 'Unnamed';
+        sheet.hp_current = parseInt(document.getElementById('fHpCurrent').value, 10) || 0;
+        sheet.hp_max = parseInt(document.getElementById('fHpMax').value, 10) || 0;
+        sheet.ac = parseInt(document.getElementById('fAc').value, 10) || 10;
+        sheet.speed = parseInt(document.getElementById('fSpeed').value, 10) || 30;
+        sheet.gold = parseInt(document.getElementById('fGold').value, 10) || 0;
+        sheet.proficiencies = document.getElementById('fProficiencies').value;
+        sheet.personality = {
+          traits: document.getElementById('fTraits').value,
+          ideals: document.getElementById('fIdeals').value,
+          bonds: document.getElementById('fBonds').value,
+          flaws: document.getElementById('fFlaws').value
+        };
+        sheet.notes = document.getElementById('fNotes').value;
+        sheet.appearance = {
+          age: document.getElementById('fAge').value, height: document.getElementById('fHeight').value,
+          weight: document.getElementById('fWeight').value, eyes: document.getElementById('fEyes').value,
+          skin: document.getElementById('fSkin').value, hair: document.getElementById('fHair').value
+        };
+
+        const payload = Object.assign({}, sheet, { updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+        delete payload.createdAt; // never overwrite on update
+        charsRef().doc(editingCharId).set(payload, { merge:true })
+          .then(() => show('charListScreen'))
+          .catch(err => alert('Save failed: ' + err.message));
+      });
+      document.getElementById('sheetDeleteBtn').addEventListener('click', () => {
+        if(!editingCharId) return;
+        if(!confirm('Delete this character? This cannot be undone.')) return;
+        charsRef().doc(editingCharId).delete().then(() => show('charListScreen')).catch(err => alert('Delete failed: ' + err.message));
+      });
+    })();
+  </script>
+</body>
 </html>

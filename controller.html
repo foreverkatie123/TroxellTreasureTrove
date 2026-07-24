@@ -35,7 +35,21 @@
       #fbDot{ width:8px; height:8px; border-radius:50%; background:var(--danger); flex-shrink:0; }
       #fbDot.live{ background:var(--accent-2); box-shadow:0 0 8px var(--accent-2); }
       #fbDot.pending{ background:#c9a227; box-shadow:0 0 8px #c9a227; }
-      #fbText{ color:var(--text-dim); }
+      #fbText{ color:var(--text-dim); flex:1; }
+      #fbSignInBtn{
+        background:none; border:1px solid var(--border); border-radius:6px; color:var(--text);
+        font-size:11px; text-transform:none; letter-spacing:0; padding:4px 9px; cursor:pointer; flex-shrink:0;
+      }
+      #fbSignInBtn:hover{ border-color:var(--accent); }
+      #fbUserRow{ display:flex; align-items:center; gap:6px; flex-shrink:0; }
+      #fbUserRow img{ width:18px; height:18px; border-radius:50%; }
+      #fbUserRow span{ font-size:11px; text-transform:none; letter-spacing:0; color:var(--text); max-width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      #fbSignOutBtn{
+        background:none; border:none; color:var(--text-dim); font-size:11px; text-transform:none;
+        letter-spacing:0; cursor:pointer; padding:0; text-decoration:underline; flex-shrink:0;
+      }
+      #fbSignOutBtn:hover{ color:var(--danger); }
+      .hidden{ display:none !important; }
 
       #noOpener{
         display:none; text-align:center; padding:40px 20px; color:var(--text-dim);
@@ -245,6 +259,28 @@
       .cdbEntry .cdbSnippet{ font-size:11px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
       #cdbListEmpty{ font-size:12px; color:var(--text-dim); text-align:center; padding:12px 0; }
 
+      /* ---------- Recent Campaigns ---------- */
+      .campaignEntry{
+        display:flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid var(--border);
+        border-radius:8px; background:#0d1318; margin-bottom:6px; cursor:pointer; font-size:13px;
+      }
+      .campaignEntry:hover{ border-color:var(--accent); }
+      .campaignEntry.current{ border-color:var(--accent-2); }
+      .campaignEntry .ceName{ flex:1; font-weight:600; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .campaignEntry .ceCode{ font-size:11px; color:var(--text-dim); flex-shrink:0; }
+      #recentCampaignsEmpty{ font-size:12px; color:var(--text-dim); padding:4px 0; }
+
+      /* ---------- Session Notes ---------- */
+      #notesList{ margin:10px 0; }
+      .noteEntry{
+        padding:9px 10px; border:1px solid var(--border); border-radius:8px; background:#0d1318;
+        margin-bottom:6px; cursor:pointer;
+      }
+      .noteEntry:hover{ border-color:var(--accent); }
+      .noteEntry .noteTitle{ font-weight:600; color:var(--text); font-size:13px; margin-bottom:2px; }
+      .noteEntry .noteSnippet{ font-size:11px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      #notesListEmpty{ font-size:12px; color:var(--text-dim); text-align:center; padding:12px 0; }
+
       /* ---------- Plugins ---------- */
       .pluginToggleRow{ display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid rgba(255,255,255,0.04); cursor:pointer; }
       .pluginToggleRow:last-child{ border-bottom:none; }
@@ -374,6 +410,19 @@
         width:100%; max-width:440px; padding:16px; box-shadow:0 20px 60px rgba(0,0,0,0.6);
       }
       .modalBox h2{ margin:0 0 12px; color:var(--accent-bright); font-size:18px; }
+
+      /* Session Notes get a much bigger writing surface than the other modals —
+         a session plan needs room, not a cramped sidebar textarea. */
+      #notesModal{ padding:10px; align-items:stretch; }
+      #notesModal .modalBox{ max-width:760px; width:100%; margin:0 auto; display:flex; flex-direction:column; height:calc(100vh - 20px); }
+      #notesModal #notesTitleInput{ font-size:16px; font-weight:600; padding:12px; }
+      #notesModal .field{ display:flex; flex-direction:column; }
+      #notesModal .field:last-of-type{ flex:1; min-height:0; }
+      #notesModal #notesBodyInput{
+        flex:1; min-height:0; width:100%; resize:none; font-size:14px; line-height:1.6; padding:14px;
+      }
+      #notesWordCount{ font-size:11px; color:var(--text-dim); text-align:right; margin-top:4px; }
+
       .tabBar{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
       .tabBtn{
         padding:6px 10px; font-size:11px; border-radius:6px; border:1px solid var(--border);
@@ -413,7 +462,12 @@
   <body>
 
     <div id="connBar"><div id="connDot"></div><div id="connText">Connecting to TV display…</div></div>
-    <div id="fbBar"><div id="fbDot" class="pending"></div><div id="fbText">Connecting to campaign database…</div></div>
+    <div id="fbBar">
+      <div id="fbDot" class="pending"></div>
+      <div id="fbText">Connecting to campaign database…</div>
+      <button id="fbSignInBtn" class="hidden">Sign in with Google</button>
+      <div id="fbUserRow" class="hidden"><img id="fbUserPhoto" src="" alt=""><span id="fbUserName"></span><button id="fbSignOutBtn">Sign out</button></div>
+    </div>
 
     <div id="noOpener">
       <h2>No TV Display Found</h2>
@@ -730,10 +784,20 @@
           <label>HUD size <span id="hudScaleLabel" style="color:var(--text);text-transform:none;letter-spacing:0;">100%</span></label>
           <input type="range" id="hudScaleSlider" min="0.6" max="2.5" step="0.05" value="1">
         </div>
-        <div class="field">
-          <label>Campaign ID <span class="sub">Everyone using the same ID shares the same campaign database</span></label>
-          <input type="text" id="campaignIdInput" placeholder="default">
+      </div>
+
+      <div class="panel">
+        <h3>Campaigns <span class="sub">Switch games — each has its own database, notes, and cloud save slot</span></h3>
+        <div class="statusLine" id="campaignCurrentLabel">Current: </div>
+        <div class="row2">
+          <div class="field" style="flex:2;"><label>Campaign name</label><input type="text" id="campaignNameInput" placeholder="e.g. The Sunken Spire"></div>
+          <div class="field"><label>Code</label><input type="text" id="campaignIdInput" placeholder=""></div>
         </div>
+        <button class="btn primary" id="campaignSwitchBtn">Switch / Create Campaign</button>
+        <div class="sub" style="margin-top:8px;">This is also the code your players use to join from their character page — switching it does not change what's live on the TV. Use Session Save/Load below for that.</div>
+        <div class="divider"></div>
+        <div class="sub" style="margin-bottom:6px;">Recent campaigns:</div>
+        <div id="recentCampaignsList"></div>
       </div>
 
       <div class="panel">
@@ -741,6 +805,13 @@
         <button class="btn primary" id="sessionSaveBtn">☁ Save Session to Cloud</button>
         <button class="btn danger" id="sessionLoadBtn">☁ Load Session from Cloud</button>
         <div id="sessionSaveStatus" class="sub" style="margin-top:8px;"></div>
+      </div>
+
+      <div class="panel">
+        <h3>Session Notes <span class="sub">Your running DM journal for this campaign</span></h3>
+        <input type="text" id="notesSearchInput" placeholder="Search notes…">
+        <div id="notesList"></div>
+        <button class="btn primary" id="notesNewBtn">+ New Note</button>
       </div>
 
     </div>
@@ -829,6 +900,24 @@
           <button class="btn danger" id="cdbDeleteBtn" style="display:none;">Delete</button>
           <button class="btn" id="cdbCancelBtn">Cancel</button>
           <button class="btn primary" id="cdbSaveBtn">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Session Notes modal -->
+    <div class="modalOverlay" id="notesModal">
+      <div class="modalBox">
+        <h2 id="notesModalTitle">New Note</h2>
+        <div class="field"><label>Title</label><input type="text" id="notesTitleInput"></div>
+        <div class="field">
+          <label>Notes</label>
+          <textarea id="notesBodyInput" rows="10" style="width:100%;"></textarea>
+          <div id="notesWordCount">0 words</div>
+        </div>
+        <div class="modalFooter">
+          <button class="btn danger" id="notesDeleteBtn" style="display:none;">Delete</button>
+          <button class="btn" id="notesCancelBtn">Cancel</button>
+          <button class="btn primary" id="notesSaveBtn">Save</button>
         </div>
       </div>
     </div>
@@ -968,12 +1057,20 @@
           try{
             firebase.initializeApp(firebaseConfig);
             db = firebase.firestore();
-            firebase.auth().signInAnonymously().catch(err => {
-              setFbStatus('', 'Firebase auth failed: ' + err.message);
-            });
             firebase.auth().onAuthStateChanged(user => {
               fbUser = user;
-              if(!user){ setFbStatus('', 'Not signed in to campaign database'); return; }
+              const signInBtn = document.getElementById('fbSignInBtn');
+              const userRow = document.getElementById('fbUserRow');
+              if(!user){
+                signInBtn.classList.remove('hidden');
+                userRow.classList.add('hidden');
+                setFbStatus('', 'Sign in to save your campaign to the cloud');
+                return;
+              }
+              signInBtn.classList.add('hidden');
+              userRow.classList.remove('hidden');
+              document.getElementById('fbUserPhoto').src = user.photoURL || '';
+              document.getElementById('fbUserName').textContent = user.displayName || user.email || 'DM';
               connectToCampaign();
             });
           }catch(err){
@@ -982,19 +1079,45 @@
         }
         window.addEventListener('DOMContentLoaded', initFirebase);
 
+        document.getElementById('fbSignInBtn').addEventListener('click', () => {
+          if(!firebaseConfig){ return; }
+          const provider = new firebase.auth.GoogleAuthProvider();
+          firebase.auth().signInWithPopup(provider).catch(err => {
+            setFbStatus('', 'Sign-in failed: ' + err.message);
+          });
+        });
+        document.getElementById('fbSignOutBtn').addEventListener('click', () => {
+          if(typeof cdbUnsub === 'function') cdbUnsub();
+          if(typeof notesUnsub === 'function') notesUnsub();
+          firebase.auth().signOut();
+        });
+
         function connectToCampaign(){
           if(!db || !fbUser) return;
           setFbStatus('pending', `Connecting to campaign "${campaignId}"…`);
-          // round-trip write + read against the current campaign to prove the connection works end-to-end
-          db.collection('campaigns').doc(campaignId).set({
-            lastConnectedAt: firebase.firestore.FieldValue.serverTimestamp(),
-            lastConnectedBy: fbUser.uid
-          }, { merge:true }).then(() => {
+          const campaignDocRef = db.collection('campaigns').doc(campaignId);
+          campaignDocRef.get().then(doc => {
+            const existingOwner = doc.exists ? doc.data().ownerId : null;
+            const metaUpdate = {
+              ownerId: existingOwner || fbUser.uid, // first person to touch a campaign ID owns it
+              lastConnectedAt: firebase.firestore.FieldValue.serverTimestamp(),
+              lastConnectedBy: fbUser.uid
+            };
+            if(campaignNames[campaignId]) metaUpdate.name = campaignNames[campaignId];
+            return campaignDocRef.set(metaUpdate, { merge:true });
+          }).then(() => {
             setFbStatus('live', `Connected to campaign "${campaignId}"`);
+            // only attach the DM-only listeners once we know we own (or successfully
+            // claimed) this campaign — otherwise they'd race the ownership write above
+            if(typeof startCampaignDbListener === 'function') startCampaignDbListener();
+            if(typeof startNotesListener === 'function') startNotesListener();
           }).catch(err => {
-            setFbStatus('', 'Firebase connected but write failed: ' + err.message);
+            if(err.code === 'permission-denied'){
+              setFbStatus('', `"${campaignId}" belongs to a different account — sign in as that account or pick a new campaign code`);
+            } else {
+              setFbStatus('', 'Firebase connected but write failed: ' + err.message);
+            }
           });
-          if(typeof startCampaignDbListener === 'function') startCampaignDbListener();
         }
 
         function send(action, payload){
@@ -1383,16 +1506,66 @@
           if(!isNaN(v)) send('setHudScale', { value: v });
         });
 
+        // ---- Campaigns (switch/create, recent list, friendly names) ----
+        const CAMPAIGN_NAME_KEY = 'blackstoneCampaignNames_v1'; // { [id]: name } — local cache of friendly names
+        const RECENT_CAMPAIGNS_KEY = 'blackstoneRecentCampaigns_v1'; // [id, ...] most-recent-first
+        let campaignNames = {};
+        let recentCampaignIds = [];
+        try{ campaignNames = JSON.parse(localStorage.getItem(CAMPAIGN_NAME_KEY)) || {}; }catch(err){ campaignNames = {}; }
+        try{ recentCampaignIds = JSON.parse(localStorage.getItem(RECENT_CAMPAIGNS_KEY)) || []; }catch(err){ recentCampaignIds = []; }
+
         const campaignIdInput = document.getElementById('campaignIdInput');
+        const campaignNameInput = document.getElementById('campaignNameInput');
         campaignIdInput.value = campaignId;
-        campaignIdInput.addEventListener('change', function(){
-          const v = this.value.trim() || 'default';
-          this.value = v;
-          campaignId = v;
-          try{ localStorage.setItem(CAMPAIGN_KEY, v); }catch(err){}
+        campaignNameInput.value = campaignNames[campaignId] || '';
+
+        function updateCampaignCurrentLabel(){
+          const label = campaignNames[campaignId] ? `${campaignNames[campaignId]} (${campaignId})` : campaignId;
+          document.getElementById('campaignCurrentLabel').textContent = 'Current: ' + label;
+        }
+        function rememberRecentCampaign(id){
+          recentCampaignIds = [id, ...recentCampaignIds.filter(x => x !== id)].slice(0, 10);
+          try{ localStorage.setItem(RECENT_CAMPAIGNS_KEY, JSON.stringify(recentCampaignIds)); }catch(err){}
+        }
+        function renderRecentCampaigns(){
+          const el = document.getElementById('recentCampaignsList');
+          const others = recentCampaignIds.filter(id => id !== campaignId);
+          if(!others.length){
+            el.innerHTML = '<div id="recentCampaignsEmpty">No other campaigns yet.</div>';
+            return;
+          }
+          el.innerHTML = others.map(id => `
+            <div class="campaignEntry" data-id="${id}">
+              <span class="ceName">${escapeHtml(campaignNames[id] || id)}</span>
+              <span class="ceCode">${escapeHtml(id)}</span>
+            </div>
+          `).join('');
+          el.querySelectorAll('.campaignEntry').forEach(row => {
+            row.addEventListener('click', () => switchCampaign(row.dataset.id, campaignNames[row.dataset.id] || ''));
+          });
+        }
+        function switchCampaign(id, name){
+          id = (id || '').trim() || 'default';
+          name = (name || '').trim();
+          campaignId = id;
+          campaignIdInput.value = id;
+          campaignNameInput.value = name;
+          if(name) campaignNames[id] = name;
+          try{
+            localStorage.setItem(CAMPAIGN_KEY, id);
+            localStorage.setItem(CAMPAIGN_NAME_KEY, JSON.stringify(campaignNames));
+          }catch(err){}
+          rememberRecentCampaign(id);
+          updateCampaignCurrentLabel();
+          renderRecentCampaigns();
           connectToCampaign();
-          if(typeof startCampaignDbListener === 'function') startCampaignDbListener();
+        }
+        document.getElementById('campaignSwitchBtn').addEventListener('click', () => {
+          switchCampaign(campaignIdInput.value, campaignNameInput.value);
         });
+        rememberRecentCampaign(campaignId);
+        updateCampaignCurrentLabel();
+        renderRecentCampaigns();
 
         document.getElementById('sessionSaveBtn').addEventListener('click', () => {
           document.getElementById('sessionSaveStatus').textContent = 'Saving…';
@@ -2626,6 +2799,95 @@
           if(!confirm('Delete this entry? This cannot be undone.')) return;
           campaignRef('entries').doc(cdbEditingId).delete()
             .then(() => cdbModal.classList.remove('open'))
+            .catch(err => alert('Delete failed: ' + err.message));
+        });
+
+        // ---- Session Notes ----
+        let sessionNotes = [];
+        let notesEditingId = null;
+        let notesUnsub = null;
+
+        function startNotesListener(){
+          if(!db) return;
+          if(notesUnsub){ notesUnsub(); notesUnsub = null; }
+          notesUnsub = campaignRef('sessionNotes').onSnapshot(snap => {
+            sessionNotes = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+            renderNotesList();
+          }, err => {
+            document.getElementById('notesList').innerHTML = '<div id="notesListEmpty">Could not load notes: ' + escapeHtml(err.message) + '</div>';
+          });
+        }
+        document.getElementById('notesSearchInput').addEventListener('input', renderNotesList);
+
+        function notesSortKey(n){
+          return (n.updatedAt && n.updatedAt.toMillis) ? n.updatedAt.toMillis() : 0;
+        }
+        function renderNotesList(){
+          const listEl = document.getElementById('notesList');
+          const q = document.getElementById('notesSearchInput').value.trim().toLowerCase();
+          let items = sessionNotes.slice();
+          if(q){
+            items = items.filter(n =>
+              (n.title || '').toLowerCase().includes(q) || (n.body || '').toLowerCase().includes(q)
+            );
+          }
+          items.sort((a, b) => notesSortKey(b) - notesSortKey(a));
+          if(!items.length){
+            listEl.innerHTML = '<div id="notesListEmpty">No notes yet — tap "+ New Note" to start your journal.</div>';
+            return;
+          }
+          listEl.innerHTML = items.map(n => `
+            <div class="noteEntry" data-id="${n.id}">
+              <div class="noteTitle">${escapeHtml(n.title || '(untitled)')}</div>
+              ${n.body ? `<div class="noteSnippet">${escapeHtml(n.body)}</div>` : ''}
+            </div>
+          `).join('');
+          listEl.querySelectorAll('.noteEntry').forEach(row => {
+            row.addEventListener('click', () => openNotesModal(row.dataset.id));
+          });
+        }
+
+        const notesModal = document.getElementById('notesModal');
+        function todayLabel(){
+          return new Date().toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' });
+        }
+        function updateNotesWordCount(){
+          const text = document.getElementById('notesBodyInput').value.trim();
+          const count = text ? text.split(/\s+/).length : 0;
+          document.getElementById('notesWordCount').textContent = `${count} word${count === 1 ? '' : 's'}`;
+        }
+        document.getElementById('notesBodyInput').addEventListener('input', updateNotesWordCount);
+        function openNotesModal(id){
+          notesEditingId = id || null;
+          const note = id ? sessionNotes.find(n => n.id === id) : null;
+          document.getElementById('notesModalTitle').textContent = note ? 'Edit Note' : 'New Note';
+          document.getElementById('notesTitleInput').value = note ? (note.title || '') : todayLabel();
+          document.getElementById('notesBodyInput').value = note ? (note.body || '') : '';
+          document.getElementById('notesDeleteBtn').style.display = note ? '' : 'none';
+          updateNotesWordCount();
+          notesModal.classList.add('open');
+        }
+        document.getElementById('notesNewBtn').addEventListener('click', () => openNotesModal(null));
+        document.getElementById('notesCancelBtn').addEventListener('click', () => notesModal.classList.remove('open'));
+        document.getElementById('notesSaveBtn').addEventListener('click', () => {
+          if(!db){ alert('Not connected to Firebase yet — try again in a moment.'); return; }
+          const title = document.getElementById('notesTitleInput').value.trim() || todayLabel();
+          const payload = {
+            title,
+            body: document.getElementById('notesBodyInput').value.trim(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          };
+          const coll = campaignRef('sessionNotes');
+          const p = notesEditingId
+            ? coll.doc(notesEditingId).set(payload, { merge:true })
+            : coll.add(Object.assign({ createdAt: firebase.firestore.FieldValue.serverTimestamp() }, payload));
+          p.then(() => notesModal.classList.remove('open')).catch(err => alert('Save failed: ' + err.message));
+        });
+        document.getElementById('notesDeleteBtn').addEventListener('click', () => {
+          if(!notesEditingId) return;
+          if(!confirm('Delete this note? This cannot be undone.')) return;
+          campaignRef('sessionNotes').doc(notesEditingId).delete()
+            .then(() => notesModal.classList.remove('open'))
             .catch(err => alert('Delete failed: ' + err.message));
         });
 
