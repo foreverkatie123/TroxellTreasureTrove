@@ -589,7 +589,7 @@
       </div>
 
       <div class="panel">
-        <h3>Roster <span class="sub">Prep your party &amp; monsters ahead of time — saved on this device</span></h3>
+        <h3>Roster <span class="sub">Prep your party &amp; monsters ahead of time — synced to your campaign, available on any device</span></h3>
         <input type="text" id="rosterFilter" placeholder="Filter by name…">
         <div id="rosterList"></div>
         <button class="btn primary" id="newCreatureBtn">+ New Character / Monster</button>
@@ -1078,7 +1078,7 @@
               signInBtn.classList.add('hidden');
               userRow.classList.remove('hidden');
               document.getElementById('fbUserPhoto').src = user.photoURL || '';
-              document.getElementById('fbUserName').textContent = user.displayName || user.email;
+              document.getElementById('fbUserName').textContent = user.displayName || user.email || 'DM';
               discoverMyCampaigns().then(list => {
                 myCampaignsCache = list;
                 renderMyCampaigns(list);
@@ -1110,6 +1110,7 @@
         document.getElementById('fbSignOutBtn').addEventListener('click', () => {
           if(typeof cdbUnsub === 'function') cdbUnsub();
           if(typeof notesUnsub === 'function') notesUnsub();
+          if(typeof rosterUnsub === 'function') rosterUnsub();
           firebase.auth().signOut();
         });
 
@@ -1132,6 +1133,7 @@
             // claimed) this campaign — otherwise they'd race the ownership write above
             if(typeof startCampaignDbListener === 'function') startCampaignDbListener();
             if(typeof startNotesListener === 'function') startNotesListener();
+            if(typeof startRosterListener === 'function') startRosterListener();
           }).catch(err => {
             if(err.code === 'permission-denied'){
               setFbStatus('', `"${campaignId}" belongs to a different account — sign in as that account or pick a new campaign code`);
@@ -1853,15 +1855,30 @@
         // ROSTER — persistent character/monster library (saved locally on this
         // device only; independent of the live combat session on the TV).
         // =====================================================================
-        const ROSTER_KEY = 'blackstoneRosterLibrary_v1';
         let roster = [];
-        function loadRoster(){
-          try{ roster = JSON.parse(localStorage.getItem(ROSTER_KEY)) || []; }
-          catch(err){ roster = []; }
+        let rosterUnsub = null;
+        function rosterRef(){ return campaignRef('roster'); }
+        function startRosterListener(){
+          if(!db) return;
+          if(rosterUnsub){ rosterUnsub(); rosterUnsub = null; }
+          rosterUnsub = rosterRef().onSnapshot(snap => {
+            roster = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+            renderRosterList();
+          }, err => {
+            document.getElementById('rosterList').innerHTML =
+              '<div class="rcEmpty">Could not load roster: ' + escapeHtml(err.message) + '</div>';
+          });
         }
-        function saveRoster(){
-          try{ localStorage.setItem(ROSTER_KEY, JSON.stringify(roster)); }
-          catch(err){ console.warn('Roster save failed', err); }
+        function saveRosterEntry(creature){
+          if(!db){ alert('Not connected to Firebase yet — try again in a moment.'); return Promise.reject(new Error('no db')); }
+          const payload = Object.assign({}, creature, { updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+          delete payload.id; // id is the doc id itself, not a field
+          return rosterRef().doc(creature.id).set(payload, { merge:true })
+            .catch(err => { alert('Save failed: ' + err.message); throw err; });
+        }
+        function deleteRosterEntry(id){
+          if(!db) return Promise.resolve();
+          return rosterRef().doc(id).delete().catch(err => { alert('Delete failed: ' + err.message); throw err; });
         }
 
         const SKILLS = [
@@ -1949,9 +1966,7 @@
             btn.addEventListener('click', () => {
               const creature = roster.find(c => c.id === btn.dataset.id);
               if(creature && confirm('Delete "' + (creature.name || 'this entry') + '" from the roster? This cannot be undone.')){
-                roster = roster.filter(c => c.id !== btn.dataset.id);
-                saveRoster();
-                renderRosterList();
+                deleteRosterEntry(btn.dataset.id);
               }
             });
           });
@@ -2192,19 +2207,12 @@
             document.getElementById('fName').focus();
             return;
           }
-          const idx = roster.findIndex(c => c.id === editingCreature.id);
-          if(idx >= 0) roster[idx] = editingCreature; else roster.push(editingCreature);
-          saveRoster();
-          renderRosterList();
-          closeSheetEditor();
+          saveRosterEntry(editingCreature).then(() => closeSheetEditor()).catch(() => {});
         });
         document.getElementById('sheetDeleteBtn').addEventListener('click', () => {
           if(!editingCreature) return;
           if(confirm('Delete "' + (editingCreature.name || 'this entry') + '" from the roster? This cannot be undone.')){
-            roster = roster.filter(c => c.id !== editingCreature.id);
-            saveRoster();
-            renderRosterList();
-            closeSheetEditor();
+            deleteRosterEntry(editingCreature.id).then(() => closeSheetEditor()).catch(() => {});
           }
         });
 
@@ -2943,8 +2951,7 @@
             .catch(err => alert('Delete failed: ' + err.message));
         });
 
-        loadRoster();
-        renderRosterList();
+        renderRosterList(); // shows empty state until startRosterListener() delivers live data
 
         // ---- Plugins (toggle which extra tools are visible) ----
         const PLUGIN_KEY = 'blackstonePluginsEnabled_v1';
