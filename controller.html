@@ -796,7 +796,7 @@
         <button class="btn primary" id="campaignSwitchBtn">Switch / Create Campaign</button>
         <div class="sub" style="margin-top:8px;">This is also the code your players use to join from their character page — switching it does not change what's live on the TV. Use Session Save/Load below for that.</div>
         <div class="divider"></div>
-        <div class="sub" style="margin-bottom:6px;">Your campaigns <span id="myCampaignsHint" style="text-transform:none;letter-spacing:0;"></span>:</div>
+        <div class="sub" style="margin-bottom:6px;">Campaigns you've created <span id="myCampaignsHint" style="text-transform:none;letter-spacing:0;"></span> <span style="text-transform:none;letter-spacing:0;">— anyone signed in can still switch to any campaign code, this is just a shortcut:</span></div>
         <div id="myCampaignsList"></div>
         <div class="divider"></div>
         <div class="sub" style="margin-bottom:6px;">Recent on this device:</div>
@@ -1119,9 +1119,12 @@
           setFbStatus('pending', `Connecting to campaign "${campaignId}"…`);
           const campaignDocRef = db.collection('campaigns').doc(campaignId);
           campaignDocRef.get().then(doc => {
+            // ownerId is informational only now (drives the "Your campaigns" quick-list) —
+            // it does NOT gate write access. Any signed-in account that knows the campaign
+            // code can act as DM, so we just preserve whoever created it first for that list.
             const existingOwner = doc.exists ? doc.data().ownerId : null;
             const metaUpdate = {
-              ownerId: existingOwner || fbUser.uid, // first person to touch a campaign ID owns it
+              ownerId: existingOwner || fbUser.uid,
               lastConnectedAt: firebase.firestore.FieldValue.serverTimestamp(),
               lastConnectedBy: fbUser.uid
             };
@@ -1129,17 +1132,11 @@
             return campaignDocRef.set(metaUpdate, { merge:true });
           }).then(() => {
             setFbStatus('live', `Connected to campaign "${campaignId}"`);
-            // only attach the DM-only listeners once we know we own (or successfully
-            // claimed) this campaign — otherwise they'd race the ownership write above
             if(typeof startCampaignDbListener === 'function') startCampaignDbListener();
             if(typeof startNotesListener === 'function') startNotesListener();
             if(typeof startRosterListener === 'function') startRosterListener();
           }).catch(err => {
-            if(err.code === 'permission-denied'){
-              setFbStatus('', `"${campaignId}" belongs to a different account — sign in as that account or pick a new campaign code`);
-            } else {
-              setFbStatus('', 'Firebase connected but write failed: ' + err.message);
-            }
+            setFbStatus('', 'Firebase connected but write failed: ' + err.message);
           });
         }
 
@@ -1560,7 +1557,7 @@
           const hint = document.getElementById('myCampaignsHint');
           if(!list || !list.length){
             hint.textContent = '';
-            el.innerHTML = '<div id="recentCampaignsEmpty">None found yet under this account — switch to or create one above.</div>';
+            el.innerHTML = '<div id="recentCampaignsEmpty">You haven\'t created any campaigns yet — connect to any code above to start using one.</div>';
             return;
           }
           hint.textContent = `(${list.length})`;

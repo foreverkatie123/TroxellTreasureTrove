@@ -38,9 +38,7 @@ next-env.d.ts
 # Dependencies
 node_modules/
 
-# Firebase / secrets - copy js/firebase-config.example.js to js/firebase-config.js
-# and fill in your own project's config; the real file is never committed.
-js/firebase-config.js
+# Firebase / secrets
 .env
 .env.*
 *.pem

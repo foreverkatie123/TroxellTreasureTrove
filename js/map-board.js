@@ -1,4 +1,4 @@
-      // ---------------- Map / Grid ----------------
+// ---------------- Map / Grid ----------------
       const stage = document.getElementById('stage');
       const mapLayer = document.getElementById('mapLayer');
       const mapImage = document.getElementById('mapImage');
@@ -475,19 +475,26 @@
             length:dist
           };
         }
-        if(shape === 'circle') return { cx:o.x, cy:o.y, r:dist };
+        if(shape === 'circle' || shape === 'cylinder') return { cx:o.x, cy:o.y, r:dist };
+        if(shape === 'cube'){
+          const side = dist;
+          const sx = dx >= 0 ? o.x : o.x - side;
+          const sy = dy >= 0 ? o.y : o.y - side;
+          return { x:sx, y:sy, w:side, h:side };
+        }
         return { x:Math.min(o.x,c.x), y:Math.min(o.y,c.y), w:Math.abs(dx), h:Math.abs(dy) };
       }
 
       function shapeDistance(shape, geo){
         if(shape === 'cone' || shape === 'line') return geo.length;
-        if(shape === 'circle') return geo.r;
+        if(shape === 'circle' || shape === 'cylinder') return geo.r;
+        if(shape === 'cube') return geo.w;
         return Math.max(geo.w, geo.h);
       }
 
       function labelPos(shape, geo, o, c){
-        if(shape === 'circle') return { x:geo.cx, y:geo.cy };
-        if(shape === 'square') return { x:geo.x+geo.w/2, y:geo.y+geo.h/2 };
+        if(shape === 'circle' || shape === 'cylinder') return { x:geo.cx, y:geo.cy };
+        if(shape === 'cube') return { x:geo.x+geo.w/2, y:geo.y+geo.h/2 };
         return { x:(o.x+c.x)/2, y:(o.y+c.y)/2 };
       }
 
@@ -500,7 +507,7 @@
       function shapeSvg(shape, geo, cls){
         if(shape === 'cone') return `<polygon class="${cls}" points="${geo.ox},${geo.oy} ${geo.p2x},${geo.p2y} ${geo.p3x},${geo.p3y}"/>`;
         if(shape === 'line') return `<polygon class="${cls}" points="${geo.x1},${geo.y1} ${geo.x2},${geo.y2} ${geo.x3},${geo.y3} ${geo.x4},${geo.y4}"/>`;
-        if(shape === 'circle') return `<circle class="${cls}" cx="${geo.cx}" cy="${geo.cy}" r="${geo.r}"/>`;
+        if(shape === 'circle' || shape === 'cylinder') return `<circle class="${cls}" cx="${geo.cx}" cy="${geo.cy}" r="${geo.r}"/>`;
         return `<rect class="${cls}" x="${geo.x}" y="${geo.y}" width="${geo.w}" height="${geo.h}"/>`;
       }
 
@@ -645,4 +652,3 @@
         minW: 260, minH: 320,
         defaultOpen: { combat: false, exploration: false, town: false }
       });
-
