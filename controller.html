@@ -387,6 +387,9 @@
       .rosterCard{
         background:#0d1318; border:1px solid var(--border); border-radius:8px; padding:10px 12px;
       }
+      .rosterCard.playerCard{ border-color:rgba(90,200,192,0.35); }
+      .rcTypeTag.player{ color:var(--accent-2); border-color:rgba(90,200,192,0.35); }
+      .rcOwner{ font-size:11px; color:var(--text-dim); margin-top:2px; font-style:italic; }
       .rcTop{ display:flex; align-items:flex-start; gap:8px; margin-bottom:8px; }
       .rcName{ font-size:14px; font-weight:600; flex:1; }
       .rcTypeTag{
@@ -1111,6 +1114,7 @@
           if(typeof cdbUnsub === 'function') cdbUnsub();
           if(typeof notesUnsub === 'function') notesUnsub();
           if(typeof rosterUnsub === 'function') rosterUnsub();
+          if(typeof playerCharsUnsub === 'function') playerCharsUnsub();
           firebase.auth().signOut();
         });
 
@@ -1135,6 +1139,7 @@
             if(typeof startCampaignDbListener === 'function') startCampaignDbListener();
             if(typeof startNotesListener === 'function') startNotesListener();
             if(typeof startRosterListener === 'function') startRosterListener();
+            if(typeof startPlayerCharsListener === 'function') startPlayerCharsListener();
           }).catch(err => {
             setFbStatus('', 'Firebase connected but write failed: ' + err.message);
           });
@@ -1878,6 +1883,20 @@
           return rosterRef().doc(id).delete().catch(err => { alert('Delete failed: ' + err.message); throw err; });
         }
 
+        // Player characters — read-only here (editing stays on the player's own
+        // page), shown live alongside the DM's own prepped roster so a character
+        // someone builds after joining with the campaign code shows up automatically.
+        let playerChars = [];
+        let playerCharsUnsub = null;
+        function startPlayerCharsListener(){
+          if(!db) return;
+          if(playerCharsUnsub){ playerCharsUnsub(); playerCharsUnsub = null; }
+          playerCharsUnsub = campaignRef('characters').onSnapshot(snap => {
+            playerChars = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+            renderRosterList();
+          }, () => { /* non-fatal — DM roster still works without player characters */ });
+        }
+
         const SKILLS = [
           ['Acrobatics','dex'],['Animal Handling','wis'],['Arcana','int'],['Athletics','str'],
           ['Deception','cha'],['History','int'],['Insight','wis'],['Intimidation','cha'],
@@ -1909,26 +1928,44 @@
           if(c.classRace) parts.push(c.classRace);
           return parts.join(' · ');
         }
+        // Normalizes a live player character doc (from public/index.html's schema)
+        // into the same shape the roster card template expects.
+        function normalizePlayerChar(c){
+          const classRace = [c.race, c.class, c.level ? ('Lv ' + c.level) : ''].filter(Boolean).join(' ');
+          return {
+            id: 'pc:' + c.id,
+            rawId: c.id,
+            isPlayer: true,
+            name: c.name || 'Unnamed',
+            type: 'PC',
+            classRace,
+            ac: c.ac ?? 10,
+            hpMax: c.hp_max ?? c.hp_current ?? 10,
+            hpCurrent: c.hp_current ?? c.hp_max ?? 10,
+            ownerName: c.ownerName || ''
+          };
+        }
 
         function renderRosterList(){
           const filterVal = document.getElementById('rosterFilter').value.trim().toLowerCase();
           const listEl = document.getElementById('rosterList');
-          const filtered = roster.filter(c => !filterVal || c.name.toLowerCase().includes(filterVal));
+          const combined = [...playerChars.map(normalizePlayerChar), ...roster];
+          const filtered = combined.filter(c => !filterVal || (c.name || '').toLowerCase().includes(filterVal));
           if(!filtered.length){
-            listEl.innerHTML = '<div class="rcEmpty">' + (roster.length ? 'No matches.' : 'No characters yet — add your party and monsters here.') + '</div>';
+            listEl.innerHTML = '<div class="rcEmpty">' + (combined.length ? 'No matches.' : 'No characters yet — add your party and monsters here, or wait for players to join with the campaign code.') + '</div>';
             return;
           }
           listEl.innerHTML = filtered.map(c => `
-            <div class="rosterCard" data-id="${c.id}">
+            <div class="rosterCard ${c.isPlayer ? 'playerCard' : ''}" data-id="${c.id}">
               <div class="rcTop">
-                <div class="rcName">${escapeHtml(c.name || 'Unnamed')}<span class="rcTypeTag">${c.type}</span></div>
+                <div class="rcName">${escapeHtml(c.name || 'Unnamed')}<span class="rcTypeTag ${c.isPlayer ? 'player' : ''}">${c.isPlayer ? 'Player' : c.type}</span></div>
               </div>
               <div class="rcMeta">${escapeHtml(rosterCardMeta(c))}</div>
+              ${c.isPlayer ? `<div class="rcOwner">Owned by ${escapeHtml(c.ownerName || 'a player')} — edited from their character page</div>` : ''}
               <div class="rcActions">
                 <input type="number" class="rcInit" placeholder="Init" data-id="${c.id}">
                 <button class="btn primary rcAddBtn" data-id="${c.id}">Add to Fight</button>
-                <button class="btn rcEditBtn" data-id="${c.id}">Edit</button>
-                <button class="btn danger rcDelBtn" data-id="${c.id}">✕</button>
+                ${c.isPlayer ? '' : `<button class="btn rcEditBtn" data-id="${c.id}">Edit</button><button class="btn danger rcDelBtn" data-id="${c.id}">✕</button>`}
               </div>
             </div>
           `).join('');
@@ -1936,7 +1973,7 @@
           listEl.querySelectorAll('.rcAddBtn').forEach(btn => {
             btn.addEventListener('click', () => {
               const id = btn.dataset.id;
-              const creature = roster.find(c => c.id === id);
+              const creature = filtered.find(c => c.id === id);
               if(!creature) return;
               const initInput = listEl.querySelector('.rcInit[data-id="' + id + '"]');
               const init = parseFloat(initInput.value);
@@ -1947,10 +1984,11 @@
                 setTimeout(() => { initInput.style.borderColor = ''; initInput.placeholder = 'Init'; }, 1800);
                 return;
               }
+              const hp = creature.isPlayer ? creature.hpCurrent : creature.hpMax;
               send('addCombatantFromRoster', {
                 name: creature.name || 'Unnamed', init,
-                hp: creature.hpMax, maxHp: creature.hpMax, tempHp: 0,
-                ac: creature.ac, notes: creature.classRace || '', rosterId: creature.id
+                hp, maxHp: creature.hpMax, tempHp: 0,
+                ac: creature.ac, notes: creature.classRace || '', rosterId: creature.isPlayer ? null : creature.id
               });
               initInput.value = '';
               initInput.style.borderColor = '';
@@ -2641,7 +2679,7 @@
         // so they can't silently break if Open5e's key format ever changes.
         const BUILTIN_ENCOUNTER_TEMPLATES = [
           { name:'Bandit Camp', builtin:true, entries:[{ name:'Bandit', qty:4 }, { name:'Bandit Captain', qty:1 }] },
-          { name:'Goblin Ambush', builtin:true, entries:[{ name:'Goblin', qty:4 }] },
+          { name:'Goblin Ambush', builtin:true, entries:[{ name:'Goblin Warrior', qty:4 }] },
           { name:'Skeleton Patrol', builtin:true, entries:[{ name:'Skeleton', qty:4 }] },
           { name:'Wolf Pack', builtin:true, entries:[{ name:'Wolf', qty:3 }] },
           { name:'Zombie Horde', builtin:true, entries:[{ name:'Zombie', qty:5 }] }
