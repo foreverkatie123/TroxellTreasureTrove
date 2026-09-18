@@ -1009,6 +1009,20 @@
       </div>
     </div>
 
+    <!-- In-app Confirm / Alert modal — replaces native confirm()/alert(), which have a
+         confirmed Electron bug: once shown, they can permanently break mouse/keyboard
+         input on the window afterward, with no error and no recovery short of a restart. -->
+    <div class="modalOverlay" id="confirmModal">
+      <div class="modalBox" style="max-width:360px;">
+        <h2 id="confirmModalTitle">Are you sure?</h2>
+        <p id="confirmModalMessage" style="color:var(--text-dim);font-size:13px;line-height:1.5;margin:0;"></p>
+        <div class="modalFooter">
+          <button class="btn" id="confirmModalCancelBtn">Cancel</button>
+          <button class="btn danger" id="confirmModalOkBtn">Confirm</button>
+        </div>
+      </div>
+    </div>
+
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js" defer></script>
@@ -1030,6 +1044,40 @@
 
         let lastSnapshot = null;
         let liveTimer = null;
+
+        // ---- In-app Confirm / Alert modal (see HTML comment above for why) ----
+        const confirmModal = document.getElementById('confirmModal');
+        const confirmModalCancelBtn = document.getElementById('confirmModalCancelBtn');
+        const confirmModalOkBtn = document.getElementById('confirmModalOkBtn');
+        let confirmCallback = null;
+        function showConfirm(message, onConfirm, title){
+          confirmModalCancelBtn.classList.remove('hidden');
+          confirmModalOkBtn.textContent = 'Confirm';
+          confirmModalOkBtn.className = 'btn danger';
+          document.getElementById('confirmModalTitle').textContent = title || 'Are you sure?';
+          document.getElementById('confirmModalMessage').textContent = message;
+          confirmCallback = onConfirm;
+          confirmModal.classList.add('open');
+        }
+        function showAlert(message, title){
+          confirmModalCancelBtn.classList.add('hidden');
+          confirmModalOkBtn.textContent = 'OK';
+          confirmModalOkBtn.className = 'btn primary';
+          document.getElementById('confirmModalTitle').textContent = title || 'Notice';
+          document.getElementById('confirmModalMessage').textContent = message;
+          confirmCallback = null;
+          confirmModal.classList.add('open');
+        }
+        confirmModalCancelBtn.addEventListener('click', () => {
+          confirmModal.classList.remove('open');
+          confirmCallback = null;
+        });
+        confirmModalOkBtn.addEventListener('click', () => {
+          const cb = confirmCallback;
+          confirmModal.classList.remove('open');
+          confirmCallback = null;
+          if(cb) cb();
+        });
 
         // ---- Firebase (campaign database) ----
         // Config lives in js/firebase-config.js (gitignored) — see js/firebase-config.example.js
@@ -1495,13 +1543,13 @@
         document.getElementById('addBtn').addEventListener('click', addCombatant);
         document.getElementById('addInit').addEventListener('keydown', e => { if(e.key === 'Enter') addCombatant(); });
         document.getElementById('clearAllBtn').addEventListener('click', () => {
-          if(confirm('Clear the entire initiative order?')) send('clearAll');
+          showConfirm('Clear the entire initiative order?', () => send('clearAll'));
         });
 
         document.getElementById('fogToggleBtn').addEventListener('click', () => send('toggleFog'));
         document.getElementById('fogRevealBtn').addEventListener('click', () => send('revealAllFog'));
         document.getElementById('fogResetBtn').addEventListener('click', () => {
-          if(confirm('Reset fog — re-hide all revealed regions?')) send('resetFog');
+          showConfirm('Reset fog — re-hide all revealed regions?', () => send('resetFog'));
         });
 
         document.getElementById('rulerBtn').addEventListener('click', () => {
@@ -1517,7 +1565,7 @@
           }
         });
         document.getElementById('fxClearAllBtn').addEventListener('click', () => {
-          if(confirm('Clear all placed spell effects?')) send('clearAllEffects');
+          showConfirm('Clear all placed spell effects?', () => send('clearAllEffects'));
         });
 
         document.getElementById('feetPerSquare').addEventListener('change', function(){
@@ -1628,9 +1676,14 @@
           send('saveSessionToCloud', { campaignId });
         });
         document.getElementById('sessionLoadBtn').addEventListener('click', () => {
-          if(!confirm('Load the last cloud save? This replaces everything currently on the TV — initiative, HP, conditions, timers, map settings, widget positions — with whatever was last saved to the cloud for campaign "' + campaignId + '".')) return;
-          document.getElementById('sessionSaveStatus').textContent = 'Loading…';
-          send('loadSessionFromCloud', { campaignId });
+          showConfirm(
+            'This replaces everything currently on the TV — initiative, HP, conditions, timers, map settings, widget positions — with whatever was last saved to the cloud for campaign "' + campaignId + '".',
+            () => {
+              document.getElementById('sessionSaveStatus').textContent = 'Loading…';
+              send('loadSessionFromCloud', { campaignId });
+            },
+            'Load the last cloud save?'
+          );
         });
 
         function submitRemoteLogEntry(){
@@ -1872,15 +1925,15 @@
           });
         }
         function saveRosterEntry(creature){
-          if(!db){ alert('Not connected to Firebase yet — try again in a moment.'); return Promise.reject(new Error('no db')); }
+          if(!db){ showAlert('Not connected to Firebase yet — try again in a moment.'); return Promise.reject(new Error('no db')); }
           const payload = Object.assign({}, creature, { updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
           delete payload.id; // id is the doc id itself, not a field
           return rosterRef().doc(creature.id).set(payload, { merge:true })
-            .catch(err => { alert('Save failed: ' + err.message); throw err; });
+            .catch(err => { showAlert('Save failed: ' + err.message); throw err; });
         }
         function deleteRosterEntry(id){
           if(!db) return Promise.resolve();
-          return rosterRef().doc(id).delete().catch(err => { alert('Delete failed: ' + err.message); throw err; });
+          return rosterRef().doc(id).delete().catch(err => { showAlert('Delete failed: ' + err.message); throw err; });
         }
 
         // Player characters — read-only here (editing stays on the player's own
@@ -2000,9 +2053,10 @@
           listEl.querySelectorAll('.rcDelBtn').forEach(btn => {
             btn.addEventListener('click', () => {
               const creature = roster.find(c => c.id === btn.dataset.id);
-              if(creature && confirm('Delete "' + (creature.name || 'this entry') + '" from the roster? This cannot be undone.')){
+              if(!creature) return;
+              showConfirm('Delete "' + (creature.name || 'this entry') + '" from the roster? This cannot be undone.', () => {
                 deleteRosterEntry(btn.dataset.id);
-              }
+              });
             });
           });
         }
@@ -2237,7 +2291,7 @@
         document.getElementById('sheetSaveBtn').addEventListener('click', () => {
           if(!editingCreature) return;
           if(!editingCreature.name.trim()){
-            alert('Give this character or monster a name before saving.');
+            showAlert('Give this character or monster a name before saving.');
             setActiveTab('core');
             document.getElementById('fName').focus();
             return;
@@ -2246,9 +2300,9 @@
         });
         document.getElementById('sheetDeleteBtn').addEventListener('click', () => {
           if(!editingCreature) return;
-          if(confirm('Delete "' + (editingCreature.name || 'this entry') + '" from the roster? This cannot be undone.')){
+          showConfirm('Delete "' + (editingCreature.name || 'this entry') + '" from the roster? This cannot be undone.', () => {
             deleteRosterEntry(editingCreature.id).then(() => closeSheetEditor()).catch(() => {});
-          }
+          });
         });
 
         if(window.blackstoneDesktop){
@@ -2872,7 +2926,7 @@
         document.getElementById('cdbNewBtn').addEventListener('click', () => openCdbModal(null));
         document.getElementById('cdbCancelBtn').addEventListener('click', () => cdbModal.classList.remove('open'));
         document.getElementById('cdbSaveBtn').addEventListener('click', () => {
-          if(!db){ alert('Not connected to Firebase yet — try again in a moment.'); return; }
+          if(!db){ showAlert('Not connected to Firebase yet — try again in a moment.'); return; }
           const title = document.getElementById('cdbTitleInput').value.trim();
           if(!title) return;
           const payload = {
@@ -2887,14 +2941,15 @@
           const p = cdbEditingId
             ? coll.doc(cdbEditingId).set(payload, { merge:true })
             : coll.add(Object.assign({ createdAt: firebase.firestore.FieldValue.serverTimestamp() }, payload));
-          p.then(() => cdbModal.classList.remove('open')).catch(err => alert('Save failed: ' + err.message));
+          p.then(() => cdbModal.classList.remove('open')).catch(err => showAlert('Save failed: ' + err.message));
         });
         document.getElementById('cdbDeleteBtn').addEventListener('click', () => {
           if(!cdbEditingId) return;
-          if(!confirm('Delete this entry? This cannot be undone.')) return;
-          campaignRef('entries').doc(cdbEditingId).delete()
-            .then(() => cdbModal.classList.remove('open'))
-            .catch(err => alert('Delete failed: ' + err.message));
+          showConfirm('Delete this entry? This cannot be undone.', () => {
+            campaignRef('entries').doc(cdbEditingId).delete()
+              .then(() => cdbModal.classList.remove('open'))
+              .catch(err => showAlert('Delete failed: ' + err.message));
+          });
         });
 
         // ---- Session Notes ----
@@ -2965,7 +3020,7 @@
         document.getElementById('notesNewBtn').addEventListener('click', () => openNotesModal(null));
         document.getElementById('notesCancelBtn').addEventListener('click', () => notesModal.classList.remove('open'));
         document.getElementById('notesSaveBtn').addEventListener('click', () => {
-          if(!db){ alert('Not connected to Firebase yet — try again in a moment.'); return; }
+          if(!db){ showAlert('Not connected to Firebase yet — try again in a moment.'); return; }
           const title = document.getElementById('notesTitleInput').value.trim() || todayLabel();
           const payload = {
             title,
@@ -2976,14 +3031,15 @@
           const p = notesEditingId
             ? coll.doc(notesEditingId).set(payload, { merge:true })
             : coll.add(Object.assign({ createdAt: firebase.firestore.FieldValue.serverTimestamp() }, payload));
-          p.then(() => notesModal.classList.remove('open')).catch(err => alert('Save failed: ' + err.message));
+          p.then(() => notesModal.classList.remove('open')).catch(err => showAlert('Save failed: ' + err.message));
         });
         document.getElementById('notesDeleteBtn').addEventListener('click', () => {
           if(!notesEditingId) return;
-          if(!confirm('Delete this note? This cannot be undone.')) return;
-          campaignRef('sessionNotes').doc(notesEditingId).delete()
-            .then(() => notesModal.classList.remove('open'))
-            .catch(err => alert('Delete failed: ' + err.message));
+          showConfirm('Delete this note? This cannot be undone.', () => {
+            campaignRef('sessionNotes').doc(notesEditingId).delete()
+              .then(() => notesModal.classList.remove('open'))
+              .catch(err => showAlert('Delete failed: ' + err.message));
+          });
         });
 
         renderRosterList(); // shows empty state until startRosterListener() delivers live data
