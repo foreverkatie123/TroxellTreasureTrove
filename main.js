@@ -7,6 +7,7 @@ let overlayWindow;
 let controllerWindow;
 let lastState = null;
 let overlayInteractive = false;
+const panelWindows = new Map();
 
 // Firebase's Google sign-in popup refuses to run on pages loaded over file://
 // (it only supports http/https/chrome-extension). Serving the app's own files
@@ -75,6 +76,7 @@ function choosePlayerDisplay() {
 function applyClickThrough() {
   if (!overlayWindow || overlayWindow.isDestroyed()) return;
   overlayWindow.setIgnoreMouseEvents(!overlayInteractive, { forward: true });
+  overlayWindow.setFocusable(overlayInteractive)
   overlayWindow.webContents.send('overlay-interactive-changed', overlayInteractive);
   if (controllerWindow && !controllerWindow.isDestroyed()) {
     controllerWindow.webContents.send('overlay-interactive-changed', overlayInteractive);
@@ -136,6 +138,38 @@ function createController() {
   controllerWindow.on('closed', () => { controllerWindow = null; });
 }
 
+function broadcastPoppedPanels() {
+  if (controllerWindow && !controllerWindow.isDestroyed()) {
+    controllerWindow.webContents.send('popped-panels-changed', Array.from(panelWindows.keys()));
+  }
+}
+
+function createPanelWindow(panelId) {
+  const existing = panelWindows.get(panelId);
+  if (existing && !existing.isDestroyed()) { existing.show(); existing.focus(); return; }
+  const primary = screen.getPrimaryDisplay();
+  const offset = panelWindows.size * 28;
+  const win = new BrowserWindow({
+    width: 460,
+    height: 700,
+    x: primary.workArea.x + 40 + offset,
+    y: primary.workArea.y + 40 + offset,
+    title: 'Troxell — ' + panelId,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  });
+  win.loadURL(`http://localhost:${localServerPort}/controller.html?panel=${encodeURIComponent(panelId)}`);
+  panelWindows.set(panelId, win);
+  broadcastPoppedPanels();
+  win.on('closed', () => {
+    panelWindows.delete(panelId);
+    broadcastPoppedPanels();
+  });
+}
+
 app.whenReady().then(async () => {
   await startLocalServer();
   createOverlay();
@@ -153,11 +187,23 @@ ipcMain.on('overlay-command', (_event, packet) => {
 ipcMain.on('overlay-state', (_event, payload) => {
   lastState = payload;
   if (controllerWindow && !controllerWindow.isDestroyed()) controllerWindow.webContents.send('overlay-state', payload);
+  for (const win of panelWindows.values()) {
+    if (win && !win.isDestroyed()) win.webContents.send('overlay-state', payload);
+  }
 });
 
-ipcMain.on('request-overlay-state', () => {
-  if (lastState && controllerWindow && !controllerWindow.isDestroyed()) controllerWindow.webContents.send('overlay-state', lastState);
+ipcMain.on('request-overlay-state', (event) => {
+  if (lastState) event.sender.send('overlay-state', lastState);
   if (overlayWindow && !overlayWindow.isDestroyed()) overlayWindow.webContents.send('overlay-command', { action: '__requestState', payload: {} });
+});
+
+ipcMain.on('open-panel-window', (_event, panelId) => createPanelWindow(panelId));
+ipcMain.on('close-panel-window', (_event, panelId) => {
+  const win = panelWindows.get(panelId);
+  if (win && !win.isDestroyed()) win.close();
+});
+ipcMain.on('request-popped-panels', (event) => {
+  event.sender.send('popped-panels-changed', Array.from(panelWindows.keys()));
 });
 
 ipcMain.on('open-controller', createController);

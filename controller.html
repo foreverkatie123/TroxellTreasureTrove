@@ -61,7 +61,22 @@
 
       .panel{
         background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:14px 16px;
+        position:relative;
       }
+      .panelPopoutBtn{
+        position:absolute; top:12px; right:14px;
+        background:none; border:1px solid var(--border); border-radius:6px;
+        color:var(--text-dim); font-size:13px; line-height:1; cursor:pointer; padding:4px 6px;
+      }
+      .panelPopoutBtn:hover{ color:var(--accent-2); border-color:var(--accent-2); }
+      .panelPoppedPlaceholder{
+        background:var(--panel); border:1px dashed var(--border); border-radius:10px;
+        padding:14px 16px; display:flex; align-items:center; justify-content:space-between;
+        gap:10px; font-size:12px; color:var(--text-dim);
+      }
+      .panelPoppedPlaceholder .btn{ width:auto; padding:7px 12px; font-size:12px; }
+      #soloPanelBackBar{ margin-bottom:14px; }
+      #soloPanelBackBar .btn{ width:auto; padding:8px 14px; }
       .panel h3{ margin:0 0 12px; color:var(--accent-bright); font-size:14px; text-transform:uppercase; letter-spacing:.08em; }
       .panel h3 .sub{ text-transform:none; letter-spacing:0; color:var(--text-dim); font-size:11px; font-weight:400; display:block; margin-top:2px; }
 
@@ -404,10 +419,10 @@
 
       /* ---------- Modal overlay (sheet editor / quick stats) ---------- */
       .modalOverlay{
-        display:none; position:fixed; inset:0; background:rgba(4,6,8,0.82); z-index:100;
+        display:none; pointer-events:none; position:fixed; inset:0; background:rgba(4,6,8,0.82); z-index:100;
         align-items:flex-start; justify-content:center; overflow-y:auto; padding:20px 12px 40px;
       }
-      .modalOverlay.open{ display:flex; }
+      .modalOverlay.open{ display:flex; pointer-events:auto; }
       .modalBox{
         background:var(--panel); border:1px solid var(--border); border-radius:12px;
         width:100%; max-width:440px; padding:16px; box-shadow:0 20px 60px rgba(0,0,0,0.6);
@@ -1042,15 +1057,93 @@
           return;
         }
 
+        // ---- Panel pop-out: tear any panel out into its own real window ----
+        (function(){
+          if (!window.blackstoneDesktop) return; // desktop app only
+
+          const soloPanelId = new URLSearchParams(location.search).get('panel');
+          const slugify = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+          const allPanels = Array.from(document.querySelectorAll('#appBody > .panel'));
+          const seen = {};
+          allPanels.forEach(panel => {
+            const h3 = panel.querySelector('h3');
+            if(!h3) return;
+            const label = Array.from(h3.childNodes)
+              .filter(n => n.nodeType === Node.TEXT_NODE)
+              .map(n => n.textContent).join('').trim() || h3.textContent.trim();
+            let id = slugify(label);
+            if(seen[id]){ id = id + '-' + (++seen[id]); } else { seen[id] = 1; }
+            panel.dataset.panelId = id;
+            panel.dataset.panelLabel = label;
+          });
+
+          if (soloPanelId){
+            document.body.classList.add('soloPanelMode');
+            allPanels.forEach(panel => {
+              if(panel.dataset.panelId !== soloPanelId) panel.style.display = 'none';
+            });
+            const backBar = document.createElement('div');
+            backBar.id = 'soloPanelBackBar';
+            backBar.innerHTML = '<button class="btn" id="soloBackBtn">↩ Back to main window</button>';
+            document.body.insertBefore(backBar, document.getElementById('appBody'));
+            document.getElementById('soloBackBtn').addEventListener('click', () => window.close());
+            return;
+          }
+
+          allPanels.forEach(panel => {
+            const btn = document.createElement('button');
+            btn.className = 'panelPopoutBtn';
+            btn.title = 'Open in separate window';
+            btn.textContent = '⤢';
+            btn.addEventListener('click', () => window.blackstoneDesktop.openPanelWindow(panel.dataset.panelId));
+            panel.appendChild(btn);
+
+            const placeholder = document.createElement('div');
+            placeholder.className = 'panelPoppedPlaceholder';
+            placeholder.style.display = 'none';
+            const label = document.createElement('span');
+            label.textContent = panel.dataset.panelLabel + ' is open in a separate window.';
+            const bringBackBtn = document.createElement('button');
+            bringBackBtn.className = 'btn small';
+            bringBackBtn.textContent = 'Bring back';
+            bringBackBtn.addEventListener('click', () => window.blackstoneDesktop.closePanelWindow(panel.dataset.panelId));
+            placeholder.appendChild(label);
+            placeholder.appendChild(bringBackBtn);
+            panel.parentNode.insertBefore(placeholder, panel.nextSibling);
+            panel._popoutPlaceholder = placeholder;
+          });
+
+          window.blackstoneDesktop.onPoppedPanelsChanged(list => {
+            allPanels.forEach(panel => {
+              const popped = list.includes(panel.dataset.panelId);
+              panel.style.display = popped ? 'none' : '';
+              if(panel._popoutPlaceholder) panel._popoutPlaceholder.style.display = popped ? '' : 'none';
+            });
+          });
+          window.blackstoneDesktop.requestPoppedPanels();
+        })();
+
         let lastSnapshot = null;
         let liveTimer = null;
+
+        // Closing a full-viewport fixed-position overlay can leave Electron/Chromium
+        // with a stale hit-test region that still swallows clicks underneath it, even
+        // though it's invisible — minimizing and restoring the window forces a repaint
+        // and "fixes" it manually. This does the same thing automatically on every close.
+        function closeModal(modalEl){
+          modalEl.classList.remove('open');
+          requestAnimationFrame(() => { void modalEl.offsetHeight; });
+        }
 
         // ---- In-app Confirm / Alert modal (see HTML comment above for why) ----
         const confirmModal = document.getElementById('confirmModal');
         const confirmModalCancelBtn = document.getElementById('confirmModalCancelBtn');
         const confirmModalOkBtn = document.getElementById('confirmModalOkBtn');
         let confirmCallback = null;
+        let lastFocusBeforeModal = null;
         function showConfirm(message, onConfirm, title){
+          lastFocusBeforeModal = document.activeElement;
           confirmModalCancelBtn.classList.remove('hidden');
           confirmModalOkBtn.textContent = 'Confirm';
           confirmModalOkBtn.className = 'btn danger';
@@ -1059,7 +1152,23 @@
           confirmCallback = onConfirm;
           confirmModal.classList.add('open');
         }
+        function closeConfirm(){
+          if (confirmModal.contains(document.activeElement)) document.activeElement.blur();
+          closeModal(confirmModal);
+          confirmCallback = null;
+          const back = lastFocusBeforeModal;
+          lastFocusBeforeModal = null;
+          if (back && document.body.contains(back)) back.focus();
+          else document.getElementById('addName').focus();
+        }
+        confirmModalCancelBtn.addEventListener('click', closeConfirm);
+        confirmModalOkBtn.addEventListener('click', () => {
+          const cb = confirmCallback;
+          closeConfirm();
+          if (cb) cb();
+        });
         function showAlert(message, title){
+          lastFocusBeforeModal = document.activeElement;
           confirmModalCancelBtn.classList.add('hidden');
           confirmModalOkBtn.textContent = 'OK';
           confirmModalOkBtn.className = 'btn primary';
@@ -1068,16 +1177,6 @@
           confirmCallback = null;
           confirmModal.classList.add('open');
         }
-        confirmModalCancelBtn.addEventListener('click', () => {
-          confirmModal.classList.remove('open');
-          confirmCallback = null;
-        });
-        confirmModalOkBtn.addEventListener('click', () => {
-          const cb = confirmCallback;
-          confirmModal.classList.remove('open');
-          confirmCallback = null;
-          if(cb) cb();
-        });
 
         // ---- Firebase (campaign database) ----
         // Config lives in js/firebase-config.js (gitignored) — see js/firebase-config.example.js
@@ -1766,7 +1865,7 @@
           document.getElementById('statAc').value = c.ac !== null && c.ac !== undefined ? c.ac : '';
           statsModal.classList.add('open');
         }
-        document.getElementById('statsCancelBtn').addEventListener('click', () => statsModal.classList.remove('open'));
+        document.getElementById('statsCancelBtn').addEventListener('click', () => closeModal(statsModal));
         document.getElementById('statsSaveBtn').addEventListener('click', () => {
           if(statsEditingId === null) return;
           const nameInput = document.getElementById('statName');
@@ -1797,7 +1896,7 @@
             tempHp: tempRaw === '' ? 0 : parseFloat(tempRaw),
             ac: acRaw === '' ? null : parseFloat(acRaw)
           });
-          statsModal.classList.remove('open');
+          closeModal(statsModal);
         });
 
         // ---- Spellcasting modal (concentration / spell slots / prepared spells) ----
@@ -1883,7 +1982,7 @@
           renderPreparedSpells();
           spellModal.classList.add('open');
         }
-        document.getElementById('spellModalCloseBtn').addEventListener('click', () => spellModal.classList.remove('open'));
+        document.getElementById('spellModalCloseBtn').addEventListener('click', () => closeModal(spellModal));
         document.getElementById('concStartBtn').addEventListener('click', () => {
           if(spellEditingId === null) return;
           const spellName = document.getElementById('concSpellInput').value.trim();
@@ -2083,7 +2182,7 @@
           populateEditorFields();
           sheetModal.classList.add('open');
         }
-        function closeSheetEditor(){ sheetModal.classList.remove('open'); editingCreature = null; }
+        function closeSheetEditor(){ closeModal(sheetModal); editingCreature = null; }
 
         function setActiveTab(tab){
           document.querySelectorAll('#tabBar .tabBtn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
@@ -2924,7 +3023,7 @@
           cdbModal.classList.add('open');
         }
         document.getElementById('cdbNewBtn').addEventListener('click', () => openCdbModal(null));
-        document.getElementById('cdbCancelBtn').addEventListener('click', () => cdbModal.classList.remove('open'));
+        document.getElementById('cdbCancelBtn').addEventListener('click', () => closeModal(cdbModal));
         document.getElementById('cdbSaveBtn').addEventListener('click', () => {
           if(!db){ showAlert('Not connected to Firebase yet — try again in a moment.'); return; }
           const title = document.getElementById('cdbTitleInput').value.trim();
@@ -2941,13 +3040,13 @@
           const p = cdbEditingId
             ? coll.doc(cdbEditingId).set(payload, { merge:true })
             : coll.add(Object.assign({ createdAt: firebase.firestore.FieldValue.serverTimestamp() }, payload));
-          p.then(() => cdbModal.classList.remove('open')).catch(err => showAlert('Save failed: ' + err.message));
+          p.then(() => closeModal(cdbModal)).catch(err => showAlert('Save failed: ' + err.message));
         });
         document.getElementById('cdbDeleteBtn').addEventListener('click', () => {
           if(!cdbEditingId) return;
           showConfirm('Delete this entry? This cannot be undone.', () => {
             campaignRef('entries').doc(cdbEditingId).delete()
-              .then(() => cdbModal.classList.remove('open'))
+              .then(() => closeModal(cdbModal))
               .catch(err => showAlert('Delete failed: ' + err.message));
           });
         });
@@ -3018,7 +3117,7 @@
           notesModal.classList.add('open');
         }
         document.getElementById('notesNewBtn').addEventListener('click', () => openNotesModal(null));
-        document.getElementById('notesCancelBtn').addEventListener('click', () => notesModal.classList.remove('open'));
+        document.getElementById('notesCancelBtn').addEventListener('click', () => closeModal(notesModal));
         document.getElementById('notesSaveBtn').addEventListener('click', () => {
           if(!db){ showAlert('Not connected to Firebase yet — try again in a moment.'); return; }
           const title = document.getElementById('notesTitleInput').value.trim() || todayLabel();
@@ -3031,13 +3130,13 @@
           const p = notesEditingId
             ? coll.doc(notesEditingId).set(payload, { merge:true })
             : coll.add(Object.assign({ createdAt: firebase.firestore.FieldValue.serverTimestamp() }, payload));
-          p.then(() => notesModal.classList.remove('open')).catch(err => showAlert('Save failed: ' + err.message));
+          p.then(() => closeModal(notesModal)).catch(err => showAlert('Save failed: ' + err.message));
         });
         document.getElementById('notesDeleteBtn').addEventListener('click', () => {
           if(!notesEditingId) return;
           showConfirm('Delete this note? This cannot be undone.', () => {
             campaignRef('sessionNotes').doc(notesEditingId).delete()
-              .then(() => notesModal.classList.remove('open'))
+              .then(() => closeModal(notesModal))
               .catch(err => showAlert('Delete failed: ' + err.message));
           });
         });
