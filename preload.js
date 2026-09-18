@@ -10,5 +10,10 @@ contextBridge.exposeInMainWorld('blackstoneDesktop', {
   setOverlayInteractive: on => ipcRenderer.send('set-overlay-interactive', !!on),
   onOverlayInteractive: callback => ipcRenderer.on('overlay-interactive-changed', (_e, on) => callback(on)),
   getDisplays: () => ipcRenderer.invoke('get-displays'),
-  moveOverlay: displayId => ipcRenderer.send('move-overlay', displayId)
+  moveOverlay: displayId => ipcRenderer.send('move-overlay', displayId),
+  // ---- panel pop-out ----
+  openPanelWindow: panelId => ipcRenderer.send('open-panel-window', panelId),
+  closePanelWindow: panelId => ipcRenderer.send('close-panel-window', panelId),
+  onPoppedPanelsChanged: callback => ipcRenderer.on('popped-panels-changed', (_e, list) => callback(list)),
+  requestPoppedPanels: () => ipcRenderer.send('request-popped-panels')
 });

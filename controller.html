@@ -61,7 +61,22 @@
 
       .panel{
         background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:14px 16px;
+        position:relative;
       }
+      .panelPopoutBtn{
+        position:absolute; top:12px; right:14px;
+        background:none; border:1px solid var(--border); border-radius:6px;
+        color:var(--text-dim); font-size:13px; line-height:1; cursor:pointer; padding:4px 6px;
+      }
+      .panelPopoutBtn:hover{ color:var(--accent-2); border-color:var(--accent-2); }
+      .panelPoppedPlaceholder{
+        background:var(--panel); border:1px dashed var(--border); border-radius:10px;
+        padding:14px 16px; display:flex; align-items:center; justify-content:space-between;
+        gap:10px; font-size:12px; color:var(--text-dim);
+      }
+      .panelPoppedPlaceholder .btn{ width:auto; padding:7px 12px; font-size:12px; }
+      #soloPanelBackBar{ margin-bottom:14px; }
+      #soloPanelBackBar .btn{ width:auto; padding:8px 14px; }
       .panel h3{ margin:0 0 12px; color:var(--accent-bright); font-size:14px; text-transform:uppercase; letter-spacing:.08em; }
       .panel h3 .sub{ text-transform:none; letter-spacing:0; color:var(--text-dim); font-size:11px; font-weight:400; display:block; margin-top:2px; }
 
@@ -404,10 +419,10 @@
 
       /* ---------- Modal overlay (sheet editor / quick stats) ---------- */
       .modalOverlay{
-        display:none; position:fixed; inset:0; background:rgba(4,6,8,0.82); z-index:100;
+        display:none; pointer-events:none; position:fixed; inset:0; background:rgba(4,6,8,0.82); z-index:100;
         align-items:flex-start; justify-content:center; overflow-y:auto; padding:20px 12px 40px;
       }
-      .modalOverlay.open{ display:flex; }
+      .modalOverlay.open{ display:flex; pointer-events:auto; }
       .modalBox{
         background:var(--panel); border:1px solid var(--border); border-radius:12px;
         width:100%; max-width:440px; padding:16px; box-shadow:0 20px 60px rgba(0,0,0,0.6);
@@ -479,7 +494,7 @@
 
     <div id="appBody">
 
-      <div class="panel">
+      <div class="panel" id="roundPanel">
         <div id="roundDisplay">
           <span class="num" id="roundNum">1</span>
           <span class="label">Round</span>
@@ -492,7 +507,7 @@
         </div>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="initiativePanel">
         <h3>Initiative &amp; Combat<span class="sub">HP / temp HP / AC live-edit here — the TV only shows names and a bloodied/down icon</span></h3>
         <div id="combatantList"></div>
 
@@ -1009,6 +1024,20 @@
       </div>
     </div>
 
+    <!-- In-app Confirm / Alert modal — replaces native confirm()/alert(), which have a
+         confirmed Electron bug: once shown, they can permanently break mouse/keyboard
+         input on the window afterward, with no error and no recovery short of a restart. -->
+    <div class="modalOverlay" id="confirmModal">
+      <div class="modalBox" style="max-width:360px;">
+        <h2 id="confirmModalTitle">Are you sure?</h2>
+        <p id="confirmModalMessage" style="color:var(--text-dim);font-size:13px;line-height:1.5;margin:0;"></p>
+        <div class="modalFooter">
+          <button class="btn" id="confirmModalCancelBtn">Cancel</button>
+          <button class="btn danger" id="confirmModalOkBtn">Confirm</button>
+        </div>
+      </div>
+    </div>
+
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js" defer></script>
@@ -1028,8 +1057,161 @@
           return;
         }
 
+        // ---- Panel pop-out: tear any panel out into its own real window ----
+        (function(){
+          if (!window.blackstoneDesktop) return; // desktop app only
+
+          const soloPanelId = new URLSearchParams(location.search).get('panel');
+          const slugify = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+          // Panels listed here pop out together as ONE window with ONE button.
+          // Anything not listed here still pops out individually, keyed off its own <h3>.
+          const GROUPS = [
+            { id: 'turn-initiative', label: 'Turn & Initiative', selectors: ['#roundPanel', '#initiativePanel'] }
+          ];
+
+          const groupedEls = new Set();
+          GROUPS.forEach(g => {
+            g.els = g.selectors.map(sel => document.querySelector(sel)).filter(Boolean);
+            g.els.forEach(el => groupedEls.add(el));
+          });
+
+          const allPanels = Array.from(document.querySelectorAll('#appBody > .panel'))
+            .filter(panel => !groupedEls.has(panel));
+
+          const seen = {};
+          allPanels.forEach(panel => {
+            const h3 = panel.querySelector('h3');
+            if(!h3) return;
+            const label = Array.from(h3.childNodes)
+              .filter(n => n.nodeType === Node.TEXT_NODE)
+              .map(n => n.textContent).join('').trim() || h3.textContent.trim();
+            let id = slugify(label);
+            if(seen[id]){ id = id + '-' + (++seen[id]); } else { seen[id] = 1; }
+            panel.dataset.panelId = id;
+            panel.dataset.panelLabel = label;
+          });
+
+          if (soloPanelId){
+            document.body.classList.add('soloPanelMode');
+            const group = GROUPS.find(g => g.id === soloPanelId);
+            if (group){
+              allPanels.forEach(p => { p.style.display = 'none'; });
+              GROUPS.forEach(g => { if(g.id !== soloPanelId) g.els.forEach(el => { el.style.display = 'none'; }); });
+            } else {
+              groupedEls.forEach(el => { el.style.display = 'none'; });
+              allPanels.forEach(panel => {
+                if(panel.dataset.panelId !== soloPanelId) panel.style.display = 'none';
+              });
+            }
+            const backBar = document.createElement('div');
+            backBar.id = 'soloPanelBackBar';
+            backBar.innerHTML = '<button class="btn" id="soloBackBtn">↩ Back to main window</button>';
+            document.body.insertBefore(backBar, document.getElementById('appBody'));
+            document.getElementById('soloBackBtn').addEventListener('click', () => window.close());
+            return;
+          }
+
+          function addPopoutButton(anchorEl, panelId, label, placeholderAfterEl){
+            const btn = document.createElement('button');
+            btn.className = 'panelPopoutBtn';
+            btn.title = 'Open in separate window';
+            btn.textContent = '⤢';
+            btn.addEventListener('click', () => window.blackstoneDesktop.openPanelWindow(panelId));
+            anchorEl.appendChild(btn);
+
+            const placeholder = document.createElement('div');
+            placeholder.className = 'panelPoppedPlaceholder';
+            placeholder.style.display = 'none';
+            const labelEl = document.createElement('span');
+            labelEl.textContent = label + ' is open in a separate window.';
+            const bringBackBtn = document.createElement('button');
+            bringBackBtn.className = 'btn small';
+            bringBackBtn.textContent = 'Bring back';
+            bringBackBtn.addEventListener('click', () => window.blackstoneDesktop.closePanelWindow(panelId));
+            placeholder.appendChild(labelEl);
+            placeholder.appendChild(bringBackBtn);
+            placeholderAfterEl.parentNode.insertBefore(placeholder, placeholderAfterEl.nextSibling);
+            return placeholder;
+          }
+
+          const poppableEntries = [];
+
+          GROUPS.forEach(g => {
+            if(!g.els.length) return;
+            const placeholder = addPopoutButton(g.els[0], g.id, g.label, g.els[g.els.length - 1]);
+            poppableEntries.push({ id: g.id, els: g.els, placeholder });
+          });
+
+          allPanels.forEach(panel => {
+            if(!panel.dataset.panelId) return;
+            const placeholder = addPopoutButton(panel, panel.dataset.panelId, panel.dataset.panelLabel, panel);
+            poppableEntries.push({ id: panel.dataset.panelId, els: [panel], placeholder });
+          });
+
+          window.blackstoneDesktop.onPoppedPanelsChanged(list => {
+            poppableEntries.forEach(entry => {
+              const popped = list.includes(entry.id);
+              entry.els.forEach(el => { el.style.display = popped ? 'none' : ''; });
+              entry.placeholder.style.display = popped ? '' : 'none';
+            });
+          });
+          window.blackstoneDesktop.requestPoppedPanels();
+        })();
+
         let lastSnapshot = null;
         let liveTimer = null;
+
+        // Closing a full-viewport fixed-position overlay can leave Electron/Chromium
+        // with a stale hit-test region that still swallows clicks underneath it, even
+        // though it's invisible — minimizing and restoring the window forces a repaint
+        // and "fixes" it manually. This does the same thing automatically on every close.
+        function closeModal(modalEl){
+          modalEl.classList.remove('open');
+          requestAnimationFrame(() => { void modalEl.offsetHeight; });
+        }
+
+        // ---- In-app Confirm / Alert modal (see HTML comment above for why) ----
+        const confirmModal = document.getElementById('confirmModal');
+        const confirmModalCancelBtn = document.getElementById('confirmModalCancelBtn');
+        const confirmModalOkBtn = document.getElementById('confirmModalOkBtn');
+        let confirmCallback = null;
+        let lastFocusBeforeModal = null;
+        function showConfirm(message, onConfirm, title){
+          lastFocusBeforeModal = document.activeElement;
+          confirmModalCancelBtn.classList.remove('hidden');
+          confirmModalOkBtn.textContent = 'Confirm';
+          confirmModalOkBtn.className = 'btn danger';
+          document.getElementById('confirmModalTitle').textContent = title || 'Are you sure?';
+          document.getElementById('confirmModalMessage').textContent = message;
+          confirmCallback = onConfirm;
+          confirmModal.classList.add('open');
+        }
+        function closeConfirm(){
+          if (confirmModal.contains(document.activeElement)) document.activeElement.blur();
+          closeModal(confirmModal);
+          confirmCallback = null;
+          const back = lastFocusBeforeModal;
+          lastFocusBeforeModal = null;
+          if (back && document.body.contains(back)) back.focus();
+          else document.getElementById('addName').focus();
+        }
+        confirmModalCancelBtn.addEventListener('click', closeConfirm);
+        confirmModalOkBtn.addEventListener('click', () => {
+          const cb = confirmCallback;
+          closeConfirm();
+          if (cb) cb();
+        });
+        function showAlert(message, title){
+          lastFocusBeforeModal = document.activeElement;
+          confirmModalCancelBtn.classList.add('hidden');
+          confirmModalOkBtn.textContent = 'OK';
+          confirmModalOkBtn.className = 'btn primary';
+          document.getElementById('confirmModalTitle').textContent = title || 'Notice';
+          document.getElementById('confirmModalMessage').textContent = message;
+          confirmCallback = null;
+          confirmModal.classList.add('open');
+        }
 
         // ---- Firebase (campaign database) ----
         // Config lives in js/firebase-config.js (gitignored) — see js/firebase-config.example.js
@@ -1495,13 +1677,13 @@
         document.getElementById('addBtn').addEventListener('click', addCombatant);
         document.getElementById('addInit').addEventListener('keydown', e => { if(e.key === 'Enter') addCombatant(); });
         document.getElementById('clearAllBtn').addEventListener('click', () => {
-          if(confirm('Clear the entire initiative order?')) send('clearAll');
+          showConfirm('Clear the entire initiative order?', () => send('clearAll'));
         });
 
         document.getElementById('fogToggleBtn').addEventListener('click', () => send('toggleFog'));
         document.getElementById('fogRevealBtn').addEventListener('click', () => send('revealAllFog'));
         document.getElementById('fogResetBtn').addEventListener('click', () => {
-          if(confirm('Reset fog — re-hide all revealed regions?')) send('resetFog');
+          showConfirm('Reset fog — re-hide all revealed regions?', () => send('resetFog'));
         });
 
         document.getElementById('rulerBtn').addEventListener('click', () => {
@@ -1517,7 +1699,7 @@
           }
         });
         document.getElementById('fxClearAllBtn').addEventListener('click', () => {
-          if(confirm('Clear all placed spell effects?')) send('clearAllEffects');
+          showConfirm('Clear all placed spell effects?', () => send('clearAllEffects'));
         });
 
         document.getElementById('feetPerSquare').addEventListener('change', function(){
@@ -1628,9 +1810,14 @@
           send('saveSessionToCloud', { campaignId });
         });
         document.getElementById('sessionLoadBtn').addEventListener('click', () => {
-          if(!confirm('Load the last cloud save? This replaces everything currently on the TV — initiative, HP, conditions, timers, map settings, widget positions — with whatever was last saved to the cloud for campaign "' + campaignId + '".')) return;
-          document.getElementById('sessionSaveStatus').textContent = 'Loading…';
-          send('loadSessionFromCloud', { campaignId });
+          showConfirm(
+            'This replaces everything currently on the TV — initiative, HP, conditions, timers, map settings, widget positions — with whatever was last saved to the cloud for campaign "' + campaignId + '".',
+            () => {
+              document.getElementById('sessionSaveStatus').textContent = 'Loading…';
+              send('loadSessionFromCloud', { campaignId });
+            },
+            'Load the last cloud save?'
+          );
         });
 
         function submitRemoteLogEntry(){
@@ -1713,7 +1900,7 @@
           document.getElementById('statAc').value = c.ac !== null && c.ac !== undefined ? c.ac : '';
           statsModal.classList.add('open');
         }
-        document.getElementById('statsCancelBtn').addEventListener('click', () => statsModal.classList.remove('open'));
+        document.getElementById('statsCancelBtn').addEventListener('click', () => closeModal(statsModal));
         document.getElementById('statsSaveBtn').addEventListener('click', () => {
           if(statsEditingId === null) return;
           const nameInput = document.getElementById('statName');
@@ -1744,7 +1931,7 @@
             tempHp: tempRaw === '' ? 0 : parseFloat(tempRaw),
             ac: acRaw === '' ? null : parseFloat(acRaw)
           });
-          statsModal.classList.remove('open');
+          closeModal(statsModal);
         });
 
         // ---- Spellcasting modal (concentration / spell slots / prepared spells) ----
@@ -1830,7 +2017,7 @@
           renderPreparedSpells();
           spellModal.classList.add('open');
         }
-        document.getElementById('spellModalCloseBtn').addEventListener('click', () => spellModal.classList.remove('open'));
+        document.getElementById('spellModalCloseBtn').addEventListener('click', () => closeModal(spellModal));
         document.getElementById('concStartBtn').addEventListener('click', () => {
           if(spellEditingId === null) return;
           const spellName = document.getElementById('concSpellInput').value.trim();
@@ -1872,15 +2059,15 @@
           });
         }
         function saveRosterEntry(creature){
-          if(!db){ alert('Not connected to Firebase yet — try again in a moment.'); return Promise.reject(new Error('no db')); }
+          if(!db){ showAlert('Not connected to Firebase yet — try again in a moment.'); return Promise.reject(new Error('no db')); }
           const payload = Object.assign({}, creature, { updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
           delete payload.id; // id is the doc id itself, not a field
           return rosterRef().doc(creature.id).set(payload, { merge:true })
-            .catch(err => { alert('Save failed: ' + err.message); throw err; });
+            .catch(err => { showAlert('Save failed: ' + err.message); throw err; });
         }
         function deleteRosterEntry(id){
           if(!db) return Promise.resolve();
-          return rosterRef().doc(id).delete().catch(err => { alert('Delete failed: ' + err.message); throw err; });
+          return rosterRef().doc(id).delete().catch(err => { showAlert('Delete failed: ' + err.message); throw err; });
         }
 
         // Player characters — read-only here (editing stays on the player's own
@@ -2000,9 +2187,10 @@
           listEl.querySelectorAll('.rcDelBtn').forEach(btn => {
             btn.addEventListener('click', () => {
               const creature = roster.find(c => c.id === btn.dataset.id);
-              if(creature && confirm('Delete "' + (creature.name || 'this entry') + '" from the roster? This cannot be undone.')){
+              if(!creature) return;
+              showConfirm('Delete "' + (creature.name || 'this entry') + '" from the roster? This cannot be undone.', () => {
                 deleteRosterEntry(btn.dataset.id);
-              }
+              });
             });
           });
         }
@@ -2029,7 +2217,7 @@
           populateEditorFields();
           sheetModal.classList.add('open');
         }
-        function closeSheetEditor(){ sheetModal.classList.remove('open'); editingCreature = null; }
+        function closeSheetEditor(){ closeModal(sheetModal); editingCreature = null; }
 
         function setActiveTab(tab){
           document.querySelectorAll('#tabBar .tabBtn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
@@ -2237,7 +2425,7 @@
         document.getElementById('sheetSaveBtn').addEventListener('click', () => {
           if(!editingCreature) return;
           if(!editingCreature.name.trim()){
-            alert('Give this character or monster a name before saving.');
+            showAlert('Give this character or monster a name before saving.');
             setActiveTab('core');
             document.getElementById('fName').focus();
             return;
@@ -2246,9 +2434,9 @@
         });
         document.getElementById('sheetDeleteBtn').addEventListener('click', () => {
           if(!editingCreature) return;
-          if(confirm('Delete "' + (editingCreature.name || 'this entry') + '" from the roster? This cannot be undone.')){
+          showConfirm('Delete "' + (editingCreature.name || 'this entry') + '" from the roster? This cannot be undone.', () => {
             deleteRosterEntry(editingCreature.id).then(() => closeSheetEditor()).catch(() => {});
-          }
+          });
         });
 
         if(window.blackstoneDesktop){
@@ -2870,9 +3058,9 @@
           cdbModal.classList.add('open');
         }
         document.getElementById('cdbNewBtn').addEventListener('click', () => openCdbModal(null));
-        document.getElementById('cdbCancelBtn').addEventListener('click', () => cdbModal.classList.remove('open'));
+        document.getElementById('cdbCancelBtn').addEventListener('click', () => closeModal(cdbModal));
         document.getElementById('cdbSaveBtn').addEventListener('click', () => {
-          if(!db){ alert('Not connected to Firebase yet — try again in a moment.'); return; }
+          if(!db){ showAlert('Not connected to Firebase yet — try again in a moment.'); return; }
           const title = document.getElementById('cdbTitleInput').value.trim();
           if(!title) return;
           const payload = {
@@ -2887,14 +3075,15 @@
           const p = cdbEditingId
             ? coll.doc(cdbEditingId).set(payload, { merge:true })
             : coll.add(Object.assign({ createdAt: firebase.firestore.FieldValue.serverTimestamp() }, payload));
-          p.then(() => cdbModal.classList.remove('open')).catch(err => alert('Save failed: ' + err.message));
+          p.then(() => closeModal(cdbModal)).catch(err => showAlert('Save failed: ' + err.message));
         });
         document.getElementById('cdbDeleteBtn').addEventListener('click', () => {
           if(!cdbEditingId) return;
-          if(!confirm('Delete this entry? This cannot be undone.')) return;
-          campaignRef('entries').doc(cdbEditingId).delete()
-            .then(() => cdbModal.classList.remove('open'))
-            .catch(err => alert('Delete failed: ' + err.message));
+          showConfirm('Delete this entry? This cannot be undone.', () => {
+            campaignRef('entries').doc(cdbEditingId).delete()
+              .then(() => closeModal(cdbModal))
+              .catch(err => showAlert('Delete failed: ' + err.message));
+          });
         });
 
         // ---- Session Notes ----
@@ -2963,9 +3152,9 @@
           notesModal.classList.add('open');
         }
         document.getElementById('notesNewBtn').addEventListener('click', () => openNotesModal(null));
-        document.getElementById('notesCancelBtn').addEventListener('click', () => notesModal.classList.remove('open'));
+        document.getElementById('notesCancelBtn').addEventListener('click', () => closeModal(notesModal));
         document.getElementById('notesSaveBtn').addEventListener('click', () => {
-          if(!db){ alert('Not connected to Firebase yet — try again in a moment.'); return; }
+          if(!db){ showAlert('Not connected to Firebase yet — try again in a moment.'); return; }
           const title = document.getElementById('notesTitleInput').value.trim() || todayLabel();
           const payload = {
             title,
@@ -2976,14 +3165,15 @@
           const p = notesEditingId
             ? coll.doc(notesEditingId).set(payload, { merge:true })
             : coll.add(Object.assign({ createdAt: firebase.firestore.FieldValue.serverTimestamp() }, payload));
-          p.then(() => notesModal.classList.remove('open')).catch(err => alert('Save failed: ' + err.message));
+          p.then(() => closeModal(notesModal)).catch(err => showAlert('Save failed: ' + err.message));
         });
         document.getElementById('notesDeleteBtn').addEventListener('click', () => {
           if(!notesEditingId) return;
-          if(!confirm('Delete this note? This cannot be undone.')) return;
-          campaignRef('sessionNotes').doc(notesEditingId).delete()
-            .then(() => notesModal.classList.remove('open'))
-            .catch(err => alert('Delete failed: ' + err.message));
+          showConfirm('Delete this note? This cannot be undone.', () => {
+            campaignRef('sessionNotes').doc(notesEditingId).delete()
+              .then(() => closeModal(notesModal))
+              .catch(err => showAlert('Delete failed: ' + err.message));
+          });
         });
 
         renderRosterList(); // shows empty state until startRosterListener() delivers live data
