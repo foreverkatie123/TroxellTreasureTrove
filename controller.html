@@ -494,7 +494,7 @@
 
     <div id="appBody">
 
-      <div class="panel">
+      <div class="panel" id="roundPanel">
         <div id="roundDisplay">
           <span class="num" id="roundNum">1</span>
           <span class="label">Round</span>
@@ -507,7 +507,7 @@
         </div>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="initiativePanel">
         <h3>Initiative &amp; Combat<span class="sub">HP / temp HP / AC live-edit here — the TV only shows names and a bloodied/down icon</span></h3>
         <div id="combatantList"></div>
 
@@ -1064,7 +1064,21 @@
           const soloPanelId = new URLSearchParams(location.search).get('panel');
           const slugify = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
-          const allPanels = Array.from(document.querySelectorAll('#appBody > .panel'));
+          // Panels listed here pop out together as ONE window with ONE button.
+          // Anything not listed here still pops out individually, keyed off its own <h3>.
+          const GROUPS = [
+            { id: 'turn-initiative', label: 'Turn & Initiative', selectors: ['#roundPanel', '#initiativePanel'] }
+          ];
+
+          const groupedEls = new Set();
+          GROUPS.forEach(g => {
+            g.els = g.selectors.map(sel => document.querySelector(sel)).filter(Boolean);
+            g.els.forEach(el => groupedEls.add(el));
+          });
+
+          const allPanels = Array.from(document.querySelectorAll('#appBody > .panel'))
+            .filter(panel => !groupedEls.has(panel));
+
           const seen = {};
           allPanels.forEach(panel => {
             const h3 = panel.querySelector('h3');
@@ -1080,9 +1094,16 @@
 
           if (soloPanelId){
             document.body.classList.add('soloPanelMode');
-            allPanels.forEach(panel => {
-              if(panel.dataset.panelId !== soloPanelId) panel.style.display = 'none';
-            });
+            const group = GROUPS.find(g => g.id === soloPanelId);
+            if (group){
+              allPanels.forEach(p => { p.style.display = 'none'; });
+              GROUPS.forEach(g => { if(g.id !== soloPanelId) g.els.forEach(el => { el.style.display = 'none'; }); });
+            } else {
+              groupedEls.forEach(el => { el.style.display = 'none'; });
+              allPanels.forEach(panel => {
+                if(panel.dataset.panelId !== soloPanelId) panel.style.display = 'none';
+              });
+            }
             const backBar = document.createElement('div');
             backBar.id = 'soloPanelBackBar';
             backBar.innerHTML = '<button class="btn" id="soloBackBtn">↩ Back to main window</button>';
@@ -1091,34 +1112,48 @@
             return;
           }
 
-          allPanels.forEach(panel => {
+          function addPopoutButton(anchorEl, panelId, label, placeholderAfterEl){
             const btn = document.createElement('button');
             btn.className = 'panelPopoutBtn';
             btn.title = 'Open in separate window';
             btn.textContent = '⤢';
-            btn.addEventListener('click', () => window.blackstoneDesktop.openPanelWindow(panel.dataset.panelId));
-            panel.appendChild(btn);
+            btn.addEventListener('click', () => window.blackstoneDesktop.openPanelWindow(panelId));
+            anchorEl.appendChild(btn);
 
             const placeholder = document.createElement('div');
             placeholder.className = 'panelPoppedPlaceholder';
             placeholder.style.display = 'none';
-            const label = document.createElement('span');
-            label.textContent = panel.dataset.panelLabel + ' is open in a separate window.';
+            const labelEl = document.createElement('span');
+            labelEl.textContent = label + ' is open in a separate window.';
             const bringBackBtn = document.createElement('button');
             bringBackBtn.className = 'btn small';
             bringBackBtn.textContent = 'Bring back';
-            bringBackBtn.addEventListener('click', () => window.blackstoneDesktop.closePanelWindow(panel.dataset.panelId));
-            placeholder.appendChild(label);
+            bringBackBtn.addEventListener('click', () => window.blackstoneDesktop.closePanelWindow(panelId));
+            placeholder.appendChild(labelEl);
             placeholder.appendChild(bringBackBtn);
-            panel.parentNode.insertBefore(placeholder, panel.nextSibling);
-            panel._popoutPlaceholder = placeholder;
+            placeholderAfterEl.parentNode.insertBefore(placeholder, placeholderAfterEl.nextSibling);
+            return placeholder;
+          }
+
+          const poppableEntries = [];
+
+          GROUPS.forEach(g => {
+            if(!g.els.length) return;
+            const placeholder = addPopoutButton(g.els[0], g.id, g.label, g.els[g.els.length - 1]);
+            poppableEntries.push({ id: g.id, els: g.els, placeholder });
+          });
+
+          allPanels.forEach(panel => {
+            if(!panel.dataset.panelId) return;
+            const placeholder = addPopoutButton(panel, panel.dataset.panelId, panel.dataset.panelLabel, panel);
+            poppableEntries.push({ id: panel.dataset.panelId, els: [panel], placeholder });
           });
 
           window.blackstoneDesktop.onPoppedPanelsChanged(list => {
-            allPanels.forEach(panel => {
-              const popped = list.includes(panel.dataset.panelId);
-              panel.style.display = popped ? 'none' : '';
-              if(panel._popoutPlaceholder) panel._popoutPlaceholder.style.display = popped ? '' : 'none';
+            poppableEntries.forEach(entry => {
+              const popped = list.includes(entry.id);
+              entry.els.forEach(el => { el.style.display = popped ? 'none' : ''; });
+              entry.placeholder.style.display = popped ? '' : 'none';
             });
           });
           window.blackstoneDesktop.requestPoppedPanels();
