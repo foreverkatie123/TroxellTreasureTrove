@@ -3,12 +3,23 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
       const overlayInteractBtn = document.getElementById('overlayInteractBtn');
       if(overlayInteractBtn){
         let overlayInteractive = false;
-        overlayInteractBtn.addEventListener('click', () => {
-          overlayInteractive = !overlayInteractive;
+        function updateOverlayInteractBtn(){
           overlayInteractBtn.textContent = overlayInteractive ? 'Disable Overlay Interaction' : 'Enable Overlay Interaction';
           overlayInteractBtn.classList.toggle('armed', overlayInteractive);
+        }
+        overlayInteractBtn.addEventListener('click', () => {
+          overlayInteractive = !overlayInteractive;
+          updateOverlayInteractBtn();
           if(window.blackstoneDesktop) window.blackstoneDesktop.setOverlayInteractive(overlayInteractive);
         });
+        if(window.blackstoneDesktop){
+          // Keep this button in sync no matter which window (or the Ctrl+Shift+O
+          // shortcut) actually changed the interaction state.
+          window.blackstoneDesktop.onOverlayInteractive(on => {
+            overlayInteractive = !!on;
+            updateOverlayInteractBtn();
+          });
+        }
       }
       function openRemote(){
         if(window.blackstoneDesktop){ window.blackstoneDesktop.openController(); return; }
@@ -110,6 +121,8 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
           mapLoaded: !!imgW,
           sourceMode,
           fogEnabled, hasMask: !!maskData,
+          gridOn,
+          lairAction,
           regionsTotal: regions.size, regionsShown: shown.size,
           mode, feetPerSquare, hudScale,
           combatLog,
@@ -277,6 +290,7 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
             break;
           }
           case 'toggleFog': if(maskData){ fogEnabled = !fogEnabled; updateFogUI(); renderFog(); } break;
+          case 'toggleGrid': setGridOn(!gridOn); break;
           case 'revealAllFog': if(maskData){ shown = new Set(regions); updateFogUI(); renderFog(); } break;
           case 'resetFog': if(maskData){ shown = new Set(); updateFogUI(); renderFog(); } break;
           case 'setRulerMode': setRulerMode(!!payload.on); break;
@@ -376,6 +390,77 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
           case 'startCapture': startCapture(); break;
           case 'saveSessionToCloud': saveSessionToCloud(payload.campaignId || 'default'); break;
           case 'loadSessionFromCloud': loadSessionFromCloud(payload.campaignId || 'default'); break;
+          case 'toggleDelayed': {
+            const c = findCombatant(payload.id);
+            if(!c) break;
+            c.delayed = !c.delayed;
+            if(c.delayed) c.ready = false;
+            logEvent(c.delayed ? `⏸ ${c.name} delays their turn` : `▶ ${c.name} is no longer delaying`);
+            render();
+            break;
+          }
+          case 'toggleReady': {
+            const c = findCombatant(payload.id);
+            if(!c) break;
+            c.ready = !c.ready;
+            if(c.ready) c.delayed = false;
+            logEvent(c.ready ? `⚡ ${c.name} readies an action` : `${c.name}'s readied action resolves`);
+            render();
+            break;
+          }
+          case 'toggleLairAction': {
+            lairAction.enabled = !lairAction.enabled;
+            lairToggleEl.classList.toggle('on', lairAction.enabled);
+            lairConfigRowEl.style.display = lairAction.enabled ? '' : 'none';
+            if(!lairAction.enabled && activeId === 'LAIR'){
+              const ids = idsInOrder();
+              activeId = ids.length ? ids[0] : null;
+            }
+            refreshPreStartActive();
+            render();
+            break;
+          }
+          case 'setLairInitCount': {
+            const v = parseInt(payload.value, 10);
+            lairAction.initCount = isNaN(v) ? 20 : v;
+            lairInitCountEl.value = lairAction.initCount;
+            refreshPreStartActive();
+            render();
+            break;
+          }
+          case 'setLegendaryResistanceMax': {
+            const c = findCombatant(payload.id);
+            if(!c) break;
+            const v = Math.max(0, parseInt(payload.value, 10) || 0);
+            c.legendaryResistanceMax = v;
+            c.legendaryResistanceLeft = v;
+            render();
+            break;
+          }
+          case 'spendLegendaryResistance': {
+            const c = findCombatant(payload.id);
+            if(!c) break;
+            c.legendaryResistanceLeft = Math.max(0, (c.legendaryResistanceLeft || 0) - 1);
+            logEvent(`🛡 ${c.name} spends a Legendary Resistance (${c.legendaryResistanceLeft} left)`);
+            render();
+            break;
+          }
+          case 'resetLegendaryResistance': {
+            const c = findCombatant(payload.id);
+            if(!c) break;
+            c.legendaryResistanceLeft = c.legendaryResistanceMax || 0;
+            logEvent(`🛡 ${c.name}'s Legendary Resistances reset`);
+            render();
+            break;
+          }
+          case 'toggleReactionUsed': {
+            const c = findCombatant(payload.id);
+            if(!c) break;
+            c.reactionUsed = !c.reactionUsed;
+            logEvent(c.reactionUsed ? `${c.name} uses their reaction` : `${c.name}'s reaction is available again`);
+            render();
+            break;
+          }
         }
       }
 
