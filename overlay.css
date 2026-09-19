@@ -102,6 +102,25 @@
       }
       #roundFlashBorder.flash{ animation: screenRoundFlash 1.4s ease-out; }
 
+      #reminderStack{
+        position:fixed; top:80px; left:50%; transform:translateX(-50%);
+        z-index:60; display:flex; flex-direction:column; gap:8px; align-items:center;
+        pointer-events:none;
+      }
+      .reminderCard{
+        background:rgba(18,26,33,0.92); border:1px solid var(--accent-2); border-radius:10px;
+        padding:10px 18px; display:flex; align-items:center; gap:10px; font-size:14px; color:var(--text);
+        box-shadow:0 8px 24px rgba(0,0,0,0.5); pointer-events:auto; animation:reminderIn .25s ease;
+        white-space:nowrap;
+      }
+      .reminderCard.lair{ border-color:#c9a8ff; }
+      .reminderCard .reminderIcon{ font-size:18px; }
+      .reminderCard .reminderClose{ background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:14px; padding:0 2px; }
+      .reminderCard .reminderClose:hover{ color:var(--danger); }
+      @keyframes reminderIn{ 0%{ opacity:0; transform:translateY(-8px); } 100%{ opacity:1; transform:translateY(0); } }
+      @keyframes reminderOut{ 0%{ opacity:1; } 100%{ opacity:0; transform:translateY(-8px); } }
+      .reminderCard.leaving{ animation:reminderOut .2s ease forwards; }
+
       #timersPanel{
         position:fixed; top:14px; right:14px; z-index:47;
         background:rgba(18,26,33,0.85); border:1px solid var(--border); border-radius:12px;

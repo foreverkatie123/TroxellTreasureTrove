@@ -345,6 +345,14 @@
       .miniBadge{ font-size:9px; padding:1px 6px; border-radius:8px; border:1px solid var(--border); text-transform:uppercase; letter-spacing:.04em; }
       .miniBadge.delayed{ color:#d1a15a; border-color:#d1a15a; background:rgba(209,161,90,0.12); }
       .miniBadge.ready{ color:var(--accent-2); border-color:var(--accent-2); background:rgba(90,200,192,0.12); }
+      .cardLrRow{ display:flex; align-items:center; gap:6px; margin-top:7px; flex-wrap:wrap; }
+      .cardLrRow .lrLabel{ font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.05em; }
+      .cardLrRow .lrMaxInput{ width:40px; padding:4px; font-size:11px; text-align:center; flex-shrink:0; }
+      .lrPips{ display:flex; gap:2px; }
+      .lrPip{ width:8px; height:8px; border-radius:50%; background:#202a32; border:1px solid var(--border); flex-shrink:0; }
+      .lrPip.filled{ background:#e0b64a; border-color:#e0b64a; }
+      .cardLrRow .miniBtn{ width:auto; padding:5px 8px; font-size:10.5px; margin:0; flex-shrink:0; }
+      .reactionBtn.used{ border-color:var(--danger); color:var(--danger); background:rgba(209,96,90,0.12); }
 
       .condChips{ display:flex; flex-wrap:wrap; gap:4px; margin-top:7px; }
       .condChips:empty{ display:none; }
@@ -516,6 +524,16 @@
       <div class="panel">
         <h3>Initiative &amp; Combat<span class="sub">HP / temp HP / AC live-edit here — the TV only shows names and a bloodied/down icon</span></h3>
         <div id="combatantList"></div>
+
+        <div class="divider"></div>
+        <div class="toggle">
+          <label style="margin:0;font-size:13px;">🏛 Lair Actions</label>
+          <div class="switch" id="lairToggleBtn"></div>
+        </div>
+        <div class="field" id="lairInitField" style="display:none;">
+          <label>At Initiative Count</label>
+          <input type="number" id="lairInitInput" min="1" max="30" value="20">
+        </div>
 
         <div class="divider"></div>
         <div class="field"><label>Quick add (no roster entry)</label>
@@ -1375,6 +1393,14 @@
                   <button class="btn miniBtn reactReadyBtn">⚡ Ready</button>
                 </div>
                 <div class="condChips"></div>
+                <div class="cardLrRow">
+                  <span class="lrLabel">LR</span>
+                  <input type="number" class="lrMaxInput" min="0" max="9" value="0" title="Legendary Resistances per day">
+                  <div class="lrPips"></div>
+                  <button class="btn miniBtn lrSpendBtn">− Spend</button>
+                  <button class="btn miniBtn lrResetBtn">↺ Reset</button>
+                  <button class="btn miniBtn reactionBtn">Reaction: Ready</button>
+                </div>
                 <div class="condPickerWrap"></div>
                 <div class="concLine"></div>
               `;
@@ -1396,6 +1422,13 @@
                 const amt = parseFloat(el.querySelector('.amtInput').value) || 0;
                 if(amt > 0) send('applyHeal', { id: c.id, amount: amt });
               });
+              el.querySelector('.lrMaxInput').addEventListener('change', function(){
+                const v = Math.max(0, Math.min(9, parseInt(this.value, 10) || 0));
+                send('setLegendaryResistanceMax', { id: c.id, value: v });
+              });
+              el.querySelector('.lrSpendBtn').addEventListener('click', () => send('spendLegendaryResistance', { id: c.id }));
+              el.querySelector('.lrResetBtn').addEventListener('click', () => send('resetLegendaryResistance', { id: c.id }));
+              el.querySelector('.reactionBtn').addEventListener('click', () => send('toggleReactionUsed', { id: c.id }));
               list.appendChild(el);
             }
 
@@ -1422,6 +1455,15 @@
               concLine.textContent = '';
               concLine.style.display = 'none';
             }
+
+            const lrMax = c.legendaryResistanceMax || 0;
+            const lrLeft = c.legendaryResistanceLeft || 0;
+            const lrMaxInputEl = el.querySelector('.lrMaxInput');
+            if(document.activeElement !== lrMaxInputEl) lrMaxInputEl.value = lrMax;
+            el.querySelector('.lrPips').innerHTML = Array.from({length: lrMax}, (_, i) => `<span class="lrPip${i < lrLeft ? ' filled' : ''}"></span>`).join('');
+            const reactionBtnEl = el.querySelector('.reactionBtn');
+            reactionBtnEl.textContent = c.reactionUsed ? 'Reaction: Used' : 'Reaction: Ready';
+            reactionBtnEl.classList.toggle('used', !!c.reactionUsed);
 
             const conditions = c.conditions || [];
             const exhaustion = c.exhaustion || 0;
@@ -1488,6 +1530,13 @@
           const list = document.getElementById('combatantList');
           
           renderCombatantList(s);
+
+          // Lair Actions
+          const lairEnabled = !!(s.lairAction && s.lairAction.enabled);
+          document.getElementById('lairToggleBtn').classList.toggle('on', lairEnabled);
+          document.getElementById('lairInitField').style.display = lairEnabled ? '' : 'none';
+          const lairInitInput = document.getElementById('lairInitInput');
+          if(document.activeElement !== lairInitInput) lairInitInput.value = (s.lairAction && s.lairAction.initCount) || 20;
 
           // Fog
           const fogStatus = document.getElementById('fogStatus');
@@ -1617,6 +1666,12 @@
         document.getElementById('addInit').addEventListener('keydown', e => { if(e.key === 'Enter') addCombatant(); });
         document.getElementById('clearAllBtn').addEventListener('click', () => {
           showConfirm('Clear the entire initiative order?', () => send('clearAll'));
+        });
+
+        document.getElementById('lairToggleBtn').addEventListener('click', () => send('toggleLairAction'));
+        document.getElementById('lairInitInput').addEventListener('change', function(){
+          const v = parseInt(this.value, 10);
+          if(!isNaN(v)) send('setLairInitCount', { value: v });
         });
 
         document.getElementById('gridToggleBtn').addEventListener('click', () => send('toggleGrid'));

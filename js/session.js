@@ -66,7 +66,10 @@ const STORAGE_KEY = 'blackstoneTvSession_v2';
           concentrationSpell: c.concentrationSpell || '',
           concentrationRounds: typeof c.concentrationRounds === 'number' ? c.concentrationRounds : 0,
           spellSlots: c.spellSlots && typeof c.spellSlots === 'object' ? c.spellSlots : {},
-          preparedSpells: Array.isArray(c.preparedSpells) ? c.preparedSpells : []
+          preparedSpells: Array.isArray(c.preparedSpells) ? c.preparedSpells : [],
+          legendaryResistanceMax: typeof c.legendaryResistanceMax === 'number' ? c.legendaryResistanceMax : 0,
+          legendaryResistanceLeft: typeof c.legendaryResistanceLeft === 'number' ? c.legendaryResistanceLeft : (typeof c.legendaryResistanceMax === 'number' ? c.legendaryResistanceMax : 0),
+          reactionUsed: !!c.reactionUsed,
         }));
         activeId = data.activeId ?? null;
         round = data.round || 1;

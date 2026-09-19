@@ -83,7 +83,11 @@
       }
 
       function onRoundStart(){
-        combatants.forEach(c => { if(c.legendaryMax > 0) c.legendaryLeft = c.legendaryMax; });
+        combatants.forEach(c => {
+          if(c.legendaryMax > 0) c.legendaryLeft = c.legendaryMax;
+          if(c.legendaryResistanceMax > 0) c.legendaryResistanceLeft = c.legendaryResistanceMax;
+          c.reactionUsed = false;
+        });
         lairAction.triggered = false;
         advanceTimers();
         advanceConcentration();
@@ -124,6 +128,32 @@
         const border = document.getElementById('roundFlashBorder');
         hud.classList.remove('roundFlash'); void hud.offsetWidth; hud.classList.add('roundFlash');
         border.classList.remove('flash'); void border.offsetWidth; border.classList.add('flash');
+      }
+
+      const REMINDER_MS = 7000;
+      function showReminder(icon, text, cls){
+        const stack = document.getElementById('reminderStack');
+        const card = document.createElement('div');
+        card.className = 'reminderCard' + (cls ? ' ' + cls : '');
+        card.innerHTML = `<span class="reminderIcon">${icon}</span><span>${escapeHtml(text)}</span><button class="reminderClose">✕</button>`;
+        const remove = () => { card.classList.add('leaving'); setTimeout(() => card.remove(), 220); };
+        card.querySelector('.reminderClose').addEventListener('click', remove);
+        stack.appendChild(card);
+        setTimeout(remove, REMINDER_MS);
+      }
+
+      function checkLegendaryReminder(endedId){
+        if(endedId === null || endedId === undefined) return;
+        const available = combatants.filter(c => c.id !== endedId && c.legendaryMax > 0 && c.legendaryLeft > 0);
+        if(!available.length) return;
+        const names = available.map(c => `${c.name} (${c.legendaryLeft})`).join(', ');
+        showReminder('👑', `Legendary action available: ${names}`, 'legendary');
+      }
+
+      function checkLairReminder(){
+        if(activeId === 'LAIR' && !lairAction.triggered){
+          // showReminder('🏛', 'Lair Action triggers now!', 'lair');
+        }
       }
 
       function render(){
@@ -477,7 +507,9 @@
         if(!name || isNaN(init)) return;
         const c = {
           id: nextId++, name, init, notes:'', hp:null, maxHp:null, tempHp:0, ac:null, rosterId:null,
-          delayed:false, ready:false, legendaryMax:0, legendaryLeft:0, conditions:[], exhaustion:0,
+          delayed:false, ready:false, legendaryMax:0, legendaryLeft:0,
+          legendaryResistanceMax:0, legendaryResistanceLeft:0, reactionUsed:false,
+          conditions:[], exhaustion:0,
           concentrating:false, concentrationSpell:'', concentrationRounds:0,
           spellSlots:{}, preparedSpells:[]
         };
@@ -509,10 +541,13 @@
         if(!ids.length) return;
         const idx = ids.indexOf(activeId);
         const nextIdx = (idx + 1) % ids.length;
-        if(nextIdx === 0 && idx !== -1){ round++; onRoundStart(); logEvent(`- Round ${round} -`); }
+        const endedId = activeId;
+        if(nextIdx === 0 && idx !== -1){ round++; onRoundStart(); logEvent(`— Round ${round} —`); flashRoundStart(); }
         activeId = ids[nextIdx];
         const nm = nameForId(activeId);
         if(nm) logEvent(`▶ ${nm}'s turn`);
+        checkLegendaryReminder(endedId);
+        checkLairReminder();
         render();
       }
       function prevTurn(){
