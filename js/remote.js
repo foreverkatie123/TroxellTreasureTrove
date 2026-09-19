@@ -3,12 +3,23 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
       const overlayInteractBtn = document.getElementById('overlayInteractBtn');
       if(overlayInteractBtn){
         let overlayInteractive = false;
-        overlayInteractBtn.addEventListener('click', () => {
-          overlayInteractive = !overlayInteractive;
+        function updateOverlayInteractBtn(){
           overlayInteractBtn.textContent = overlayInteractive ? 'Disable Overlay Interaction' : 'Enable Overlay Interaction';
           overlayInteractBtn.classList.toggle('armed', overlayInteractive);
+        }
+        overlayInteractBtn.addEventListener('click', () => {
+          overlayInteractive = !overlayInteractive;
+          updateOverlayInteractBtn();
           if(window.blackstoneDesktop) window.blackstoneDesktop.setOverlayInteractive(overlayInteractive);
         });
+        if(window.blackstoneDesktop){
+          // Keep this button in sync no matter which window (or the Ctrl+Shift+O
+          // shortcut) actually changed the interaction state.
+          window.blackstoneDesktop.onOverlayInteractive(on => {
+            overlayInteractive = !!on;
+            updateOverlayInteractBtn();
+          });
+        }
       }
       function openRemote(){
         if(window.blackstoneDesktop){ window.blackstoneDesktop.openController(); return; }
@@ -110,6 +121,7 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
           mapLoaded: !!imgW,
           sourceMode,
           fogEnabled, hasMask: !!maskData,
+          gridOn,
           regionsTotal: regions.size, regionsShown: shown.size,
           mode, feetPerSquare, hudScale,
           combatLog,
@@ -277,6 +289,7 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
             break;
           }
           case 'toggleFog': if(maskData){ fogEnabled = !fogEnabled; updateFogUI(); renderFog(); } break;
+          case 'toggleGrid': setGridOn(!gridOn); break;
           case 'revealAllFog': if(maskData){ shown = new Set(regions); updateFogUI(); renderFog(); } break;
           case 'resetFog': if(maskData){ shown = new Set(); updateFogUI(); renderFog(); } break;
           case 'setRulerMode': setRulerMode(!!payload.on); break;

@@ -788,6 +788,10 @@
         <h3>Overlay Window</h3>
         <button class="btn" id="clickThroughBtn">Enable Interaction</button>
         <div class="statusLine">Enable interaction only while drawing, measuring, or revealing fog. Disable it to pass mouse clicks to the program underneath.</div>
+        <div class="toggle">
+          <label style="margin:0;font-size:13px;">Show Grid</label>
+          <div class="switch" id="gridToggleBtn"></div>
+        </div>
         <div class="field"><label>Player display</label><select id="displaySelect"></select></div>
         <button class="btn" id="moveOverlayBtn">Move Overlay to Display</button>
       </div>
@@ -1481,6 +1485,7 @@
           fogResetBtn.disabled = !s.hasMask;
           fogToggleBtn.classList.toggle('on', s.fogEnabled && s.hasMask);
           fogToggleBtn.textContent = s.fogEnabled ? 'Fog: On' : 'Toggle Fog';
+          document.getElementById('gridToggleBtn').classList.toggle('on', !!s.gridOn);
 
           // Ruler
           const rulerBtn = document.getElementById('rulerBtn');
@@ -1597,6 +1602,7 @@
           showConfirm('Clear the entire initiative order?', () => send('clearAll'));
         });
 
+        document.getElementById('gridToggleBtn').addEventListener('click', () => send('toggleGrid'));
         document.getElementById('fogToggleBtn').addEventListener('click', () => send('toggleFog'));
         document.getElementById('fogRevealBtn').addEventListener('click', () => send('revealAllFog'));
         document.getElementById('fogResetBtn').addEventListener('click', () => {

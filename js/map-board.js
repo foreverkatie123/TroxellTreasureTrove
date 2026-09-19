@@ -278,12 +278,14 @@
         return `rgba(${r},${g},${b},${a})`;
       }
 
-      document.getElementById('gridToggle').addEventListener('click', function(){
-        gridOn = !gridOn;
-        this.classList.toggle('on', gridOn);
+      const gridToggleBtn = document.getElementById('gridToggle');
+      function setGridOn(on){
+        gridOn = !!on;
+        gridToggleBtn.classList.toggle('on', gridOn);
         drawGrid();
         afterStateChange();
-      });
+      }
+      gridToggleBtn.addEventListener('click', () => setGridOn(!gridOn));
       document.getElementById('gridSize').addEventListener('input', function(){
         gridSize = parseFloat(this.value) || 88; drawGrid(); afterStateChange();
       });
