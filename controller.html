@@ -73,7 +73,23 @@
 
       .panel{
         background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:14px 16px;
+        position:relative;
       }
+      .panelHidden{ display:none !important; }
+      .panelPopoutBtn{
+        position:absolute; top:12px; right:14px;
+        background:none; border:1px solid var(--border); border-radius:6px;
+        color:var(--text-dim); font-size:13px; line-height:1; cursor:pointer; padding:4px 6px;
+      }
+      .panelPopoutBtn:hover{ color:var(--accent-2); border-color:var(--accent-2); }
+      .panelPoppedPlaceholder{
+        background:var(--panel); border:1px dashed var(--border); border-radius:10px;
+        padding:14px 16px; display:flex; align-items:center; justify-content:space-between;
+        gap:10px; font-size:12px; color:var(--text-dim);
+      }
+      .panelPoppedPlaceholder .btn{ width:auto; padding:7px 12px; font-size:12px; }
+      #soloPanelBackBar{ margin-bottom:14px; }
+      #soloPanelBackBar .btn{ width:auto; padding:8px 14px; }
       .panel h3{ margin:0 0 12px; color:var(--accent-bright); font-size:14px; text-transform:uppercase; letter-spacing:.08em; }
       .panel h3 .sub{ text-transform:none; letter-spacing:0; color:var(--text-dim); font-size:11px; font-weight:400; display:block; margin-top:2px; }
 
@@ -204,10 +220,23 @@
       .preparedRow .repRemove{ background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:15px; padding:4px; flex-shrink:0; }
       .preparedRow .repRemove:hover{ color:var(--danger); }
       #preparedSpellsEmpty{ font-size:12px; color:var(--text-dim); padding:4px 0 8px; }
+
+      /* ---------- Concentration save prompts (controller-only) ---------- */
       .concLine{
         margin-top:6px; font-size:11px; color:var(--accent-2); background:rgba(90,200,192,0.1);
         border:1px solid rgba(90,200,192,0.35); border-radius:6px; padding:3px 8px; display:none;
       }
+      #concAlerts{ position:sticky; top:8px; z-index:30; display:flex; flex-direction:column; gap:8px; }
+      #concAlerts:empty{ display:none; }
+      .concAlert{
+        background:var(--panel); border:1px solid var(--accent-2); border-radius:10px;
+        padding:10px 12px; box-shadow:0 6px 20px rgba(0,0,0,.5);
+      }
+      .concAlert .caTitle{ font-size:13px; font-weight:600; color:var(--accent-2); margin-bottom:2px; }
+      .concAlert .caBody{ font-size:12px; color:var(--text); margin-bottom:8px; }
+      .concAlert .caBody b{ color:var(--accent-bright); }
+      .concAlert .caBtns{ display:flex; gap:8px; }
+      .concAlert .caBtns .btn{ margin-top:0; padding:8px; font-size:12px; }
 
       /* ---------- Monster Library ---------- */
       #monsterResults{ margin-top:8px; }
@@ -507,8 +536,9 @@
     </div>
 
     <div id="appBody">
+      <div id="concAlerts"></div>
 
-      <div class="panel">
+      <div class="panel" id="roundPanel">
         <div id="roundDisplay">
           <span class="num" id="roundNum">1</span>
           <span class="label">Round</span>
@@ -521,8 +551,8 @@
         </div>
       </div>
 
-      <div class="panel">
-        <h3>Initiative &amp; Combat<span class="sub">HP / temp HP / AC live-edit here — the TV only shows names and a bloodied/down icon</span></h3>
+      <div class="panel" id="initiativePanel">
+        <h3>Initiative &amp; Combat</h3>
         <div id="combatantList"></div>
 
         <div class="divider"></div>
@@ -1088,6 +1118,111 @@
         let lastSnapshot = null;
         let liveTimer = null;
 
+        // ---- Panel pop-out: tear any panel out into its own real window ----
+        (function(){
+          if (!window.blackstoneDesktop) return; // desktop app only
+
+          const soloPanelId = new URLSearchParams(location.search).get('panel');
+          const slugify = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+          const hide = el => el.classList.add('panelHidden');
+
+          // Panels listed here pop out together as ONE window with ONE button.
+          // Anything not listed here still pops out individually, keyed off its own <h3>.
+          const GROUPS = [
+            { id: 'turn-initiative', label: 'Turn & Initiative', selectors: ['#roundPanel', '#initiativePanel'] }
+          ];
+
+          const groupedEls = new Set();
+          GROUPS.forEach(g => {
+            g.els = g.selectors.map(sel => document.querySelector(sel)).filter(Boolean);
+            g.els.forEach(el => groupedEls.add(el));
+          });
+
+          const allPanels = Array.from(document.querySelectorAll('#appBody > .panel'))
+            .filter(panel => !groupedEls.has(panel));
+
+          const seen = {};
+          allPanels.forEach(panel => {
+            const h3 = panel.querySelector('h3');
+            if(!h3) return;
+            const label = Array.from(h3.childNodes)
+              .filter(n => n.nodeType === Node.TEXT_NODE)
+              .map(n => n.textContent).join('').trim() || h3.textContent.trim();
+            let id = slugify(label);
+            if(seen[id]){ id = id + '-' + (++seen[id]); } else { seen[id] = 1; }
+            panel.dataset.panelId = id;
+            panel.dataset.panelLabel = label;
+          });
+
+          // ---- This window IS a popped-out panel: show only that panel ----
+          if (soloPanelId){
+            document.body.classList.add('soloPanelMode');
+            const group = GROUPS.find(g => g.id === soloPanelId);
+            if (group){
+              allPanels.forEach(hide);
+              GROUPS.forEach(g => { if(g.id !== soloPanelId) g.els.forEach(hide); });
+            } else {
+              groupedEls.forEach(hide);
+              allPanels.forEach(panel => {
+                if(panel.dataset.panelId !== soloPanelId) hide(panel);
+              });
+            }
+            const backBar = document.createElement('div');
+            backBar.id = 'soloPanelBackBar';
+            backBar.innerHTML = '<button class="btn" id="soloBackBtn">↩ Back to main window</button>';
+            document.body.insertBefore(backBar, document.getElementById('appBody'));
+            document.getElementById('soloBackBtn').addEventListener('click', () => window.close());
+            return;
+          }
+
+          // ---- Main window: add a ⤢ button + "is open in a separate window" placeholder ----
+          function addPopoutButton(anchorEl, panelId, label, placeholderAfterEl){
+            const btn = document.createElement('button');
+            btn.className = 'panelPopoutBtn';
+            btn.title = 'Open in separate window';
+            btn.textContent = '⤢';
+            btn.addEventListener('click', () => window.blackstoneDesktop.openPanelWindow(panelId));
+            anchorEl.appendChild(btn);
+
+            const placeholder = document.createElement('div');
+            placeholder.className = 'panelPoppedPlaceholder';
+            placeholder.style.display = 'none';
+            const labelEl = document.createElement('span');
+            labelEl.textContent = label + ' is open in a separate window.';
+            const bringBackBtn = document.createElement('button');
+            bringBackBtn.className = 'btn small';
+            bringBackBtn.textContent = 'Bring back';
+            bringBackBtn.addEventListener('click', () => window.blackstoneDesktop.closePanelWindow(panelId));
+            placeholder.appendChild(labelEl);
+            placeholder.appendChild(bringBackBtn);
+            placeholderAfterEl.parentNode.insertBefore(placeholder, placeholderAfterEl.nextSibling);
+            return placeholder;
+          }
+
+          const poppableEntries = [];
+
+          GROUPS.forEach(g => {
+            if(!g.els.length) return;
+            const placeholder = addPopoutButton(g.els[0], g.id, g.label, g.els[g.els.length - 1]);
+            poppableEntries.push({ id: g.id, els: g.els, placeholder });
+          });
+
+          allPanels.forEach(panel => {
+            if(!panel.dataset.panelId) return;
+            const placeholder = addPopoutButton(panel, panel.dataset.panelId, panel.dataset.panelLabel, panel);
+            poppableEntries.push({ id: panel.dataset.panelId, els: [panel], placeholder });
+          });
+
+          window.blackstoneDesktop.onPoppedPanelsChanged(list => {
+            poppableEntries.forEach(entry => {
+              const popped = list.includes(entry.id);
+              entry.els.forEach(el => el.classList.toggle('panelHidden', popped));
+              entry.placeholder.style.display = popped ? '' : 'none';
+            });
+          });
+          window.blackstoneDesktop.requestPoppedPanels();
+        })();
+
         // Closing a full-viewport fixed-position overlay can leave Electron/Chromium
         // with a stale hit-test region that still swallows clicks underneath it, even
         // though it's invisible — minimizing and restoring the window forces a repaint
@@ -1350,6 +1485,63 @@
         function controllerConditionInfo(id){ return CONTROLLER_CONDITIONS.find(c => c.id === id); }
         let condPickerOpenId = null; // combatant id whose condition picker is open — local to this device
 
+        // ---- Concentration save prompts (controller-only — never sent to the TV) ----
+        let concAlerts = []; // { id, combatantId, name, spell, dmg, dc }
+        let concAlertSeq = 1;
+
+        function isConcentrating(c){
+          return !!c && (!!c.concentrating || (Array.isArray(c.conditions) && c.conditions.includes('concentrating')));
+        }
+        function queueConcentrationPrompt(combatantId, damage){
+          if(!lastSnapshot || !(damage > 0)) return;
+          const c = lastSnapshot.combatants.find(x => x.id === combatantId);
+          if(!isConcentrating(c)) return;
+          concAlerts.push({
+            id: concAlertSeq++, combatantId, name: c.name,
+            spell: c.concentrating ? (c.concentrationSpell || '') : '',
+            dmg: damage, dc: Math.max(10, Math.floor(damage / 2))
+          });
+          renderConcAlerts();
+        }
+        function renderConcAlerts(){
+          const el = document.getElementById('concAlerts');
+          el.innerHTML = concAlerts.map(a => `
+            <div class="concAlert" data-id="${a.id}">
+              <div class="caTitle">🔮 Concentration check — ${escapeHtml(a.name)}</div>
+              <div class="caBody">Took <b>${a.dmg}</b> damage${a.spell ? ' while concentrating on ' + escapeHtml(a.spell) : ''}.
+                CON save, <b>DC ${a.dc}</b>.</div>
+              <div class="caBtns">
+                <button class="btn on caHeldBtn">✓ Held</button>
+                <button class="btn danger caLostBtn">✕ Lost it</button>
+              </div>
+            </div>
+          `).join('');
+          el.querySelectorAll('.concAlert').forEach(card => {
+            const alertId = parseInt(card.dataset.id);
+            const a = concAlerts.find(x => x.id === alertId);
+            card.querySelector('.caHeldBtn').addEventListener('click', () => {
+              concAlerts = concAlerts.filter(x => x.id !== alertId);
+              renderConcAlerts();
+            });
+            card.querySelector('.caLostBtn').addEventListener('click', () => {
+              const c = lastSnapshot && lastSnapshot.combatants.find(x => x.id === a.combatantId);
+              if(c){
+                if(c.concentrating) send('clearConcentration', { id: c.id });
+                if((c.conditions || []).includes('concentrating')) send('toggleCondition', { id: c.id, cond: 'concentrating' });
+              }
+              // concentration is gone, so any other pending checks for this creature are moot
+              concAlerts = concAlerts.filter(x => x.combatantId !== a.combatantId);
+              renderConcAlerts();
+            });
+          });
+        }
+        // Drop prompts whose creature was removed or stopped concentrating some other way
+        function pruneConcAlerts(s){
+          const before = concAlerts.length;
+          concAlerts = concAlerts.filter(a => isConcentrating(s.combatants.find(c => c.id === a.combatantId)));
+          if(concAlerts.length !== before) renderConcAlerts();
+        }
+
         function renderCombatantList(s){
           const list = document.getElementById('combatantList');
 
@@ -1416,7 +1608,10 @@
               });
               el.querySelector('.dmgBtn').addEventListener('click', () => {
                 const amt = parseFloat(el.querySelector('.amtInput').value) || 0;
-                if(amt > 0) send('applyDamage', { id: c.id, amount: amt });
+                if(amt > 0){
+                  send('applyDamage', { id: c.id, amount: amt });
+                  queueConcentrationPrompt(c.id, amt);
+                }
               });
               el.querySelector('.healBtn').addEventListener('click', () => {
                 const amt = parseFloat(el.querySelector('.amtInput').value) || 0;
@@ -1530,6 +1725,8 @@
           const list = document.getElementById('combatantList');
           
           renderCombatantList(s);
+
+          pruneConcAlerts(s);
 
           // Lair Actions
           const lairEnabled = !!(s.lairAction && s.lairAction.enabled);
