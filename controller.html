@@ -18,18 +18,19 @@
       h1,h2,h3,.display{ font-family:'Cinzel',Georgia,serif; letter-spacing:0.02em; }
       body{ padding:16px; max-width:460px; }
 
+      #statusBarsRow{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
       #connBar{
         display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px;
-        margin-bottom:14px; font-size:12px; text-transform:uppercase; letter-spacing:.06em;
+        flex:1 1 100%; font-size:12px; text-transform:uppercase; letter-spacing:.06em;
         border:1px solid var(--border); background:var(--panel);
       }
       #connDot{ width:8px; height:8px; border-radius:50%; background:var(--danger); flex-shrink:0; }
       #connDot.live{ background:var(--accent-2); box-shadow:0 0 8px var(--accent-2); }
-      #connText{ color:var(--text-dim); }
+      #connText{ color:var(--text-dim); flex:1; }
 
       #fbBar{
         display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px;
-        margin-bottom:14px; font-size:12px; text-transform:uppercase; letter-spacing:.06em;
+        flex:1 1 100%; font-size:12px; text-transform:uppercase; letter-spacing:.06em;
         border:1px solid var(--border); background:var(--panel);
       }
       #fbDot{ width:8px; height:8px; border-radius:50%; background:var(--danger); flex-shrink:0; }
@@ -51,6 +52,17 @@
       #fbSignOutBtn:hover{ color:var(--danger); }
       .hidden{ display:none !important; }
 
+      /* ---------- Hide/collapse for the status bars ---------- */
+      .barHideBtn{
+        background:none; border:none; color:var(--text-dim); font-size:13px; text-transform:none;
+        letter-spacing:0; cursor:pointer; padding:2px 4px; flex-shrink:0; line-height:1;
+      }
+      .barHideBtn:hover{ color:var(--danger); }
+      #connBar.collapsed, #fbBar.collapsed{
+        flex:0 0 auto; width:20px; height:20px; padding:0; justify-content:center; cursor:pointer; border-radius:50%;
+      }
+      #connBar.collapsed > *:not(#connDot), #fbBar.collapsed > *:not(#fbDot){ display:none !important; }
+
       #noOpener{
         display:none; text-align:center; padding:40px 20px; color:var(--text-dim);
         border:1px dashed var(--border); border-radius:12px;
@@ -61,22 +73,7 @@
 
       .panel{
         background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:14px 16px;
-        position:relative;
       }
-      .panelPopoutBtn{
-        position:absolute; top:12px; right:14px;
-        background:none; border:1px solid var(--border); border-radius:6px;
-        color:var(--text-dim); font-size:13px; line-height:1; cursor:pointer; padding:4px 6px;
-      }
-      .panelPopoutBtn:hover{ color:var(--accent-2); border-color:var(--accent-2); }
-      .panelPoppedPlaceholder{
-        background:var(--panel); border:1px dashed var(--border); border-radius:10px;
-        padding:14px 16px; display:flex; align-items:center; justify-content:space-between;
-        gap:10px; font-size:12px; color:var(--text-dim);
-      }
-      .panelPoppedPlaceholder .btn{ width:auto; padding:7px 12px; font-size:12px; }
-      #soloPanelBackBar{ margin-bottom:14px; }
-      #soloPanelBackBar .btn{ width:auto; padding:8px 14px; }
       .panel h3{ margin:0 0 12px; color:var(--accent-bright); font-size:14px; text-transform:uppercase; letter-spacing:.08em; }
       .panel h3 .sub{ text-transform:none; letter-spacing:0; color:var(--text-dim); font-size:11px; font-weight:400; display:block; margin-top:2px; }
 
@@ -479,12 +476,15 @@
   </head>
   <body>
 
-    <div id="connBar"><div id="connDot"></div><div id="connText">Connecting to TV display…</div></div>
-    <div id="fbBar">
-      <div id="fbDot" class="pending"></div>
-      <div id="fbText">Connecting to campaign database…</div>
-      <button id="fbSignInBtn" class="hidden">Sign in with Google</button>
-      <div id="fbUserRow" class="hidden"><img id="fbUserPhoto" src="" alt=""><span id="fbUserName"></span><button id="fbSignOutBtn">Sign out</button></div>
+    <div id="statusBarsRow">
+      <div id="connBar"><div id="connDot"></div><div id="connText">Connecting to TV display…</div><button id="connHideBtn" class="barHideBtn" title="Hide">✕</button></div>
+      <div id="fbBar">
+        <div id="fbDot" class="pending"></div>
+        <div id="fbText">Connecting to campaign database…</div>
+        <button id="fbSignInBtn" class="hidden">Sign in with Google</button>
+        <div id="fbUserRow" class="hidden"><img id="fbUserPhoto" src="" alt=""><span id="fbUserName"></span><button id="fbSignOutBtn">Sign out</button></div>
+        <button id="fbHideBtn" class="barHideBtn" title="Hide">✕</button>
+      </div>
     </div>
 
     <div id="noOpener">
@@ -494,7 +494,7 @@
 
     <div id="appBody">
 
-      <div class="panel" id="roundPanel">
+      <div class="panel">
         <div id="roundDisplay">
           <span class="num" id="roundNum">1</span>
           <span class="label">Round</span>
@@ -507,7 +507,7 @@
         </div>
       </div>
 
-      <div class="panel" id="initiativePanel">
+      <div class="panel">
         <h3>Initiative &amp; Combat<span class="sub">HP / temp HP / AC live-edit here — the TV only shows names and a bloodied/down icon</span></h3>
         <div id="combatantList"></div>
 
@@ -1057,108 +1057,6 @@
           return;
         }
 
-        // ---- Panel pop-out: tear any panel out into its own real window ----
-        (function(){
-          if (!window.blackstoneDesktop) return; // desktop app only
-
-          const soloPanelId = new URLSearchParams(location.search).get('panel');
-          const slugify = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-
-          // Panels listed here pop out together as ONE window with ONE button.
-          // Anything not listed here still pops out individually, keyed off its own <h3>.
-          const GROUPS = [
-            { id: 'turn-initiative', label: 'Turn & Initiative', selectors: ['#roundPanel', '#initiativePanel'] }
-          ];
-
-          const groupedEls = new Set();
-          GROUPS.forEach(g => {
-            g.els = g.selectors.map(sel => document.querySelector(sel)).filter(Boolean);
-            g.els.forEach(el => groupedEls.add(el));
-          });
-
-          const allPanels = Array.from(document.querySelectorAll('#appBody > .panel'))
-            .filter(panel => !groupedEls.has(panel));
-
-          const seen = {};
-          allPanels.forEach(panel => {
-            const h3 = panel.querySelector('h3');
-            if(!h3) return;
-            const label = Array.from(h3.childNodes)
-              .filter(n => n.nodeType === Node.TEXT_NODE)
-              .map(n => n.textContent).join('').trim() || h3.textContent.trim();
-            let id = slugify(label);
-            if(seen[id]){ id = id + '-' + (++seen[id]); } else { seen[id] = 1; }
-            panel.dataset.panelId = id;
-            panel.dataset.panelLabel = label;
-          });
-
-          if (soloPanelId){
-            document.body.classList.add('soloPanelMode');
-            const group = GROUPS.find(g => g.id === soloPanelId);
-            if (group){
-              allPanels.forEach(p => { p.style.display = 'none'; });
-              GROUPS.forEach(g => { if(g.id !== soloPanelId) g.els.forEach(el => { el.style.display = 'none'; }); });
-            } else {
-              groupedEls.forEach(el => { el.style.display = 'none'; });
-              allPanels.forEach(panel => {
-                if(panel.dataset.panelId !== soloPanelId) panel.style.display = 'none';
-              });
-            }
-            const backBar = document.createElement('div');
-            backBar.id = 'soloPanelBackBar';
-            backBar.innerHTML = '<button class="btn" id="soloBackBtn">↩ Back to main window</button>';
-            document.body.insertBefore(backBar, document.getElementById('appBody'));
-            document.getElementById('soloBackBtn').addEventListener('click', () => window.close());
-            return;
-          }
-
-          function addPopoutButton(anchorEl, panelId, label, placeholderAfterEl){
-            const btn = document.createElement('button');
-            btn.className = 'panelPopoutBtn';
-            btn.title = 'Open in separate window';
-            btn.textContent = '⤢';
-            btn.addEventListener('click', () => window.blackstoneDesktop.openPanelWindow(panelId));
-            anchorEl.appendChild(btn);
-
-            const placeholder = document.createElement('div');
-            placeholder.className = 'panelPoppedPlaceholder';
-            placeholder.style.display = 'none';
-            const labelEl = document.createElement('span');
-            labelEl.textContent = label + ' is open in a separate window.';
-            const bringBackBtn = document.createElement('button');
-            bringBackBtn.className = 'btn small';
-            bringBackBtn.textContent = 'Bring back';
-            bringBackBtn.addEventListener('click', () => window.blackstoneDesktop.closePanelWindow(panelId));
-            placeholder.appendChild(labelEl);
-            placeholder.appendChild(bringBackBtn);
-            placeholderAfterEl.parentNode.insertBefore(placeholder, placeholderAfterEl.nextSibling);
-            return placeholder;
-          }
-
-          const poppableEntries = [];
-
-          GROUPS.forEach(g => {
-            if(!g.els.length) return;
-            const placeholder = addPopoutButton(g.els[0], g.id, g.label, g.els[g.els.length - 1]);
-            poppableEntries.push({ id: g.id, els: g.els, placeholder });
-          });
-
-          allPanels.forEach(panel => {
-            if(!panel.dataset.panelId) return;
-            const placeholder = addPopoutButton(panel, panel.dataset.panelId, panel.dataset.panelLabel, panel);
-            poppableEntries.push({ id: panel.dataset.panelId, els: [panel], placeholder });
-          });
-
-          window.blackstoneDesktop.onPoppedPanelsChanged(list => {
-            poppableEntries.forEach(entry => {
-              const popped = list.includes(entry.id);
-              entry.els.forEach(el => { el.style.display = popped ? 'none' : ''; });
-              entry.placeholder.style.display = popped ? '' : 'none';
-            });
-          });
-          window.blackstoneDesktop.requestPoppedPanels();
-        })();
-
         let lastSnapshot = null;
         let liveTimer = null;
 
@@ -1176,9 +1074,7 @@
         const confirmModalCancelBtn = document.getElementById('confirmModalCancelBtn');
         const confirmModalOkBtn = document.getElementById('confirmModalOkBtn');
         let confirmCallback = null;
-        let lastFocusBeforeModal = null;
         function showConfirm(message, onConfirm, title){
-          lastFocusBeforeModal = document.activeElement;
           confirmModalCancelBtn.classList.remove('hidden');
           confirmModalOkBtn.textContent = 'Confirm';
           confirmModalOkBtn.className = 'btn danger';
@@ -1187,23 +1083,7 @@
           confirmCallback = onConfirm;
           confirmModal.classList.add('open');
         }
-        function closeConfirm(){
-          if (confirmModal.contains(document.activeElement)) document.activeElement.blur();
-          closeModal(confirmModal);
-          confirmCallback = null;
-          const back = lastFocusBeforeModal;
-          lastFocusBeforeModal = null;
-          if (back && document.body.contains(back)) back.focus();
-          else document.getElementById('addName').focus();
-        }
-        confirmModalCancelBtn.addEventListener('click', closeConfirm);
-        confirmModalOkBtn.addEventListener('click', () => {
-          const cb = confirmCallback;
-          closeConfirm();
-          if (cb) cb();
-        });
         function showAlert(message, title){
-          lastFocusBeforeModal = document.activeElement;
           confirmModalCancelBtn.classList.add('hidden');
           confirmModalOkBtn.textContent = 'OK';
           confirmModalOkBtn.className = 'btn primary';
@@ -1212,6 +1092,43 @@
           confirmCallback = null;
           confirmModal.classList.add('open');
         }
+        confirmModalCancelBtn.addEventListener('click', () => {
+          closeModal(confirmModal);
+          confirmCallback = null;
+        });
+        confirmModalOkBtn.addEventListener('click', () => {
+          const cb = confirmCallback;
+          closeModal(confirmModal);
+          confirmCallback = null;
+          if(cb) cb();
+        });
+
+        // ---- Collapsible status bars (hide button shrinks each bar down to just its
+        // status dot; clicking the collapsed dot restores it; choice persists) ----
+        const BAR_COLLAPSE_KEY = 'blackstoneBarsCollapsed_v1';
+        let barsCollapsed = {};
+        try{ barsCollapsed = JSON.parse(localStorage.getItem(BAR_COLLAPSE_KEY)) || {}; }catch(err){ barsCollapsed = {}; }
+        function saveBarsCollapsed(){
+          try{ localStorage.setItem(BAR_COLLAPSE_KEY, JSON.stringify(barsCollapsed)); }catch(err){}
+        }
+        function setupCollapsibleBar(barEl, hideBtn, key){
+          if(barsCollapsed[key]) barEl.classList.add('collapsed');
+          hideBtn.addEventListener('click', e => {
+            e.stopPropagation();
+            barEl.classList.add('collapsed');
+            barsCollapsed[key] = true;
+            saveBarsCollapsed();
+          });
+          barEl.addEventListener('click', () => {
+            if(barEl.classList.contains('collapsed')){
+              barEl.classList.remove('collapsed');
+              barsCollapsed[key] = false;
+              saveBarsCollapsed();
+            }
+          });
+        }
+        setupCollapsibleBar(document.getElementById('connBar'), document.getElementById('connHideBtn'), 'conn');
+        setupCollapsibleBar(document.getElementById('fbBar'), document.getElementById('fbHideBtn'), 'fb');
 
         // ---- Firebase (campaign database) ----
         // Config lives in js/firebase-config.js (gitignored) — see js/firebase-config.example.js
@@ -2041,8 +1958,8 @@
         document.getElementById('preparedSpellInput').addEventListener('keydown', e => { if(e.key === 'Enter') submitPreparedSpell(); });
 
         // =====================================================================
-        // ROSTER — persistent character/monster library (saved locally on this
-        // device only; independent of the live combat session on the TV).
+        // ROSTER — persistent character/monster library (synced live to the
+        // campaign in Firestore, shared across every device connected to it).
         // =====================================================================
         let roster = [];
         let rosterUnsub = null;
