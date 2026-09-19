@@ -119,6 +119,13 @@
         document.getElementById('hudOnDeckName').textContent = onDeck ? onDeck.name : '-';
       }
 
+      function flashRoundStart(){
+        const hud = document.getElementById('hud');
+        const border = document.getElementById('roundFlashBorder');
+        hud.classList.remove('roundFlash'); void hud.offsetWidth; hud.classList.add('roundFlash');
+        border.classList.remove('flash'); void border.offsetWidth; border.classList.add('flash');
+      }
+
       function render(){
         const order = turnOrder().map(resolveEntry).filter(Boolean);
         listEl.innerHTML = '';
@@ -502,7 +509,7 @@
         if(!ids.length) return;
         const idx = ids.indexOf(activeId);
         const nextIdx = (idx + 1) % ids.length;
-        if(nextIdx === 0 && idx !== -1){ round++; onRoundStart(); logEvent(`— Round ${round} —`); }
+        if(nextIdx === 0 && idx !== -1){ round++; onRoundStart(); logEvent(`- Round ${round} -`); }
         activeId = ids[nextIdx];
         const nm = nameForId(activeId);
         if(nm) logEvent(`▶ ${nm}'s turn`);

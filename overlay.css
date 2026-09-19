@@ -83,6 +83,25 @@
       #hud .hudOnDeck{ font-size:12px; color:var(--text-dim); }
       #hud .hudOnDeck span{ color:var(--text); font-weight:600; }
 
+      @keyframes hudRoundPulse{
+        0%   { box-shadow:0 0 0 1px var(--accent-2), 0 0 0 rgba(90,200,192,0.6); }
+        30%  { box-shadow:0 0 0 1px var(--accent-2), 0 0 34px rgba(90,200,192,0.85); }
+        100% { box-shadow:0 0 0 1px var(--border), 0 0 0 rgba(90,200,192,0); }
+      }
+      #hud.roundFlash{ animation: hudRoundPulse 1.4s ease-out; }
+
+      @keyframes screenRoundFlash{
+        0%   { opacity:0; }
+        15%  { opacity:1; }
+        100% { opacity:0; }
+      }
+      #roundFlashBorder{
+        position:fixed; inset:0; z-index:200; pointer-events:none;
+        box-shadow: inset 0 0 0 6px var(--accent-2), inset 0 0 60px rgba(90,200,192,0.5);
+        opacity:0;
+      }
+      #roundFlashBorder.flash{ animation: screenRoundFlash 1.4s ease-out; }
+
       #timersPanel{
         position:fixed; top:14px; right:14px; z-index:47;
         background:rgba(18,26,33,0.85); border:1px solid var(--border); border-radius:12px;
