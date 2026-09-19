@@ -339,6 +339,12 @@
       .cardStats .statText.bloodied{ color:var(--danger); }
       .amtInput{ width:52px; padding:6px 6px; font-size:12px; text-align:center; flex-shrink:0; }
       .miniBtn{ width:auto; padding:6px 9px; font-size:11px; margin:0; flex-shrink:0; }
+      .reactDelayBtn.active{ border-color:#d1a15a; color:#d1a15a; background:rgba(209,161,90,0.12); }
+      .reactReadyBtn.active{ border-color:var(--accent-2); color:var(--accent-2); background:rgba(90,200,192,0.12); }
+      .cardReactRow{ display:flex; gap:6px; margin-top:7px; }
+      .miniBadge{ font-size:9px; padding:1px 6px; border-radius:8px; border:1px solid var(--border); text-transform:uppercase; letter-spacing:.04em; }
+      .miniBadge.delayed{ color:#d1a15a; border-color:#d1a15a; background:rgba(209,161,90,0.12); }
+      .miniBadge.ready{ color:var(--accent-2); border-color:var(--accent-2); background:rgba(90,200,192,0.12); }
 
       .condChips{ display:flex; flex-wrap:wrap; gap:4px; margin-top:7px; }
       .condChips:empty{ display:none; }
@@ -1364,6 +1370,10 @@
                   <button class="btn miniBtn dmgBtn">−HP</button>
                   <button class="btn miniBtn healBtn">+HP</button>
                 </div>
+                <div class="cardReactRow">
+                  <button class="btn miniBtn reactDelayBtn">⏸ Delay</button>
+                  <button class="btn miniBtn reactReadyBtn">⚡ Ready</button>
+                </div>
                 <div class="condChips"></div>
                 <div class="condPickerWrap"></div>
                 <div class="concLine"></div>
@@ -1371,6 +1381,8 @@
               // wire listeners ONCE, when the card is created — never re-attached on re-render
               el.querySelector('.removeBtn').addEventListener('click', () => send('removeCombatant', { id: c.id }));
               el.querySelector('.statBtn').addEventListener('click', () => openStatsModal(c.id));
+              el.querySelector('.reactDelayBtn').addEventListener('click', () => send('toggleDelayed', { id: c.id }));
+              el.querySelector('.reactReadyBtn').addEventListener('click', () => send('toggleReady', { id: c.id }));
               el.querySelector('.spellBtn').addEventListener('click', () => openSpellModal(c.id));
               el.querySelector('.condBtn').addEventListener('click', () => {
                 condPickerOpenId = condPickerOpenId === c.id ? null : c.id;
@@ -1393,7 +1405,12 @@
             // update only the mutable display bits — amtInput is never touched here
             el.classList.toggle('active', c.id === s.activeId);
             el.querySelector('.initNum').textContent = c.init;
-            el.querySelector('.name').textContent = c.name;
+            const nameEl = el.querySelector('.name');
+            nameEl.innerHTML = escapeHtml(c.name) +
+              (c.delayed ? ' <span class="miniBadge delayed">Delaying</span>' : '') +
+              (c.ready ? ' <span class="miniBadge ready">Ready</span>' : '');
+            el.querySelector('.reactDelayBtn').classList.toggle('active', !!c.delayed);
+            el.querySelector('.reactReadyBtn').classList.toggle('active', !!c.ready);
             const statSpan = el.querySelector('.statText');
             statSpan.textContent = st.text;
             statSpan.classList.toggle('bloodied', st.bloodied);

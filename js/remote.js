@@ -389,6 +389,24 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
           case 'startCapture': startCapture(); break;
           case 'saveSessionToCloud': saveSessionToCloud(payload.campaignId || 'default'); break;
           case 'loadSessionFromCloud': loadSessionFromCloud(payload.campaignId || 'default'); break;
+          case 'toggleDelayed': {
+            const c = findCombatant(payload.id);
+            if(!c) break;
+            c.delayed = !c.delayed;
+            if(c.delayed) c.ready = false;
+            logEvent(c.delayed ? `⏸ ${c.name} delays their turn` : `▶ ${c.name} is no longer delaying`);
+            render();
+            break;
+          }
+          case 'toggleReady': {
+            const c = findCombatant(payload.id);
+            if(!c) break;
+            c.ready = !c.ready;
+            if(c.ready) c.delayed = false;
+            logEvent(c.ready ? `⚡ ${c.name} readies an action` : `${c.name}'s readied action resolves`);
+            render();
+            break;
+          }
         }
       }
 
