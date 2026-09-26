@@ -57,7 +57,7 @@
       .printCard .idLabel{ font-family:monospace; font-size:11px; color:#000; margin-top:4px; }
       @media print{
         body{ background:#fff; color:#000; padding:0; }
-        .tabBar, .panel h3, #printControls, #videoTab{ display:none !important; }
+        .tabBar, .panel h3, #printControls, #videoTab, #ringControls{ display:none !important; }
         .printCard .idLabel{ color:#000; }
       }
       .field{ margin-bottom:10px; }
@@ -66,16 +66,11 @@
   </head>
   <body>
     <h1>Mini Tracker — Detection Test</h1>
-    <div class="sub">
-      A standalone test bench for the "physical minis move the digital token" idea: print some markers below,
-      stick them under a few minis, then switch to Detect and point a camera at them. This does not yet feed
-      positions into the overlay app — it's just to prove detection works with your camera, lighting, and
-      marker size before wiring that up for real.
-    </div>
 
     <div class="tabBar">
       <button class="tabBtn active" data-tab="detect">Detect</button>
       <button class="tabBtn" data-tab="print">Print Markers</button>
+      <button class="tabBtn" data-tab="rings">Base Rings</button>
     </div>
 
     <div class="tabPanel active" data-panel="detect" id="videoTab">
@@ -112,13 +107,50 @@
           <button class="btn primary" id="generateBtn" style="align-self:flex-end;">Generate</button>
           <button class="btn" id="printBtn" style="align-self:flex-end;">Print This Sheet</button>
         </div>
-        <div class="sub" style="margin:0;">
-          Uses the ARUCO_MIP_36h12 dictionary (250 possible IDs, 0–249) — the more robust of the two the
-          detector supports. Print at a size where each marker is at least about 1.5–2cm across for a mini's
-          base; bigger is more reliable at a distance. Write down which ID you assign to which creature.
-        </div>
       </div>
       <div class="printGrid" id="printGrid"></div>
+    </div>
+
+    <div class="tabPanel" data-panel="rings">
+      <div class="panel" id="ringControls">
+        <h3>Base Ring Templates</h3>
+        <div class="row" style="margin-top:12px;">
+          <div class="field" style="margin-bottom:0;">
+            <label>Outer diameter (mm)</label>
+            <input type="number" id="ringOuterMm" value="25.4" step="0.1" min="10">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>Inner cutout (mm)</label>
+            <input type="number" id="ringInnerMm" value="20" step="0.5" min="5">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>Copies around ring</label>
+            <input type="number" id="ringCopies" value="4" min="2" max="8">
+          </div>
+        </div>
+        <div class="row">
+          <div class="field" style="margin-bottom:0;">
+            <label>Marker ID for this base</label>
+            <input type="number" id="ringMarkerId" value="0" min="0" max="249">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>How many bases (sheet)</label>
+            <input type="number" id="ringCount" value="4" min="1" max="12">
+          </div>
+          <button class="btn primary" id="ringGenerateBtn" style="align-self:flex-end;">Generate</button>
+          <button class="btn" id="ringPrintBtn" style="align-self:flex-end;">Print This Sheet</button>
+        </div>
+        <div class="sub" style="margin:0;">
+          Default outer size (25.4mm = 1 inch) matches a standard battle-map square exactly. The default 20mm
+          inner cutout leaves a ~2.7mm ring — workable for most standard mini bases, but check it against your
+          own bases before printing a whole set; a narrower ring means smaller, harder-to-read markers.
+        </div>
+        <div class="sub" style="margin:4px 0 0;color:#f4d35e;">
+          When you print: set your printer's scale to "100%" / "Actual size" (not "Fit to page") — these are
+          sized in real millimeters, and page-fit scaling will throw that off.
+        </div>
+      </div>
+      <div class="printGrid" id="ringGrid"></div>
     </div>
 
     <script src="js/vendor/cv.js"></script>
@@ -151,6 +183,75 @@
       document.getElementById('generateBtn').addEventListener('click', renderPrintGrid);
       document.getElementById('printBtn').addEventListener('click', () => window.print());
       renderPrintGrid();
+
+      // ---- Base Ring Templates ----
+      // ArUco detection is rotation-invariant by design, so the repeated copies
+      // around the ring don't need to be rotated to "face" anything in particular -
+      // whichever one the camera can see is enough to read the ID.
+      function parseMarkerSvg(svgStr){
+        const doc = new DOMParser().parseFromString(svgStr, 'image/svg+xml');
+        const svgEl = doc.documentElement;
+        return { viewBox: svgEl.getAttribute('viewBox'), inner: svgEl.innerHTML };
+      }
+      function buildRingSVG(outerMm, innerMm, copies, markerId){
+        const outerR = outerMm / 2;
+        const innerR = innerMm / 2;
+        const midR = (outerR + innerR) / 2;
+        const markerSize = Math.max(1, (outerR - innerR) * 0.85);
+        const parsed = parseMarkerSvg(dictionary.generateSVG(markerId));
+        let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${outerMm} ${outerMm}" width="${outerMm}mm" height="${outerMm}mm">`;
+        svg += `<circle cx="${outerR}" cy="${outerR}" r="${outerR - 0.3}" fill="none" stroke="#000" stroke-width="0.3" stroke-dasharray="1.5,1"/>`;
+        svg += `<circle cx="${outerR}" cy="${outerR}" r="${innerR}" fill="none" stroke="#000" stroke-width="0.3" stroke-dasharray="1.5,1"/>`;
+        for(let i = 0; i < copies; i++){
+          const angle = (i / copies) * Math.PI * 2 - Math.PI / 2;
+          const cx = outerR + midR * Math.cos(angle);
+          const cy = outerR + midR * Math.sin(angle);
+          svg += `<g transform="translate(${cx - markerSize / 2}, ${cy - markerSize / 2})"><svg width="${markerSize}" height="${markerSize}" viewBox="${parsed.viewBox}">${parsed.inner}</svg></g>`;
+        }
+        svg += '</svg>';
+        return { svg, markerSize };
+      }
+      function renderRingGrid(){
+        const outerMm = parseFloat(document.getElementById('ringOuterMm').value) || 25.4;
+        const innerMm = parseFloat(document.getElementById('ringInnerMm').value) || 20;
+        const copies = Math.max(2, Math.min(8, parseInt(document.getElementById('ringCopies').value) || 4));
+        const startId = Math.max(0, Math.min(249, parseInt(document.getElementById('ringMarkerId').value) || 0));
+        const count = Math.max(1, Math.min(12, parseInt(document.getElementById('ringCount').value) || 4));
+        const grid = document.getElementById('ringGrid');
+        grid.innerHTML = '';
+        let lastMarkerSize = 0;
+        for(let i = 0; i < count; i++){
+          const id = startId + i;
+          if(id > 249) break;
+          const { svg, markerSize } = buildRingSVG(outerMm, innerMm, copies, id);
+          lastMarkerSize = markerSize;
+          const card = document.createElement('div');
+          card.className = 'printCard';
+          card.innerHTML = svg + `<div class="idLabel">ID ${id} — ${outerMm}mm / ${innerMm}mm cutout</div>`;
+          grid.appendChild(card);
+        }
+        let warnEl = document.getElementById('ringSizeInfo');
+        if(!warnEl){
+          warnEl = document.createElement('div');
+          warnEl.id = 'ringSizeInfo';
+          warnEl.className = 'sub';
+          warnEl.style.margin = '8px 0 0';
+          document.getElementById('ringControls').appendChild(warnEl);
+        }
+        if(outerMm <= innerMm){
+          warnEl.textContent = 'Outer diameter must be bigger than the inner cutout.';
+          warnEl.style.color = '#f28c8c';
+        } else if(lastMarkerSize < 3){
+          warnEl.textContent = `Each marker copy works out to about ${lastMarkerSize.toFixed(1)}mm — that's small enough detection may be unreliable. Try a smaller inner cutout, fewer copies, or a bigger outer size.`;
+          warnEl.style.color = '#f4d35e';
+        } else {
+          warnEl.textContent = `Each marker copy works out to about ${lastMarkerSize.toFixed(1)}mm across.`;
+          warnEl.style.color = '';
+        }
+      }
+      document.getElementById('ringGenerateBtn').addEventListener('click', renderRingGrid);
+      document.getElementById('ringPrintBtn').addEventListener('click', () => window.print());
+      renderRingGrid();
 
       // ---- Camera detection ----
       const video = document.getElementById('video');

@@ -447,7 +447,9 @@
         if(!name || isNaN(init)) return;
         const c = {
           id: nextId++, name, init, notes:'', hp:null, maxHp:null, tempHp:0, ac:null, rosterId:null,
-          delayed:false, ready:false, legendaryMax:0, legendaryLeft:0, conditions:[], exhaustion:0
+          delayed:false, ready:false, legendaryMax:0, legendaryLeft:0, conditions:[], exhaustion:0,
+          tokenColor: null, // null = auto-assigned color; DM can override from the Remote
+          tokenSize: 1 // 1=Small/Medium, 2=Large, 3=Huge, 4=Gargantuan (squares across)
         };
         combatants.push(c);
         if(!combatStarted) refreshPreStartActive();

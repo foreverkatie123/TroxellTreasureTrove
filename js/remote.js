@@ -133,6 +133,24 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
             break;
           case 'placeToken': if(typeof placeToken === 'function') placeToken(payload.id); break;
           case 'removeToken': if(typeof removeToken === 'function') removeToken(payload.id); break;
+          case 'setTokenColor': {
+            const c = combatants.find(x => x.id === payload.id);
+            if(c){
+              c.tokenColor = payload.color || null;
+              if(typeof renderTokens === 'function') renderTokens();
+              afterStateChange();
+            }
+            break;
+          }
+          case 'setTokenSize': {
+            const c = combatants.find(x => x.id === payload.id);
+            if(c){
+              c.tokenSize = Math.max(1, Math.min(4, payload.size || 1));
+              if(typeof renderTokens === 'function') renderTokens();
+              afterStateChange();
+            }
+            break;
+          }
           case 'applyDamage': {
             const c = findCombatant(payload.id);
             if(!c) break;

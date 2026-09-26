@@ -65,14 +65,18 @@
       }
 
       function positionTokenElement(g, token){
-        const r = Math.max(10, gridSize * 0.38);
+        // Size is stashed on the element itself (set in renderTokens, where the
+        // combatant lookup happens) so a drag-in-progress can keep calling this
+        // without needing to re-look-up the combatant on every mousemove.
+        const sizeMultiplier = g.tokenSizeMultiplier || 1;
+        const r = Math.max(10, gridSize * 0.42 * sizeMultiplier);
         const base = g.querySelector('.tokenBase');
         const ring = g.querySelector('.tokenRing');
         const label = g.querySelector('.tokenLabel');
         base.setAttribute('cx', token.x); base.setAttribute('cy', token.y); base.setAttribute('r', r);
         ring.setAttribute('cx', token.x); ring.setAttribute('cy', token.y); ring.setAttribute('r', r);
         label.setAttribute('x', token.x); label.setAttribute('y', token.y);
-        label.style.fontSize = Math.max(9, r * 0.85) + 'px';
+        label.style.fontSize = Math.max(9, r * 0.6) + 'px';
       }
 
       function makeTokenElement(token){
@@ -147,8 +151,9 @@
           const base = g.querySelector('.tokenBase');
           const ring = g.querySelector('.tokenRing');
           const label = g.querySelector('.tokenLabel');
-          base.setAttribute('fill', tokenColorFor(token.combatantId));
+          base.setAttribute('fill', (c && c.tokenColor) || tokenColorFor(token.combatantId));
           label.textContent = tokenLabelFor(c ? c.name : '?');
+          g.tokenSizeMultiplier = (c && c.tokenSize) || 1;
 
           const isActive = c && typeof activeId !== 'undefined' && activeId === c.id;
           const isDown = c && c.hp !== null && c.hp !== undefined && c.hp <= 0;
@@ -160,4 +165,4 @@
           // that would fight their own mouse movement mid-gesture.
           if(draggingTokenId !== token.id) positionTokenElement(g, token);
         });
-    }
+      }
