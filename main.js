@@ -8,6 +8,10 @@ let controllerWindow;
 let lastState = null;
 let overlayInteractive = false;
 
+// Panel pop-out: panelId -> BrowserWindow, for DM Remote panels torn out into
+// their own window via controller.html's "⤢" button (e.g. "turn-initiative").
+let panelWindows = {};
+
 // Firebase's Google sign-in popup refuses to run on pages loaded over file://
 // (it only supports http/https/chrome-extension). Serving the app's own files
 // over a local-only HTTP server sidesteps that with no other changes needed —
@@ -39,12 +43,8 @@ function startLocalServer() {
         const ext = path.extname(filePath).toLowerCase();
         res.writeHead(200, {
           'Content-Type': MIME_TYPES[ext] || 'application/octet-stream',
-          // Firebase Auth's signInWithPopup watches the Google sign-in popup with
-          // window.closed to know when it's done. Chromium's default popup isolation
-          // blocks that check unless this page explicitly opts in — without it, the
-          // check silently fails forever, leaking a background poll loop that never
-          // resolves the sign-in promise. This is Firebase's own documented fix.
-          'Cross-Origin-Opener-Policy': 'same-origin-allow-popups'
+          'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+          'Cache-Control': 'no-store, no-cache, must-revalidate'
         });
         res.end(data);
       });
@@ -144,6 +144,72 @@ function createController() {
   controllerWindow.on('closed', () => { controllerWindow = null; });
 }
 
+// ---------------------------------------------------------------------------
+// Panel pop-out windows
+//
+// controller.html can tear an individual panel (currently just the grouped
+// "Turn & Initiative" panel, id "turn-initiative") into its own window via
+// window.blackstoneDesktop.openPanelWindow(panelId). That window loads
+// controller.html again with ?panel=<id> in the URL, which tells the page's
+// own script to hide everything except that one panel. All popped windows
+// (and the main controller window) get told the current list of popped panel
+// ids via 'popped-panels-changed' so each one can show/hide its "open in a
+// separate window" placeholder correctly.
+// ---------------------------------------------------------------------------
+function poppedPanelIds() {
+  return Object.keys(panelWindows);
+}
+
+function broadcastPoppedPanels() {
+  const list = poppedPanelIds();
+  if (controllerWindow && !controllerWindow.isDestroyed()) {
+    controllerWindow.webContents.send('popped-panels-changed', list);
+  }
+  Object.values(panelWindows).forEach(win => {
+    if (win && !win.isDestroyed()) win.webContents.send('popped-panels-changed', list);
+  });
+}
+
+function createPanelWindow(panelId) {
+  if (!panelId) return;
+  const existing = panelWindows[panelId];
+  if (existing && !existing.isDestroyed()) {
+    existing.show();
+    existing.focus();
+    return;
+  }
+  const primary = screen.getPrimaryDisplay();
+  const win = new BrowserWindow({
+    width: 380,
+    height: Math.min(720, primary.workArea.height),
+    x: primary.workArea.x + 40,
+    y: primary.workArea.y + 40,
+    title: 'Troxell Remote — ' + panelId,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  });
+  win.loadURL(`http://localhost:${localServerPort}/controller.html?panel=${encodeURIComponent(panelId)}`);
+  win.webContents.on('did-finish-load', () => {
+    // Give the freshly-opened panel window the latest known state immediately —
+    // otherwise it sits blank until the next state broadcast from the TV.
+    if (lastState) win.webContents.send('overlay-state', lastState);
+  });
+  win.on('closed', () => {
+    delete panelWindows[panelId];
+    broadcastPoppedPanels();
+  });
+  panelWindows[panelId] = win;
+  broadcastPoppedPanels();
+}
+
+function closePanelWindow(panelId) {
+  const win = panelWindows[panelId];
+  if (win && !win.isDestroyed()) win.close();
+}
+
 app.whenReady().then(async () => {
   // Electron denies media (camera/mic) permission requests by default unless the
   // app explicitly allows them - the Mini Tracker panel's camera access would
@@ -167,10 +233,15 @@ ipcMain.on('overlay-command', (_event, packet) => {
 ipcMain.on('overlay-state', (_event, payload) => {
   lastState = payload;
   if (controllerWindow && !controllerWindow.isDestroyed()) controllerWindow.webContents.send('overlay-state', payload);
+  // Popped-out panel windows are just another controller.html instance and need
+  // the same live state as the main Remote window (round number, HP, etc).
+  Object.values(panelWindows).forEach(win => {
+    if (win && !win.isDestroyed()) win.webContents.send('overlay-state', payload);
+  });
 });
 
-ipcMain.on('request-overlay-state', () => {
-  if (lastState && controllerWindow && !controllerWindow.isDestroyed()) controllerWindow.webContents.send('overlay-state', lastState);
+ipcMain.on('request-overlay-state', (event) => {
+  if (lastState) event.sender.send('overlay-state', lastState);
   if (overlayWindow && !overlayWindow.isDestroyed()) overlayWindow.webContents.send('overlay-command', { action: '__requestState', payload: {} });
 });
 
@@ -185,6 +256,12 @@ ipcMain.on('move-overlay', (_event, displayId) => {
   if (!display || !overlayWindow) return;
   overlayWindow.setBounds(display.bounds);
   overlayWindow.setAlwaysOnTop(true, 'screen-saver');
+});
+
+ipcMain.on('open-panel-window', (_event, panelId) => createPanelWindow(panelId));
+ipcMain.on('close-panel-window', (_event, panelId) => closePanelWindow(panelId));
+ipcMain.on('request-popped-panels', (event) => {
+  event.sender.send('popped-panels-changed', poppedPanelIds());
 });
 
 app.on('will-quit', () => globalShortcut.unregisterAll());
