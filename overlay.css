@@ -38,6 +38,24 @@
       #gridOverlay{
         position:absolute; top:0; left:0; pointer-events:none;
       }
+      /* Tokens sit above the grid but below fogCanvas, so an unrevealed token is
+         hidden by the fog exactly like the real map underneath it — the container
+         ignores clicks (so panning/fog-toggle still works everywhere else) and
+         each token individually opts back in so it alone can be grabbed and dragged. */
+      #tokensLayer{
+        position:absolute; top:0; left:0; pointer-events:none;
+      }
+      #tokensLayer .tokenGroup{ pointer-events:auto; cursor:grab; }
+      #tokensLayer .tokenGroup:active{ cursor:grabbing; }
+      #tokensLayer .tokenRing{ stroke-width:3; transition:stroke .15s, opacity .15s; }
+      #tokensLayer .tokenBase{ transition:fill .15s, opacity .15s; }
+      #tokensLayer .tokenLabel{
+        font-family:'Inter',sans-serif; font-weight:700; text-anchor:middle; dominant-baseline:central;
+        fill:#fff; paint-order:stroke; stroke:rgba(0,0,0,0.55); stroke-width:2px;
+        pointer-events:none; user-select:none;
+      }
+      #tokensLayer .tokenGroup.dragging{ opacity:0.85; }
+      #tokensLayer .tokenGroup.downed{ opacity:0.5; }
       #fogCanvas{
         position:absolute; top:0; left:0; pointer-events:none;
       }
@@ -73,7 +91,6 @@
         padding:10px 24px; z-index:48; display:flex; align-items:center; gap:20px;
         backdrop-filter:blur(4px); pointer-events:auto; white-space:nowrap;
         cursor:move; touch-action:none; transition:opacity .15s ease;
-        zoom:var(--hud-scale, 1);
       }
       #hud.dragging{ transition:none; opacity:0.85; }
       #hud.hidden{ display:none; }
@@ -82,95 +99,6 @@
       #hud .hudActive{ font-family:'Cinzel',serif; color:var(--accent-2); font-size:20px; font-weight:700; }
       #hud .hudOnDeck{ font-size:12px; color:var(--text-dim); }
       #hud .hudOnDeck span{ color:var(--text); font-weight:600; }
-
-      @keyframes hudRoundPulse{
-        0%   { box-shadow:0 0 0 1px var(--accent-2), 0 0 0 rgba(90,200,192,0.6); }
-        30%  { box-shadow:0 0 0 1px var(--accent-2), 0 0 34px rgba(90,200,192,0.85); }
-        100% { box-shadow:0 0 0 1px var(--border), 0 0 0 rgba(90,200,192,0); }
-      }
-      #hud.roundFlash{ animation: hudRoundPulse 1.4s ease-out; }
-
-      @keyframes screenRoundFlash{
-        0%   { opacity:0; }
-        15%  { opacity:1; }
-        100% { opacity:0; }
-      }
-      #roundFlashBorder{
-        position:fixed; inset:0; z-index:200; pointer-events:none;
-        box-shadow: inset 0 0 0 6px var(--accent-2), inset 0 0 60px rgba(90,200,192,0.5);
-        opacity:0;
-      }
-      #roundFlashBorder.flash{ animation: screenRoundFlash 1.4s ease-out; }
-
-      #reminderStack{
-        position:fixed; top:80px; left:50%; transform:translateX(-50%);
-        z-index:60; display:flex; flex-direction:column; gap:8px; align-items:center;
-        pointer-events:none;
-      }
-      .reminderCard{
-        background:rgba(18,26,33,0.92); border:1px solid var(--accent-2); border-radius:10px;
-        padding:10px 18px; display:flex; align-items:center; gap:10px; font-size:14px; color:var(--text);
-        box-shadow:0 8px 24px rgba(0,0,0,0.5); pointer-events:auto; animation:reminderIn .25s ease;
-        white-space:nowrap;
-      }
-      .reminderCard.lair{ border-color:#c9a8ff; }
-      .reminderCard .reminderIcon{ font-size:18px; }
-      .reminderCard .reminderClose{ background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:14px; padding:0 2px; }
-      .reminderCard .reminderClose:hover{ color:var(--danger); }
-      @keyframes reminderIn{ 0%{ opacity:0; transform:translateY(-8px); } 100%{ opacity:1; transform:translateY(0); } }
-      @keyframes reminderOut{ 0%{ opacity:1; } 100%{ opacity:0; transform:translateY(-8px); } }
-      .reminderCard.leaving{ animation:reminderOut .2s ease forwards; }
-
-      /* ---------- DM markers & pings ---------- */
-      #tokenLayer{ position:fixed; inset:0; pointer-events:none; z-index:20; overflow:hidden; }
-      .tvToken{
-        position:absolute; transform:translate(-50%,-50%); border-radius:50%; box-sizing:border-box;
-        --tok:#4fb8c9; --tokbg:#4fb8c955;
-        transition:left .25s ease, top .25s ease, width .2s ease, height .2s ease;
-      }
-      .tvToken.disc{ background:var(--tokbg); border:3px solid var(--tok); box-shadow:0 0 14px var(--tok); }
-      .tvToken.ring{
-        border:4px dashed var(--tok); box-shadow:0 0 16px var(--tok), inset 0 0 16px var(--tok);
-        animation:tvTokPulse 1.8s ease-in-out infinite;
-      }
-      @keyframes tvTokPulse{ 0%,100%{ opacity:1; } 50%{ opacity:.45; } }
-      .tvTokLabel{
-        position:absolute; top:100%; left:50%; transform:translateX(-50%); margin-top:4px; white-space:nowrap;
-        font:700 15px/1 'Inter',system-ui,sans-serif; color:#fff; background:rgba(6,10,14,.85);
-        border:1px solid var(--tok); border-radius:6px; padding:3px 8px;
-      }
-      .tvPing{ position:absolute; transform:translate(-50%,-50%); --tok:#4fb8c9; }
-      .tvPing .pingRing{
-        position:absolute; inset:0; border-radius:50%; border:5px solid var(--tok);
-        opacity:0; animation:tvPingRing 1.5s ease-out infinite;
-      }
-      .tvPing .pingRing:nth-child(2){ animation-delay:.5s; }
-      .tvPing .pingDot{
-        position:absolute; left:50%; top:50%; width:20px; height:20px; margin:-10px 0 0 -10px;
-        border-radius:50%; background:var(--tok); box-shadow:0 0 14px var(--tok);
-      }
-      @keyframes tvPingRing{ 0%{ transform:scale(.25); opacity:.95; } 100%{ transform:scale(1); opacity:0; } }
-
-      #timersPanel{
-        position:fixed; top:14px; right:14px; z-index:47;
-        background:rgba(18,26,33,0.85); border:1px solid var(--border); border-radius:12px;
-        padding:10px 14px; backdrop-filter:blur(4px); pointer-events:none;
-        display:flex; flex-direction:column; gap:6px; max-width:240px;
-      }
-      #timersPanel.hidden{ display:none; }
-      .timerCard{ display:flex; align-items:center; gap:8px; font-size:13px; white-space:nowrap; }
-      .timerCard .timerIcon{ font-size:15px; flex-shrink:0; }
-      .timerCard .timerLabel{ color:var(--text); font-weight:600; overflow:hidden; text-overflow:ellipsis; }
-      .timerCard .timerValue{ color:var(--accent-bright); font-family:'Cinzel',serif; margin-left:auto; flex-shrink:0; }
-      .timerCard.expired .timerValue{ color:var(--danger); }
-      .timerCard.expired .timerLabel{ color:var(--danger); }
-      .timerCard.paused{ opacity:.55; }
-      .timerCard .timerPausedTag{ font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.05em; flex-shrink:0; }
-
-      .concBadge{
-        margin-top:4px; font-size:12px; color:var(--accent-2); background:rgba(90,200,192,0.1);
-        border:1px solid rgba(90,200,192,0.35); border-radius:6px; padding:3px 8px; display:inline-block;
-      }
 
       #diceStage{
         position:fixed; inset:0; z-index:90; pointer-events:none; overflow:hidden;

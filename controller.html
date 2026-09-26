@@ -18,10 +18,9 @@
       h1,h2,h3,.display{ font-family:'Cinzel',Georgia,serif; letter-spacing:0.02em; }
       body{ padding:16px; max-width:460px; }
 
-      #statusBarsRow{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
       #connBar{
         display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px;
-        flex:1 1 100%; font-size:12px; text-transform:uppercase; letter-spacing:.06em;
+        margin-bottom:14px; font-size:12px; text-transform:uppercase; letter-spacing:.06em;
         border:1px solid var(--border); background:var(--panel);
       }
       #connDot{ width:8px; height:8px; border-radius:50%; background:var(--danger); flex-shrink:0; }
@@ -30,7 +29,7 @@
 
       #fbBar{
         display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px;
-        flex:1 1 100%; font-size:12px; text-transform:uppercase; letter-spacing:.06em;
+        margin-bottom:14px; font-size:12px; text-transform:uppercase; letter-spacing:.06em;
         border:1px solid var(--border); background:var(--panel);
       }
       #fbDot{ width:8px; height:8px; border-radius:50%; background:var(--danger); flex-shrink:0; }
@@ -59,7 +58,7 @@
       }
       .barHideBtn:hover{ color:var(--danger); }
       #connBar.collapsed, #fbBar.collapsed{
-        flex:0 0 auto; width:20px; height:20px; padding:0; justify-content:center; cursor:pointer; border-radius:50%;
+        width:20px; height:20px; padding:0; justify-content:center; cursor:pointer; border-radius:50%;
       }
       #connBar.collapsed > *:not(#connDot), #fbBar.collapsed > *:not(#fbDot){ display:none !important; }
 
@@ -73,23 +72,7 @@
 
       .panel{
         background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:14px 16px;
-        position:relative;
       }
-      .panelHidden{ display:none !important; }
-      .panelPopoutBtn{
-        position:absolute; top:12px; right:14px;
-        background:none; border:1px solid var(--border); border-radius:6px;
-        color:var(--text-dim); font-size:13px; line-height:1; cursor:pointer; padding:4px 6px;
-      }
-      .panelPopoutBtn:hover{ color:var(--accent-2); border-color:var(--accent-2); }
-      .panelPoppedPlaceholder{
-        background:var(--panel); border:1px dashed var(--border); border-radius:10px;
-        padding:14px 16px; display:flex; align-items:center; justify-content:space-between;
-        gap:10px; font-size:12px; color:var(--text-dim);
-      }
-      .panelPoppedPlaceholder .btn{ width:auto; padding:7px 12px; font-size:12px; }
-      #soloPanelBackBar{ margin-bottom:14px; }
-      #soloPanelBackBar .btn{ width:auto; padding:8px 14px; }
       .panel h3{ margin:0 0 12px; color:var(--accent-bright); font-size:14px; text-transform:uppercase; letter-spacing:.08em; }
       .panel h3 .sub{ text-transform:none; letter-spacing:0; color:var(--text-dim); font-size:11px; font-weight:400; display:block; margin-top:2px; }
 
@@ -220,23 +203,10 @@
       .preparedRow .repRemove{ background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:15px; padding:4px; flex-shrink:0; }
       .preparedRow .repRemove:hover{ color:var(--danger); }
       #preparedSpellsEmpty{ font-size:12px; color:var(--text-dim); padding:4px 0 8px; }
-
-      /* ---------- Concentration save prompts (controller-only) ---------- */
       .concLine{
         margin-top:6px; font-size:11px; color:var(--accent-2); background:rgba(90,200,192,0.1);
         border:1px solid rgba(90,200,192,0.35); border-radius:6px; padding:3px 8px; display:none;
       }
-      #concAlerts{ position:sticky; top:8px; z-index:30; display:flex; flex-direction:column; gap:8px; }
-      #concAlerts:empty{ display:none; }
-      .concAlert{
-        background:var(--panel); border:1px solid var(--accent-2); border-radius:10px;
-        padding:10px 12px; box-shadow:0 6px 20px rgba(0,0,0,.5);
-      }
-      .concAlert .caTitle{ font-size:13px; font-weight:600; color:var(--accent-2); margin-bottom:2px; }
-      .concAlert .caBody{ font-size:12px; color:var(--text); margin-bottom:8px; }
-      .concAlert .caBody b{ color:var(--accent-bright); }
-      .concAlert .caBtns{ display:flex; gap:8px; }
-      .concAlert .caBtns .btn{ margin-top:0; padding:8px; font-size:12px; }
 
       /* ---------- Monster Library ---------- */
       #monsterResults{ margin-top:8px; }
@@ -363,25 +333,22 @@
       .card .iconBtn{ background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:15px; padding:2px 6px; flex-shrink:0; }
       .card .iconBtn:hover{ color:var(--accent-2); }
       .card .iconBtn.removeBtn:hover{ color:var(--danger); }
+      .card .iconBtn.tokenBtn.on{ color:var(--accent-2); }
+      .card input.tokenColorInput{
+        width:20px; height:20px; padding:0; border:1px solid var(--border); border-radius:50%;
+        cursor:pointer; background:none; flex-shrink:0; -webkit-appearance:none; margin:0 1px;
+      }
+      .card input.tokenColorInput::-webkit-color-swatch-wrapper{ padding:0; border-radius:50%; }
+      .card input.tokenColorInput::-webkit-color-swatch{ border:none; border-radius:50%; }
+      .card select.tokenSizeSelect{
+        width:auto; padding:3px 4px; font-size:10px; flex-shrink:0; background:#0d1318;
+        border:1px solid var(--border); border-radius:5px; color:var(--text-dim);
+      }
       .cardStats{ display:flex; align-items:center; gap:6px; margin-top:7px; flex-wrap:wrap; }
       .cardStats .statText{ font-size:12px; color:var(--text-dim); flex:1 1 auto; min-width:110px; }
       .cardStats .statText.bloodied{ color:var(--danger); }
       .amtInput{ width:52px; padding:6px 6px; font-size:12px; text-align:center; flex-shrink:0; }
       .miniBtn{ width:auto; padding:6px 9px; font-size:11px; margin:0; flex-shrink:0; }
-      .reactDelayBtn.active{ border-color:#d1a15a; color:#d1a15a; background:rgba(209,161,90,0.12); }
-      .reactReadyBtn.active{ border-color:var(--accent-2); color:var(--accent-2); background:rgba(90,200,192,0.12); }
-      .cardReactRow{ display:flex; gap:6px; margin-top:7px; }
-      .miniBadge{ font-size:9px; padding:1px 6px; border-radius:8px; border:1px solid var(--border); text-transform:uppercase; letter-spacing:.04em; }
-      .miniBadge.delayed{ color:#d1a15a; border-color:#d1a15a; background:rgba(209,161,90,0.12); }
-      .miniBadge.ready{ color:var(--accent-2); border-color:var(--accent-2); background:rgba(90,200,192,0.12); }
-      .cardLrRow{ display:flex; align-items:center; gap:6px; margin-top:7px; flex-wrap:wrap; }
-      .cardLrRow .lrLabel{ font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.05em; }
-      .cardLrRow .lrMaxInput{ width:40px; padding:4px; font-size:11px; text-align:center; flex-shrink:0; }
-      .lrPips{ display:flex; gap:2px; }
-      .lrPip{ width:8px; height:8px; border-radius:50%; background:#202a32; border:1px solid var(--border); flex-shrink:0; }
-      .lrPip.filled{ background:#e0b64a; border-color:#e0b64a; }
-      .cardLrRow .miniBtn{ width:auto; padding:5px 8px; font-size:10.5px; margin:0; flex-shrink:0; }
-      .reactionBtn.used{ border-color:var(--danger); color:var(--danger); background:rgba(209,96,90,0.12); }
 
       .condChips{ display:flex; flex-wrap:wrap; gap:4px; margin-top:7px; }
       .condChips:empty{ display:none; }
@@ -430,6 +397,19 @@
       .fxCard .fxInfo{ flex:1; font-size:12px; }
       .fxCard .removeBtn{ background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:15px; padding:2px 6px; }
       .fxCard .removeBtn:hover{ color:var(--danger); }
+
+      /* ---------- Mini Tracker: color-dot slots ---------- */
+      .colorSlotRow{
+        display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid rgba(255,255,255,0.04);
+      }
+      .colorSlotRow input[type=text]{ flex:1; padding:7px; font-size:12px; }
+      .colorSlotRow .btn{ width:auto; padding:6px 10px; font-size:11px; margin:0; flex-shrink:0; }
+      input.colorPickerInput{
+        width:30px; height:30px; padding:0; border:2px solid var(--border); border-radius:50%;
+        cursor:pointer; background:none; flex-shrink:0; -webkit-appearance:none;
+      }
+      input.colorPickerInput::-webkit-color-swatch-wrapper{ padding:0; border-radius:50%; }
+      input.colorPickerInput::-webkit-color-swatch{ border:none; border-radius:50%; }
 
       .statusLine{ font-size:11px; color:var(--text-dim); margin-bottom:10px; }
       .divider{ height:1px; background:var(--border); margin:12px 0; }
@@ -519,15 +499,13 @@
   </head>
   <body>
 
-    <div id="statusBarsRow">
-      <div id="connBar"><div id="connDot"></div><div id="connText">Connecting to TV display…</div><button id="connHideBtn" class="barHideBtn" title="Hide">✕</button></div>
-      <div id="fbBar">
-        <div id="fbDot" class="pending"></div>
-        <div id="fbText">Connecting to campaign database…</div>
-        <button id="fbSignInBtn" class="hidden">Sign in with Google</button>
-        <div id="fbUserRow" class="hidden"><img id="fbUserPhoto" src="" alt=""><span id="fbUserName"></span><button id="fbSignOutBtn">Sign out</button></div>
-        <button id="fbHideBtn" class="barHideBtn" title="Hide">✕</button>
-      </div>
+    <div id="connBar"><div id="connDot"></div><div id="connText">Connecting to TV display…</div><button id="connHideBtn" class="barHideBtn" title="Hide">✕</button></div>
+    <div id="fbBar">
+      <div id="fbDot" class="pending"></div>
+      <div id="fbText">Connecting to campaign database…</div>
+      <button id="fbSignInBtn" class="hidden">Sign in with Google</button>
+      <div id="fbUserRow" class="hidden"><img id="fbUserPhoto" src="" alt=""><span id="fbUserName"></span><button id="fbSignOutBtn">Sign out</button></div>
+      <button id="fbHideBtn" class="barHideBtn" title="Hide">✕</button>
     </div>
 
     <div id="noOpener">
@@ -536,9 +514,8 @@
     </div>
 
     <div id="appBody">
-      <div id="concAlerts"></div>
 
-      <div class="panel" id="roundPanel">
+      <div class="panel">
         <div id="roundDisplay">
           <span class="num" id="roundNum">1</span>
           <span class="label">Round</span>
@@ -551,19 +528,9 @@
         </div>
       </div>
 
-      <div class="panel" id="initiativePanel">
-        <h3>Initiative &amp; Combat</h3>
+      <div class="panel">
+        <h3>Initiative &amp; Combat<span class="sub">HP / temp HP / AC live-edit here — the TV only shows names and a bloodied/down icon</span></h3>
         <div id="combatantList"></div>
-
-        <div class="divider"></div>
-        <div class="toggle">
-          <label style="margin:0;font-size:13px;">🏛 Lair Actions</label>
-          <div class="switch" id="lairToggleBtn"></div>
-        </div>
-        <div class="field" id="lairInitField" style="display:none;">
-          <label>At Initiative Count</label>
-          <input type="number" id="lairInitInput" min="1" max="30" value="20">
-        </div>
 
         <div class="divider"></div>
         <div class="field"><label>Quick add (no roster entry)</label>
@@ -842,12 +809,57 @@
         <h3>Overlay Window</h3>
         <button class="btn" id="clickThroughBtn">Enable Interaction</button>
         <div class="statusLine">Enable interaction only while drawing, measuring, or revealing fog. Disable it to pass mouse clicks to the program underneath.</div>
-        <div class="toggle">
-          <label style="margin:0;font-size:13px;">Show Grid</label>
-          <div class="switch" id="gridToggleBtn"></div>
-        </div>
         <div class="field"><label>Player display</label><select id="displaySelect"></select></div>
         <button class="btn" id="moveOverlayBtn">Move Overlay to Display</button>
+      </div>
+
+      <div class="panel">
+        <h3>Mini Tracker <span class="sub">Beta — camera detection test. Doesn't move tokens yet, just proves markers are readable.</span></h3>
+        <div class="row2">
+          <button class="diceTypeBtn active" id="mtModeArucoBtn" style="flex:1;padding:10px;">Aruco Markers</button>
+          <button class="diceTypeBtn" id="mtModeColorBtn" style="flex:1;padding:10px;">Color Dots</button>
+        </div>
+        <div class="row2" style="margin-top:8px;">
+          <select id="mtCameraSelect" style="flex:2;"></select>
+        </div>
+        <div class="row2" style="margin-top:8px;">
+          <button class="btn primary" id="mtStartBtn">Start Camera</button>
+          <button class="btn danger" id="mtStopBtn" disabled>Stop</button>
+        </div>
+        <div id="mtVideoWrap" style="position:relative;width:100%;background:#000;border-radius:8px;overflow:hidden;border:1px solid var(--border);margin-top:10px;">
+          <video id="mtVideo" autoplay muted playsinline style="display:block;width:100%;height:auto;"></video>
+          <canvas id="mtOverlay" style="position:absolute;top:0;left:0;width:100%;height:100%;"></canvas>
+        </div>
+        <div class="statusLine" id="mtStatusLine" style="margin-top:8px;">Camera not started.</div>
+
+        <div class="divider"></div>
+        <div id="mtColorPanel" style="display:none;">
+          <div class="sub" style="margin-bottom:8px;">
+            Color Dots — each slot below is one token's color. Print or stick a dot of roughly that color,
+            then click "Learn" and tap the dot on the video feed so it samples the real color under your
+            actual lighting, rather than trusting a printed shade to match exactly.
+          </div>
+          <div id="mtColorSlotList"></div>
+          <button class="btn" id="mtColorAddSlotBtn">+ Add Color Slot</button>
+          <div class="statusLine" id="mtColorLearnStatus" style="margin-top:6px;"></div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="sub" style="margin-bottom:8px;">
+          Calibration — teaches the camera how its pixels map to real table inches, so a tilted camera
+          (needed to see rim markers around a mini) still reports true table position, not a skewed one.
+        </div>
+        <div class="row2">
+          <div class="field" style="margin-bottom:0;"><label>Grid width (in)</label><input type="number" id="mtCalWidth" value="20" min="1"></div>
+          <div class="field" style="margin-bottom:0;"><label>Grid height (in)</label><input type="number" id="mtCalHeight" value="20" min="1"></div>
+        </div>
+        <div class="row2" style="margin-top:8px;">
+          <button class="btn primary" id="mtCalibrateBtn">Calibrate Grid</button>
+          <button class="btn" id="mtCalResetBtn">Reset Calibration</button>
+        </div>
+        <div class="statusLine" id="mtCalStatus" style="margin-top:8px;">Not calibrated — marker positions will show as raw camera pixels only.</div>
+
+        <div id="mtMarkerReadout" style="margin-top:8px;"></div>
       </div>
 
       <div class="panel">
@@ -1100,6 +1112,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js" defer></script>
     <script src="js/firebase-config.js" defer></script>
+    <script src="js/vendor/cv.js"></script>
+    <script src="js/vendor/aruco.js"></script>
     <script>
       (function(){
         const noOpener = document.getElementById('noOpener');
@@ -1117,111 +1131,6 @@
 
         let lastSnapshot = null;
         let liveTimer = null;
-
-        // ---- Panel pop-out: tear any panel out into its own real window ----
-        (function(){
-          if (!window.blackstoneDesktop) return; // desktop app only
-
-          const soloPanelId = new URLSearchParams(location.search).get('panel');
-          const slugify = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-          const hide = el => el.classList.add('panelHidden');
-
-          // Panels listed here pop out together as ONE window with ONE button.
-          // Anything not listed here still pops out individually, keyed off its own <h3>.
-          const GROUPS = [
-            { id: 'turn-initiative', label: 'Turn & Initiative', selectors: ['#roundPanel', '#initiativePanel'] }
-          ];
-
-          const groupedEls = new Set();
-          GROUPS.forEach(g => {
-            g.els = g.selectors.map(sel => document.querySelector(sel)).filter(Boolean);
-            g.els.forEach(el => groupedEls.add(el));
-          });
-
-          const allPanels = Array.from(document.querySelectorAll('#appBody > .panel'))
-            .filter(panel => !groupedEls.has(panel));
-
-          const seen = {};
-          allPanels.forEach(panel => {
-            const h3 = panel.querySelector('h3');
-            if(!h3) return;
-            const label = Array.from(h3.childNodes)
-              .filter(n => n.nodeType === Node.TEXT_NODE)
-              .map(n => n.textContent).join('').trim() || h3.textContent.trim();
-            let id = slugify(label);
-            if(seen[id]){ id = id + '-' + (++seen[id]); } else { seen[id] = 1; }
-            panel.dataset.panelId = id;
-            panel.dataset.panelLabel = label;
-          });
-
-          // ---- This window IS a popped-out panel: show only that panel ----
-          if (soloPanelId){
-            document.body.classList.add('soloPanelMode');
-            const group = GROUPS.find(g => g.id === soloPanelId);
-            if (group){
-              allPanels.forEach(hide);
-              GROUPS.forEach(g => { if(g.id !== soloPanelId) g.els.forEach(hide); });
-            } else {
-              groupedEls.forEach(hide);
-              allPanels.forEach(panel => {
-                if(panel.dataset.panelId !== soloPanelId) hide(panel);
-              });
-            }
-            const backBar = document.createElement('div');
-            backBar.id = 'soloPanelBackBar';
-            backBar.innerHTML = '<button class="btn" id="soloBackBtn">↩ Back to main window</button>';
-            document.body.insertBefore(backBar, document.getElementById('appBody'));
-            document.getElementById('soloBackBtn').addEventListener('click', () => window.close());
-            return;
-          }
-
-          // ---- Main window: add a ⤢ button + "is open in a separate window" placeholder ----
-          function addPopoutButton(anchorEl, panelId, label, placeholderAfterEl){
-            const btn = document.createElement('button');
-            btn.className = 'panelPopoutBtn';
-            btn.title = 'Open in separate window';
-            btn.textContent = '⤢';
-            btn.addEventListener('click', () => window.blackstoneDesktop.openPanelWindow(panelId));
-            anchorEl.appendChild(btn);
-
-            const placeholder = document.createElement('div');
-            placeholder.className = 'panelPoppedPlaceholder';
-            placeholder.style.display = 'none';
-            const labelEl = document.createElement('span');
-            labelEl.textContent = label + ' is open in a separate window.';
-            const bringBackBtn = document.createElement('button');
-            bringBackBtn.className = 'btn small';
-            bringBackBtn.textContent = 'Bring back';
-            bringBackBtn.addEventListener('click', () => window.blackstoneDesktop.closePanelWindow(panelId));
-            placeholder.appendChild(labelEl);
-            placeholder.appendChild(bringBackBtn);
-            placeholderAfterEl.parentNode.insertBefore(placeholder, placeholderAfterEl.nextSibling);
-            return placeholder;
-          }
-
-          const poppableEntries = [];
-
-          GROUPS.forEach(g => {
-            if(!g.els.length) return;
-            const placeholder = addPopoutButton(g.els[0], g.id, g.label, g.els[g.els.length - 1]);
-            poppableEntries.push({ id: g.id, els: g.els, placeholder });
-          });
-
-          allPanels.forEach(panel => {
-            if(!panel.dataset.panelId) return;
-            const placeholder = addPopoutButton(panel, panel.dataset.panelId, panel.dataset.panelLabel, panel);
-            poppableEntries.push({ id: panel.dataset.panelId, els: [panel], placeholder });
-          });
-
-          window.blackstoneDesktop.onPoppedPanelsChanged(list => {
-            poppableEntries.forEach(entry => {
-              const popped = list.includes(entry.id);
-              entry.els.forEach(el => el.classList.toggle('panelHidden', popped));
-              entry.placeholder.style.display = popped ? '' : 'none';
-            });
-          });
-          window.blackstoneDesktop.requestPoppedPanels();
-        })();
 
         // Closing a full-viewport fixed-position overlay can leave Electron/Chromium
         // with a stale hit-test region that still swallows clicks underneath it, even
@@ -1456,6 +1365,20 @@
         function shapeName(s){ return { cone:'Cone', line:'Line', circle:'Circle', square:'Area' }[s] || s; }
         function typeName(t){ return { frost:'Frost', poison:'Poison', acid:'Acid', generic:'Generic' }[t] || t; }
 
+        // Same palette/hash as tokens.js on the TV side, so a combatant who hasn't
+        // had a color explicitly chosen yet still shows the color they actually
+        // have on the map right now, not some unrelated placeholder.
+        const TOKEN_PALETTE = [
+          '#5ac8c0', '#e0a458', '#c9a8ff', '#7fd4ea', '#f28c8c',
+          '#a8d15a', '#ffb3d1', '#f4d35e', '#8ab6ff', '#d97fb8'
+        ];
+        function defaultTokenColorFor(combatantId){
+          let hash = 0;
+          const s = String(combatantId);
+          for(let i = 0; i < s.length; i++) hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
+          return TOKEN_PALETTE[hash % TOKEN_PALETTE.length];
+        }
+
         function hpStatText(c){
           const hpPart = (c.hp === null || c.hp === undefined) ? '—' : c.hp;
           const maxPart = (c.maxHp === null || c.maxHp === undefined) ? '' : ('/' + c.maxHp);
@@ -1484,63 +1407,6 @@
         ];
         function controllerConditionInfo(id){ return CONTROLLER_CONDITIONS.find(c => c.id === id); }
         let condPickerOpenId = null; // combatant id whose condition picker is open — local to this device
-
-        // ---- Concentration save prompts (controller-only — never sent to the TV) ----
-        let concAlerts = []; // { id, combatantId, name, spell, dmg, dc }
-        let concAlertSeq = 1;
-
-        function isConcentrating(c){
-          return !!c && (!!c.concentrating || (Array.isArray(c.conditions) && c.conditions.includes('concentrating')));
-        }
-        function queueConcentrationPrompt(combatantId, damage){
-          if(!lastSnapshot || !(damage > 0)) return;
-          const c = lastSnapshot.combatants.find(x => x.id === combatantId);
-          if(!isConcentrating(c)) return;
-          concAlerts.push({
-            id: concAlertSeq++, combatantId, name: c.name,
-            spell: c.concentrating ? (c.concentrationSpell || '') : '',
-            dmg: damage, dc: Math.max(10, Math.floor(damage / 2))
-          });
-          renderConcAlerts();
-        }
-        function renderConcAlerts(){
-          const el = document.getElementById('concAlerts');
-          el.innerHTML = concAlerts.map(a => `
-            <div class="concAlert" data-id="${a.id}">
-              <div class="caTitle">🔮 Concentration check — ${escapeHtml(a.name)}</div>
-              <div class="caBody">Took <b>${a.dmg}</b> damage${a.spell ? ' while concentrating on ' + escapeHtml(a.spell) : ''}.
-                CON save, <b>DC ${a.dc}</b>.</div>
-              <div class="caBtns">
-                <button class="btn on caHeldBtn">✓ Held</button>
-                <button class="btn danger caLostBtn">✕ Lost it</button>
-              </div>
-            </div>
-          `).join('');
-          el.querySelectorAll('.concAlert').forEach(card => {
-            const alertId = parseInt(card.dataset.id);
-            const a = concAlerts.find(x => x.id === alertId);
-            card.querySelector('.caHeldBtn').addEventListener('click', () => {
-              concAlerts = concAlerts.filter(x => x.id !== alertId);
-              renderConcAlerts();
-            });
-            card.querySelector('.caLostBtn').addEventListener('click', () => {
-              const c = lastSnapshot && lastSnapshot.combatants.find(x => x.id === a.combatantId);
-              if(c){
-                if(c.concentrating) send('clearConcentration', { id: c.id });
-                if((c.conditions || []).includes('concentrating')) send('toggleCondition', { id: c.id, cond: 'concentrating' });
-              }
-              // concentration is gone, so any other pending checks for this creature are moot
-              concAlerts = concAlerts.filter(x => x.combatantId !== a.combatantId);
-              renderConcAlerts();
-            });
-          });
-        }
-        // Drop prompts whose creature was removed or stopped concentrating some other way
-        function pruneConcAlerts(s){
-          const before = concAlerts.length;
-          concAlerts = concAlerts.filter(a => isConcentrating(s.combatants.find(c => c.id === a.combatantId)));
-          if(concAlerts.length !== before) renderConcAlerts();
-        }
 
         function renderCombatantList(s){
           const list = document.getElementById('combatantList');
@@ -1571,6 +1437,14 @@
                   <div class="name"></div>
                   <button class="iconBtn condBtn" title="Conditions">🩹</button>
                   <button class="iconBtn spellBtn" title="Spellcasting">🔮</button>
+                  <button class="iconBtn tokenBtn" title="Place on map">📍</button>
+                  <input type="color" class="tokenColorInput" title="Token color on the map">
+                  <select class="tokenSizeSelect" title="Token size on the map">
+                    <option value="1">1x</option>
+                    <option value="2">2x (Large)</option>
+                    <option value="3">3x (Huge)</option>
+                    <option value="4">4x (Gargantuan)</option>
+                  </select>
                   <button class="iconBtn statBtn" title="Edit name / initiative / HP / AC">⚙</button>
                   <button class="iconBtn removeBtn" title="Remove">✕</button>
                 </div>
@@ -1580,50 +1454,37 @@
                   <button class="btn miniBtn dmgBtn">−HP</button>
                   <button class="btn miniBtn healBtn">+HP</button>
                 </div>
-                <div class="cardReactRow">
-                  <button class="btn miniBtn reactDelayBtn">⏸ Delay</button>
-                  <button class="btn miniBtn reactReadyBtn">⚡ Ready</button>
-                </div>
                 <div class="condChips"></div>
-                <div class="cardLrRow">
-                  <span class="lrLabel">LR</span>
-                  <input type="number" class="lrMaxInput" min="0" max="9" value="0" title="Legendary Resistances per day">
-                  <div class="lrPips"></div>
-                  <button class="btn miniBtn lrSpendBtn">− Spend</button>
-                  <button class="btn miniBtn lrResetBtn">↺ Reset</button>
-                  <button class="btn miniBtn reactionBtn">Reaction: Ready</button>
-                </div>
                 <div class="condPickerWrap"></div>
                 <div class="concLine"></div>
               `;
               // wire listeners ONCE, when the card is created — never re-attached on re-render
               el.querySelector('.removeBtn').addEventListener('click', () => send('removeCombatant', { id: c.id }));
               el.querySelector('.statBtn').addEventListener('click', () => openStatsModal(c.id));
-              el.querySelector('.reactDelayBtn').addEventListener('click', () => send('toggleDelayed', { id: c.id }));
-              el.querySelector('.reactReadyBtn').addEventListener('click', () => send('toggleReady', { id: c.id }));
               el.querySelector('.spellBtn').addEventListener('click', () => openSpellModal(c.id));
               el.querySelector('.condBtn').addEventListener('click', () => {
                 condPickerOpenId = condPickerOpenId === c.id ? null : c.id;
                 if(lastSnapshot) renderCombatantList(lastSnapshot);
               });
+              el.querySelector('.tokenBtn').addEventListener('click', () => {
+                const btn = el.querySelector('.tokenBtn');
+                if(btn.classList.contains('on')) send('removeToken', { id: c.id });
+                else send('placeToken', { id: c.id });
+              });
+              el.querySelector('.tokenColorInput').addEventListener('input', function(){
+                send('setTokenColor', { id: c.id, color: this.value });
+              });
+              el.querySelector('.tokenSizeSelect').addEventListener('change', function(){
+                send('setTokenSize', { id: c.id, size: parseInt(this.value) });
+              });
               el.querySelector('.dmgBtn').addEventListener('click', () => {
                 const amt = parseFloat(el.querySelector('.amtInput').value) || 0;
-                if(amt > 0){
-                  send('applyDamage', { id: c.id, amount: amt });
-                  queueConcentrationPrompt(c.id, amt);
-                }
+                if(amt > 0) send('applyDamage', { id: c.id, amount: amt });
               });
               el.querySelector('.healBtn').addEventListener('click', () => {
                 const amt = parseFloat(el.querySelector('.amtInput').value) || 0;
                 if(amt > 0) send('applyHeal', { id: c.id, amount: amt });
               });
-              el.querySelector('.lrMaxInput').addEventListener('change', function(){
-                const v = Math.max(0, Math.min(9, parseInt(this.value, 10) || 0));
-                send('setLegendaryResistanceMax', { id: c.id, value: v });
-              });
-              el.querySelector('.lrSpendBtn').addEventListener('click', () => send('spendLegendaryResistance', { id: c.id }));
-              el.querySelector('.lrResetBtn').addEventListener('click', () => send('resetLegendaryResistance', { id: c.id }));
-              el.querySelector('.reactionBtn').addEventListener('click', () => send('toggleReactionUsed', { id: c.id }));
               list.appendChild(el);
             }
 
@@ -1633,15 +1494,21 @@
             // update only the mutable display bits — amtInput is never touched here
             el.classList.toggle('active', c.id === s.activeId);
             el.querySelector('.initNum').textContent = c.init;
-            const nameEl = el.querySelector('.name');
-            nameEl.innerHTML = escapeHtml(c.name) +
-              (c.delayed ? ' <span class="miniBadge delayed">Delaying</span>' : '') +
-              (c.ready ? ' <span class="miniBadge ready">Ready</span>' : '');
-            el.querySelector('.reactDelayBtn').classList.toggle('active', !!c.delayed);
-            el.querySelector('.reactReadyBtn').classList.toggle('active', !!c.ready);
+            el.querySelector('.name').textContent = c.name;
             const statSpan = el.querySelector('.statText');
             statSpan.textContent = st.text;
             statSpan.classList.toggle('bloodied', st.bloodied);
+            const tokenBtn = el.querySelector('.tokenBtn');
+            tokenBtn.classList.toggle('on', !!c.hasToken);
+            tokenBtn.title = c.hasToken ? 'On map — tap to remove' : 'Place on map';
+            const tokenColorInput = el.querySelector('.tokenColorInput');
+            if(document.activeElement !== tokenColorInput){
+              tokenColorInput.value = c.tokenColor || defaultTokenColorFor(c.id);
+            }
+            const tokenSizeSelect = el.querySelector('.tokenSizeSelect');
+            if(document.activeElement !== tokenSizeSelect){
+              tokenSizeSelect.value = String(c.tokenSize || 1);
+            }
             const concLine = el.querySelector('.concLine');
             if(c.concentrating){
               concLine.textContent = `🔮 ${c.concentrationSpell || 'Concentrating'} — ${c.concentrationRounds} rd${c.concentrationRounds === 1 ? '' : 's'}`;
@@ -1650,15 +1517,6 @@
               concLine.textContent = '';
               concLine.style.display = 'none';
             }
-
-            const lrMax = c.legendaryResistanceMax || 0;
-            const lrLeft = c.legendaryResistanceLeft || 0;
-            const lrMaxInputEl = el.querySelector('.lrMaxInput');
-            if(document.activeElement !== lrMaxInputEl) lrMaxInputEl.value = lrMax;
-            el.querySelector('.lrPips').innerHTML = Array.from({length: lrMax}, (_, i) => `<span class="lrPip${i < lrLeft ? ' filled' : ''}"></span>`).join('');
-            const reactionBtnEl = el.querySelector('.reactionBtn');
-            reactionBtnEl.textContent = c.reactionUsed ? 'Reaction: Used' : 'Reaction: Ready';
-            reactionBtnEl.classList.toggle('used', !!c.reactionUsed);
 
             const conditions = c.conditions || [];
             const exhaustion = c.exhaustion || 0;
@@ -1726,15 +1584,6 @@
           
           renderCombatantList(s);
 
-          pruneConcAlerts(s);
-
-          // Lair Actions
-          const lairEnabled = !!(s.lairAction && s.lairAction.enabled);
-          document.getElementById('lairToggleBtn').classList.toggle('on', lairEnabled);
-          document.getElementById('lairInitField').style.display = lairEnabled ? '' : 'none';
-          const lairInitInput = document.getElementById('lairInitInput');
-          if(document.activeElement !== lairInitInput) lairInitInput.value = (s.lairAction && s.lairAction.initCount) || 20;
-
           // Fog
           const fogStatus = document.getElementById('fogStatus');
           const fogToggleBtn = document.getElementById('fogToggleBtn');
@@ -1748,7 +1597,6 @@
           fogResetBtn.disabled = !s.hasMask;
           fogToggleBtn.classList.toggle('on', s.fogEnabled && s.hasMask);
           fogToggleBtn.textContent = s.fogEnabled ? 'Fog: On' : 'Toggle Fog';
-          document.getElementById('gridToggleBtn').classList.toggle('on', !!s.gridOn);
 
           // Ruler
           const rulerBtn = document.getElementById('rulerBtn');
@@ -1865,13 +1713,6 @@
           showConfirm('Clear the entire initiative order?', () => send('clearAll'));
         });
 
-        document.getElementById('lairToggleBtn').addEventListener('click', () => send('toggleLairAction'));
-        document.getElementById('lairInitInput').addEventListener('change', function(){
-          const v = parseInt(this.value, 10);
-          if(!isNaN(v)) send('setLairInitCount', { value: v });
-        });
-
-        document.getElementById('gridToggleBtn').addEventListener('click', () => send('toggleGrid'));
         document.getElementById('fogToggleBtn').addEventListener('click', () => send('toggleFog'));
         document.getElementById('fogRevealBtn').addEventListener('click', () => send('revealAllFog'));
         document.getElementById('fogResetBtn').addEventListener('click', () => {
@@ -3652,6 +3493,506 @@
         genLogToggleWire('treasureLogToggle');
         loadTreasureHistory();
         renderTreasureHistory();
+
+        // ---- Mini Tracker (Beta) - camera marker detection test ----
+        // This only detects and displays markers right now; it doesn't move any
+        // tokens yet. It exists to answer one question first: does the camera
+        // reliably read the printed markers, from your setup, before wiring
+        // detected positions into the token system on the TV.
+        (function(){
+          const mtVideo = document.getElementById('mtVideo');
+          const mtOverlay = document.getElementById('mtOverlay');
+          const mtOctx = mtOverlay.getContext('2d');
+          const mtCameraSelect = document.getElementById('mtCameraSelect');
+          const mtStartBtn = document.getElementById('mtStartBtn');
+          const mtStopBtn = document.getElementById('mtStopBtn');
+          const mtStatusLine = document.getElementById('mtStatusLine');
+          const mtMarkerReadout = document.getElementById('mtMarkerReadout');
+
+          // ---- Detection mode toggle (ArUco markers vs. plain color dots) ----
+          // Color dots need far less physical size to detect reliably than a binary
+          // marker pattern - the deciding factor once a marker has to squeeze into
+          // the sliver of space left around a mini's base inside a 1-inch square.
+          let mtMode = 'aruco';
+          const mtModeArucoBtn = document.getElementById('mtModeArucoBtn');
+          const mtModeColorBtn = document.getElementById('mtModeColorBtn');
+          const mtColorPanel = document.getElementById('mtColorPanel');
+          mtModeArucoBtn.addEventListener('click', () => {
+            mtMode = 'aruco';
+            mtModeArucoBtn.classList.add('active'); mtModeColorBtn.classList.remove('active');
+            mtColorPanel.style.display = 'none';
+          });
+          mtModeColorBtn.addEventListener('click', () => {
+            mtMode = 'color';
+            mtModeColorBtn.classList.add('active'); mtModeArucoBtn.classList.remove('active');
+            mtColorPanel.style.display = '';
+          });
+
+          // ---- Color dot slots - one per token, matched by hue ----
+          const MT_COLOR_KEY = 'blackstoneMiniTrackerColors_v1';
+          let mtColorSlots = [];
+          let mtLearningSlotId = null;
+          let mtColorNextId = 1;
+          const MT_SCAN_W = 160, MT_SCAN_H = 120; // downsampled scan buffer - centroid
+          // accuracy doesn't need full resolution, and scanning every pixel of a full
+          // frame every frame in plain JS would be needlessly slow at native res.
+          let mtScanCanvas = null, mtScanCtx = null;
+          const MT_HUE_TOLERANCE = 20, MT_MIN_SAT = 0.35, MT_MIN_VAL = 0.25, MT_MIN_PIXELS = 15;
+
+          function hsvToRgb(h, s, v){
+            const c = v * s;
+            const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+            const m = v - c;
+            let r, g, b;
+            if(h < 60){ r = c; g = x; b = 0; }
+            else if(h < 120){ r = x; g = c; b = 0; }
+            else if(h < 180){ r = 0; g = c; b = x; }
+            else if(h < 240){ r = 0; g = x; b = c; }
+            else if(h < 300){ r = x; g = 0; b = c; }
+            else { r = c; g = 0; b = x; }
+            return { r: Math.round((r + m) * 255), g: Math.round((g + m) * 255), b: Math.round((b + m) * 255) };
+          }
+          function hsvToCss(h, s, v){ const c = hsvToRgb(h, s, v); return `rgb(${c.r},${c.g},${c.b})`; }
+          function hsvToHex(h, s, v){
+            const c = hsvToRgb(h, s, v);
+            return '#' + [c.r, c.g, c.b].map(n => n.toString(16).padStart(2, '0')).join('');
+          }
+          function hexToRgb(hex){
+            const n = parseInt(hex.slice(1), 16);
+            return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+          }
+          function rgbToHsv(r, g, b){
+            r /= 255; g /= 255; b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            const d = max - min;
+            let h = 0;
+            if(d !== 0){
+              if(max === r) h = ((g - b) / d) % 6;
+              else if(max === g) h = (b - r) / d + 2;
+              else h = (r - g) / d + 4;
+              h *= 60;
+              if(h < 0) h += 360;
+            }
+            const s = max === 0 ? 0 : d / max;
+            return { h, s, v: max };
+          }
+          function hueDist(a, b){ const d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; }
+
+          function defaultColorSlots(){
+            return [0, 60, 120, 180, 240, 300].map((h, i) => ({
+              id: i + 1, label: 'Token ' + (i + 1), h, s: 0.75, v: 0.75, learned: false
+            }));
+          }
+          function mtSaveColorSlots(){
+            try{ localStorage.setItem(MT_COLOR_KEY, JSON.stringify({ slots: mtColorSlots, nextId: mtColorNextId })); }catch(err){}
+          }
+          function mtLoadColorSlots(){
+            try{
+              const data = JSON.parse(localStorage.getItem(MT_COLOR_KEY));
+              if(data && Array.isArray(data.slots) && data.slots.length){
+                mtColorSlots = data.slots;
+                mtColorNextId = data.nextId || (Math.max(...mtColorSlots.map(s => s.id)) + 1);
+                return;
+              }
+            }catch(err){}
+            mtColorSlots = defaultColorSlots();
+            mtColorNextId = mtColorSlots.length + 1;
+          }
+          mtLoadColorSlots();
+
+          function renderColorSlots(){
+            const el = document.getElementById('mtColorSlotList');
+            el.innerHTML = mtColorSlots.map(slot => `
+              <div class="colorSlotRow" data-id="${slot.id}">
+                <input type="color" class="colorPickerInput" value="${hsvToHex(slot.h, slot.s, slot.v)}" title="${slot.learned ? 'Pick a color, or Learn from the camera' : 'Default guess — pick one, or Learn from the camera'}">
+                <input type="text" class="colorLabelInput" value="${slot.label.replace(/"/g, '&quot;')}">
+                <button class="btn colorLearnBtn">${mtLearningSlotId === slot.id ? 'Click dot…' : 'Learn'}</button>
+                <button class="btn danger colorRemoveBtn">✕</button>
+              </div>
+            `).join('');
+            el.querySelectorAll('.colorSlotRow').forEach(row => {
+              const id = parseInt(row.dataset.id);
+              row.querySelector('.colorPickerInput').addEventListener('input', function(){
+                const slot = mtColorSlots.find(s => s.id === id);
+                if(!slot) return;
+                const rgb = hexToRgb(this.value);
+                const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
+                slot.h = hsv.h; slot.s = Math.max(0.3, hsv.s); slot.v = Math.max(0.3, hsv.v);
+                slot.learned = true;
+                mtSaveColorSlots();
+              });
+              row.querySelector('.colorLabelInput').addEventListener('input', function(){
+                const slot = mtColorSlots.find(s => s.id === id);
+                if(slot){ slot.label = this.value; mtSaveColorSlots(); }
+              });
+              row.querySelector('.colorLearnBtn').addEventListener('click', () => {
+                mtLearningSlotId = id;
+                document.getElementById('mtColorLearnStatus').textContent = 'Point the camera at that dot, then click it on the video image above.';
+                renderColorSlots();
+              });
+              row.querySelector('.colorRemoveBtn').addEventListener('click', () => {
+                mtColorSlots = mtColorSlots.filter(s => s.id !== id);
+                mtSaveColorSlots();
+                renderColorSlots();
+              });
+            });
+          }
+          renderColorSlots();
+
+          document.getElementById('mtColorAddSlotBtn').addEventListener('click', () => {
+            const usedHues = mtColorSlots.map(s => s.h);
+            let h = 0;
+            for(let cand = 0; cand < 360; cand += 15){
+              if(!usedHues.some(u => hueDist(u, cand) < 20)){ h = cand; break; }
+            }
+            mtColorSlots.push({ id: mtColorNextId, label: 'Token ' + mtColorNextId, h, s: 0.75, v: 0.75, learned: false });
+            mtColorNextId++;
+            mtSaveColorSlots();
+            renderColorSlots();
+          });
+
+          function learnColorAt(p){
+            if(!mtSampleCtx || !mtSampleCanvas) return;
+            const slot = mtColorSlots.find(s => s.id === mtLearningSlotId);
+            mtLearningSlotId = null;
+            if(!slot) return;
+            const size = 6;
+            const x0 = Math.max(0, Math.round(p.x - size / 2));
+            const y0 = Math.max(0, Math.round(p.y - size / 2));
+            const w = Math.min(size, mtSampleCanvas.width - x0);
+            const h = Math.min(size, mtSampleCanvas.height - y0);
+            if(w <= 0 || h <= 0){ renderColorSlots(); return; }
+            const data = mtSampleCtx.getImageData(x0, y0, w, h).data;
+            let rSum = 0, gSum = 0, bSum = 0, n = 0;
+            for(let i = 0; i < data.length; i += 4){ rSum += data[i]; gSum += data[i + 1]; bSum += data[i + 2]; n++; }
+            const hsv = rgbToHsv(rSum / n, gSum / n, bSum / n);
+            slot.h = hsv.h; slot.s = Math.max(0.3, hsv.s); slot.v = Math.max(0.3, hsv.v);
+            slot.learned = true;
+            mtSaveColorSlots();
+            renderColorSlots();
+            document.getElementById('mtColorLearnStatus').textContent = `Learned "${slot.label}" from the camera.`;
+          }
+
+          // ---- Calibration: maps a camera pixel to a real table inch ----
+          // A tilted camera sees the table as a skewed trapezoid, not a clean
+          // rectangle, so a simple scale factor isn't enough - this solves a full
+          // homography (perspective transform) from 4 clicked corners to the real
+          // width/height of that area, via the standard direct linear transform.
+          const MT_CAL_KEY = 'blackstoneMiniTrackerCal_v1';
+          let mtCalibrating = false;
+          let mtCalPoints = []; // clicked pixel points, in order: TL, TR, BR, BL
+          let mtHomography = null; // 8 numbers: h11,h12,h13,h21,h22,h23,h31,h32 (h33=1)
+
+          function solveLinearSystem(A, b){
+            // Plain Gaussian elimination with partial pivoting - A is NxN, b is N.
+            const n = b.length;
+            const M = A.map((row, i) => row.concat([b[i]]));
+            for(let col = 0; col < n; col++){
+              let pivot = col;
+              for(let r = col + 1; r < n; r++){
+                if(Math.abs(M[r][col]) > Math.abs(M[pivot][col])) pivot = r;
+              }
+              [M[col], M[pivot]] = [M[pivot], M[col]];
+              if(Math.abs(M[col][col]) < 1e-12) return null; // degenerate - shouldn't happen for 4 distinct corners
+              for(let r = 0; r < n; r++){
+                if(r === col) continue;
+                const factor = M[r][col] / M[col][col];
+                for(let c = col; c <= n; c++) M[r][c] -= factor * M[col][c];
+              }
+            }
+            return M.map((row, i) => row[n] / row[i]);
+          }
+
+          function computeHomography(src, dst){
+            // src/dst: 4 points each, {x,y}. Solves for h11..h32 (h33 fixed at 1).
+            const A = [], b = [];
+            for(let i = 0; i < 4; i++){
+              const { x: sx, y: sy } = src[i];
+              const { x: dx, y: dy } = dst[i];
+              A.push([sx, sy, 1, 0, 0, 0, -dx * sx, -dx * sy]); b.push(dx);
+              A.push([0, 0, 0, sx, sy, 1, -dy * sx, -dy * sy]); b.push(dy);
+            }
+            const h = solveLinearSystem(A, b);
+            return h; // [h11,h12,h13,h21,h22,h23,h31,h32] or null
+          }
+
+          function applyHomography(h, p){
+            const w = h[6] * p.x + h[7] * p.y + 1;
+            return {
+              x: (h[0] * p.x + h[1] * p.y + h[2]) / w,
+              y: (h[3] * p.x + h[4] * p.y + h[5]) / w
+            };
+          }
+
+          function mtSaveCalibration(){
+            try{
+              localStorage.setItem(MT_CAL_KEY, JSON.stringify({
+                h: mtHomography,
+                width: parseFloat(document.getElementById('mtCalWidth').value) || 20,
+                height: parseFloat(document.getElementById('mtCalHeight').value) || 20
+              }));
+            }catch(err){}
+          }
+          function mtLoadCalibration(){
+            try{
+              const data = JSON.parse(localStorage.getItem(MT_CAL_KEY));
+              if(data && Array.isArray(data.h) && data.h.length === 8){
+                mtHomography = data.h;
+                document.getElementById('mtCalWidth').value = data.width;
+                document.getElementById('mtCalHeight').value = data.height;
+                document.getElementById('mtCalStatus').textContent = `Calibrated for a ${data.width}×${data.height} in area — marker positions below show real table inches.`;
+              }
+            }catch(err){}
+          }
+          mtLoadCalibration();
+
+          document.getElementById('mtCalibrateBtn').addEventListener('click', () => {
+            mtCalibrating = true;
+            mtCalPoints = [];
+            document.getElementById('mtCalStatus').textContent = 'Click the TOP-LEFT corner of the grid area on the camera image…';
+          });
+          document.getElementById('mtCalResetBtn').addEventListener('click', () => {
+            mtHomography = null;
+            mtCalibrating = false;
+            mtCalPoints = [];
+            try{ localStorage.removeItem(MT_CAL_KEY); }catch(err){}
+            document.getElementById('mtCalStatus').textContent = 'Not calibrated — marker positions will show as raw camera pixels only.';
+          });
+
+          const MT_CAL_LABELS = ['TOP-LEFT', 'TOP-RIGHT', 'BOTTOM-RIGHT', 'BOTTOM-LEFT'];
+          mtOverlay.addEventListener('click', e => {
+            const rect = mtOverlay.getBoundingClientRect();
+            // overlay's CSS size can differ from its pixel buffer size (buffer matches
+            // the camera's native resolution) - scale the click back into that space.
+            const scaleX = mtOverlay.width / rect.width;
+            const scaleY = mtOverlay.height / rect.height;
+            const p = { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
+
+            if(mtLearningSlotId !== null){
+              learnColorAt(p);
+              return;
+            }
+            if(!mtCalibrating) return;
+            mtCalPoints.push(p);
+            if(mtCalPoints.length < 4){
+              document.getElementById('mtCalStatus').textContent = `Click the ${MT_CAL_LABELS[mtCalPoints.length]} corner of the grid area…`;
+            } else {
+              const w = parseFloat(document.getElementById('mtCalWidth').value) || 20;
+              const h = parseFloat(document.getElementById('mtCalHeight').value) || 20;
+              const dst = [{ x: 0, y: 0 }, { x: w, y: 0 }, { x: w, y: h }, { x: 0, y: h }];
+              const solved = computeHomography(mtCalPoints, dst);
+              mtCalibrating = false;
+              if(!solved){
+                document.getElementById('mtCalStatus').textContent = 'Calibration failed (corners may be collinear) — try again with 4 clearly separated corners.';
+              } else {
+                mtHomography = solved;
+                mtSaveCalibration();
+                document.getElementById('mtCalStatus').textContent = `Calibrated for a ${w}×${h} in area — marker positions below show real table inches.`;
+              }
+            }
+          });
+
+          let mtStream = null;
+          let mtDetecting = false;
+          let mtDetector = null;
+          let mtSampleCanvas = null, mtSampleCtx = null;
+
+          async function mtListCameras(){
+            try{
+              if(!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices){
+                mtStatusLine.textContent = 'This window does not expose camera APIs (navigator.mediaDevices missing).';
+                return;
+              }
+              const devices = await navigator.mediaDevices.enumerateDevices();
+              const cams = devices.filter(d => d.kind === 'videoinput');
+              mtCameraSelect.innerHTML = cams.map((c, i) => `<option value="${c.deviceId}">${c.label || ('Camera ' + (i + 1))}</option>`).join('');
+              if(!cams.length) mtStatusLine.textContent = 'No cameras found yet — click Start Camera to request permission, then reopen this panel if the list stays empty.';
+            }catch(err){
+              mtStatusLine.textContent = 'Could not list cameras: ' + err.name + ' — ' + err.message;
+            }
+          }
+          mtListCameras();
+
+          mtStartBtn.addEventListener('click', async () => {
+            mtStatusLine.textContent = 'Requesting camera…';
+            try{
+              if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+                mtStatusLine.textContent = 'Camera access is not available in this window (navigator.mediaDevices.getUserMedia missing). This usually means the app needs a permission handler added on the Electron side.';
+                return;
+              }
+              const deviceId = mtCameraSelect.value;
+              mtStream = await navigator.mediaDevices.getUserMedia({
+                video: deviceId ? { deviceId: { exact: deviceId } } : true,
+                audio: false
+              });
+              mtVideo.srcObject = mtStream;
+              await mtVideo.play();
+              mtListCameras(); // labels are populated now that permission is granted
+
+              mtSampleCanvas = document.createElement('canvas');
+              mtSampleCanvas.width = mtVideo.videoWidth || 640;
+              mtSampleCanvas.height = mtVideo.videoHeight || 480;
+              mtSampleCtx = mtSampleCanvas.getContext('2d', { willReadFrequently: true });
+              mtOverlay.width = mtSampleCanvas.width;
+              mtOverlay.height = mtSampleCanvas.height;
+
+              mtDetector = new AR.Detector({ dictionaryName: 'ARUCO_MIP_36h12' });
+              mtDetecting = true;
+              mtStartBtn.disabled = true;
+              mtStopBtn.disabled = false;
+              mtStatusLine.textContent = 'Running — point the camera at your printed markers.';
+              requestAnimationFrame(mtDetectLoop);
+            }catch(err){
+              // Surface the exact error rather than failing silently - a permission
+              // denial, a busy camera, and a missing API all need different fixes.
+              mtStatusLine.textContent = 'Camera error (' + err.name + '): ' + err.message;
+            }
+          });
+
+          mtStopBtn.addEventListener('click', () => {
+            mtDetecting = false;
+            if(mtStream){ mtStream.getTracks().forEach(t => t.stop()); mtStream = null; }
+            mtVideo.srcObject = null;
+            mtStartBtn.disabled = false;
+            mtStopBtn.disabled = true;
+            mtStatusLine.textContent = 'Camera stopped.';
+            mtOctx.clearRect(0, 0, mtOverlay.width, mtOverlay.height);
+          });
+
+          function mtMarkerCenter(marker){
+            let x = 0, y = 0;
+            marker.corners.forEach(p => { x += p.x; y += p.y; });
+            return { x: x / marker.corners.length, y: y / marker.corners.length };
+          }
+
+          // Calibration click feedback - shows the corners clicked so far so it's
+          // clear the click registered, and in what order they're being read.
+          // Shared by both detection modes since calibration is mode-independent.
+          function drawCalPointsOverlay(){
+            if(!mtCalibrating && !mtCalPoints.length) return;
+            mtOctx.fillStyle = '#f4d35e';
+            mtOctx.strokeStyle = '#f4d35e';
+            mtOctx.font = 'bold 14px monospace';
+            mtCalPoints.forEach((p, i) => {
+              mtOctx.beginPath();
+              mtOctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
+              mtOctx.fill();
+              mtOctx.fillText(MT_CAL_LABELS[i], p.x + 12, p.y - 8);
+            });
+          }
+
+          function runArucoFrame(){
+            mtSampleCtx.drawImage(mtVideo, 0, 0, mtSampleCanvas.width, mtSampleCanvas.height);
+            const imageData = mtSampleCtx.getImageData(0, 0, mtSampleCanvas.width, mtSampleCanvas.height);
+            const markers = mtDetector.detect(imageData);
+
+            mtOctx.clearRect(0, 0, mtOverlay.width, mtOverlay.height);
+            mtOctx.strokeStyle = '#7ad4e0';
+            mtOctx.lineWidth = 3;
+            mtOctx.fillStyle = '#7ad4e0';
+            mtOctx.font = 'bold 14px monospace';
+
+            markers.forEach(m => {
+              mtOctx.beginPath();
+              m.corners.forEach((p, i) => { if(i === 0) mtOctx.moveTo(p.x, p.y); else mtOctx.lineTo(p.x, p.y); });
+              mtOctx.closePath();
+              mtOctx.stroke();
+              const c = mtMarkerCenter(m);
+              mtOctx.fillText('ID ' + m.id, c.x - 18, c.y - 10);
+            });
+
+            drawCalPointsOverlay();
+
+            if(markers.length){
+              mtMarkerReadout.innerHTML = markers.map(m => {
+                const c = mtMarkerCenter(m);
+                let posText = `pixel x: ${Math.round(c.x)}, y: ${Math.round(c.y)}`;
+                if(mtHomography){
+                  const world = applyHomography(mtHomography, c);
+                  const col = Math.floor(world.x), row = Math.floor(world.y);
+                  posText = `table: ${world.x.toFixed(1)}in, ${world.y.toFixed(1)}in — square (${col}, ${row})`;
+                }
+                return `<div class="statusLine" style="margin-bottom:2px;">ID <b style="color:var(--accent-2);">${m.id}</b> — ${posText} (hamming ${m.hammingDistance})</div>`;
+              }).join('');
+            } else {
+              mtMarkerReadout.innerHTML = '<div class="statusLine">No markers detected right now.</div>';
+            }
+          }
+
+          function runColorFrame(){
+            if(!mtScanCanvas){
+              mtScanCanvas = document.createElement('canvas');
+              mtScanCanvas.width = MT_SCAN_W; mtScanCanvas.height = MT_SCAN_H;
+              mtScanCtx = mtScanCanvas.getContext('2d', { willReadFrequently: true });
+            }
+            // Keep mtSampleCanvas current too - it's what color-learning samples from,
+            // and what defines the coordinate space calibration/homography expects.
+            mtSampleCtx.drawImage(mtVideo, 0, 0, mtSampleCanvas.width, mtSampleCanvas.height);
+            mtScanCtx.drawImage(mtVideo, 0, 0, MT_SCAN_W, MT_SCAN_H);
+            const data = mtScanCtx.getImageData(0, 0, MT_SCAN_W, MT_SCAN_H).data;
+            const sums = mtColorSlots.map(() => ({ x: 0, y: 0, n: 0 }));
+
+            for(let py = 0; py < MT_SCAN_H; py++){
+              for(let px = 0; px < MT_SCAN_W; px++){
+                const idx = (py * MT_SCAN_W + px) * 4;
+                const hsv = rgbToHsv(data[idx], data[idx + 1], data[idx + 2]);
+                if(hsv.s < MT_MIN_SAT || hsv.v < MT_MIN_VAL) continue;
+                for(let i = 0; i < mtColorSlots.length; i++){
+                  if(hueDist(hsv.h, mtColorSlots[i].h) < MT_HUE_TOLERANCE){
+                    sums[i].x += px; sums[i].y += py; sums[i].n++;
+                    break; // a pixel counts toward at most one slot
+                  }
+                }
+              }
+            }
+
+            const scaleX = mtSampleCanvas.width / MT_SCAN_W;
+            const scaleY = mtSampleCanvas.height / MT_SCAN_H;
+            const detections = [];
+            mtColorSlots.forEach((slot, i) => {
+              if(sums[i].n >= MT_MIN_PIXELS){
+                detections.push({
+                  slot, pixelCount: sums[i].n,
+                  x: (sums[i].x / sums[i].n) * scaleX,
+                  y: (sums[i].y / sums[i].n) * scaleY
+                });
+              }
+            });
+
+            mtOctx.clearRect(0, 0, mtOverlay.width, mtOverlay.height);
+            mtOctx.font = 'bold 14px monospace';
+            detections.forEach(d => {
+              const col = hsvToCss(d.slot.h, 1, 1);
+              mtOctx.strokeStyle = col; mtOctx.fillStyle = col; mtOctx.lineWidth = 3;
+              mtOctx.beginPath();
+              mtOctx.arc(d.x, d.y, 16, 0, Math.PI * 2);
+              mtOctx.stroke();
+              mtOctx.fillText(d.slot.label, d.x + 20, d.y);
+            });
+            drawCalPointsOverlay();
+
+            if(detections.length){
+              mtMarkerReadout.innerHTML = detections.map(d => {
+                let posText = `pixel x: ${Math.round(d.x)}, y: ${Math.round(d.y)}`;
+                if(mtHomography){
+                  const world = applyHomography(mtHomography, d);
+                  const col = Math.floor(world.x), row = Math.floor(world.y);
+                  posText = `table: ${world.x.toFixed(1)}in, ${world.y.toFixed(1)}in — square (${col}, ${row})`;
+                }
+                return `<div class="statusLine" style="margin-bottom:2px;"><b style="color:${hsvToCss(d.slot.h, 1, 1)};">${d.slot.label}</b> — ${posText} (${d.pixelCount}px)</div>`;
+              }).join('');
+            } else {
+              mtMarkerReadout.innerHTML = '<div class="statusLine">No color dots detected right now.</div>';
+            }
+          }
+
+          function mtDetectLoop(){
+            if(!mtDetecting) return;
+            if(mtMode === 'color') runColorFrame();
+            else runArucoFrame();
+            requestAnimationFrame(mtDetectLoop);
+          }
+        })();
 
         // Let the TV know we're ready to receive state
         try{ if(window.blackstoneDesktop) window.blackstoneDesktop.requestState(); else window.opener.postMessage({ source:'blackstoneRemote', type:'ready' }, '*'); }catch(err){}

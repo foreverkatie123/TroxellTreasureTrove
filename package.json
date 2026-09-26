@@ -9,7 +9,7 @@
     "dev": "nodemon --exec electron ."
   },
   "devDependencies": {
-    "electron": "^37.2.0",
+    "electron": "^37.10.3",
     "nodemon": "^3.1.14"
   },
   "dependencies": {
@@ -17,5 +17,8 @@
     "firebase": "^12.16.0",
     "matter-js": "^0.20.0",
     "pixi.js": "^8.19.0"
+  },
+  "allowScripts": {
+    "electron@37.10.3": true
   }
 }
