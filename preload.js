@@ -11,7 +11,10 @@ contextBridge.exposeInMainWorld('blackstoneDesktop', {
   onOverlayInteractive: callback => ipcRenderer.on('overlay-interactive-changed', (_e, on) => callback(on)),
   getDisplays: () => ipcRenderer.invoke('get-displays'),
   moveOverlay: displayId => ipcRenderer.send('move-overlay', displayId),
-  // ---- panel pop-out ----
+
+  // Panel pop-out: tear an individual DM Remote panel (e.g. "Turn & Initiative")
+  // out into its own real OS window, so it can be dragged to its own monitor
+  // or positioned independently of the main Remote window.
   openPanelWindow: panelId => ipcRenderer.send('open-panel-window', panelId),
   closePanelWindow: panelId => ipcRenderer.send('close-panel-window', panelId),
   onPoppedPanelsChanged: callback => ipcRenderer.on('popped-panels-changed', (_e, list) => callback(list)),

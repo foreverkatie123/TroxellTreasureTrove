@@ -169,6 +169,36 @@
       #initDrawer.open{ opacity:1; pointer-events:auto; }
       #initDrawer.dragging{ transition:none; }
 
+      /* ---------- DM markers & pings ---------- */
+      #tokenLayer{ position:fixed; inset:0; pointer-events:none; z-index:20; overflow:hidden; }
+      .tvToken{
+        position:absolute; transform:translate(-50%,-50%); border-radius:50%; box-sizing:border-box;
+        --tok:#4fb8c9; --tokbg:#4fb8c955;
+        transition:left .25s ease, top .25s ease, width .2s ease, height .2s ease;
+      }
+      .tvToken.disc{ background:var(--tokbg); border:3px solid var(--tok); box-shadow:0 0 14px var(--tok); }
+      .tvToken.ring{
+        border:4px dashed var(--tok); box-shadow:0 0 16px var(--tok), inset 0 0 16px var(--tok);
+        animation:tvTokPulse 1.8s ease-in-out infinite;
+      }
+      @keyframes tvTokPulse{ 0%,100%{ opacity:1; } 50%{ opacity:.45; } }
+      .tvTokLabel{
+        position:absolute; top:100%; left:50%; transform:translateX(-50%); margin-top:4px; white-space:nowrap;
+        font:700 15px/1 'Inter',system-ui,sans-serif; color:#fff; background:rgba(6,10,14,.85);
+        border:1px solid var(--tok); border-radius:6px; padding:3px 8px;
+      }
+      .tvPing{ position:absolute; transform:translate(-50%,-50%); --tok:#4fb8c9; }
+      .tvPing .pingRing{
+        position:absolute; inset:0; border-radius:50%; border:5px solid var(--tok);
+        opacity:0; animation:tvPingRing 1.5s ease-out infinite;
+      }
+      .tvPing .pingRing:nth-child(2){ animation-delay:.5s; }
+      .tvPing .pingDot{
+        position:absolute; left:50%; top:50%; width:20px; height:20px; margin:-10px 0 0 -10px;
+        border-radius:50%; background:var(--tok); box-shadow:0 0 14px var(--tok);
+      }
+      @keyframes tvPingRing{ 0%{ transform:scale(.25); opacity:.95; } 100%{ transform:scale(1); opacity:0; } }
+
       /* ---------- Combat Log Panel ---------- */
       #logDrawer{
         position:fixed; top:80px; left:20px; bottom:auto;
