@@ -83,33 +83,9 @@
       }
 
       function onRoundStart(){
-        combatants.forEach(c => {
-          if(c.legendaryMax > 0) c.legendaryLeft = c.legendaryMax;
-          if(c.legendaryResistanceMax > 0) c.legendaryResistanceLeft = c.legendaryResistanceMax;
-          c.reactionUsed = false;
-        });
+        combatants.forEach(c => { if(c.legendaryMax > 0) c.legendaryLeft = c.legendaryMax; });
         lairAction.triggered = false;
-        advanceTimers();
-        advanceConcentration();
       }
-
-      function advanceConcentration(){
-        combatants.forEach(c => {
-          if(!c.concentrating) return;
-          c.concentrationRounds = Math.max(0, (c.concentrationRounds || 0) - 1);
-          if(c.concentrationRounds <= 0){
-            logEvent(`🔮 ${c.name}'s concentration on ${c.concentrationSpell || 'their spell'} ends.`);
-            c.concentrating = false;
-            c.concentrationSpell = '';
-          }
-        });
-      }
-
-      let hudScale = 1; // 1 = 100%; adjustable from the DM Remote's Settings panel
-      function applyHudScale(){
-        document.getElementById('hud').style.setProperty('--hud-scale', hudScale);
-      }
-      applyHudScale();
 
       function updateHud(order){
         const hud = document.getElementById('hud');
@@ -123,39 +99,6 @@
         document.getElementById('hudOnDeckName').textContent = onDeck ? onDeck.name : '-';
       }
 
-      function flashRoundStart(){
-        const hud = document.getElementById('hud');
-        const border = document.getElementById('roundFlashBorder');
-        hud.classList.remove('roundFlash'); void hud.offsetWidth; hud.classList.add('roundFlash');
-        border.classList.remove('flash'); void border.offsetWidth; border.classList.add('flash');
-      }
-
-      const REMINDER_MS = 7000;
-      function showReminder(icon, text, cls){
-        const stack = document.getElementById('reminderStack');
-        const card = document.createElement('div');
-        card.className = 'reminderCard' + (cls ? ' ' + cls : '');
-        card.innerHTML = `<span class="reminderIcon">${icon}</span><span>${escapeHtml(text)}</span><button class="reminderClose">✕</button>`;
-        const remove = () => { card.classList.add('leaving'); setTimeout(() => card.remove(), 220); };
-        card.querySelector('.reminderClose').addEventListener('click', remove);
-        stack.appendChild(card);
-        setTimeout(remove, REMINDER_MS);
-      }
-
-      function checkLegendaryReminder(endedId){
-        if(endedId === null || endedId === undefined) return;
-        const available = combatants.filter(c => c.id !== endedId && c.legendaryMax > 0 && c.legendaryLeft > 0);
-        if(!available.length) return;
-        const names = available.map(c => `${c.name} (${c.legendaryLeft})`).join(', ');
-        showReminder('👑', `Legendary action available: ${names}`, 'legendary');
-      }
-
-      function checkLairReminder(){
-        if(activeId === 'LAIR' && !lairAction.triggered){
-          // showReminder('🏛', 'Lair Action triggers now!', 'lair');
-        }
-      }
-
       function render(){
         const order = turnOrder().map(resolveEntry).filter(Boolean);
         listEl.innerHTML = '';
@@ -163,6 +106,7 @@
         wireCardEvents();
         roundNumEl.textContent = round;
         updateHud(order);
+        if(typeof renderTokens === 'function') renderTokens(); // keep token labels/active-ring/bloodied tint in sync
         afterStateChange();
       }
 
@@ -205,10 +149,6 @@
         ].filter(Boolean).join('');
         const chipsHtml = chips ? `<div class="condChips">${chips}</div>` : '';
 
-        const concHtml = c.concentrating
-          ? `<div class="concBadge">🔮 Concentrating: ${escapeHtml(c.concentrationSpell || 'spell')} — ${c.concentrationRounds} rd${c.concentrationRounds === 1 ? '' : 's'}</div>`
-          : '';
-
         const pickerOpen = condPickerOpenFor === c.id;
         const pickerHtml = pickerOpen ? `
           <div class="condPicker">
@@ -239,7 +179,6 @@
           </div>
           ${c.notes ? `<div class="notesLine">${escapeHtml(c.notes)}</div>` : ''}
           ${chipsHtml}
-          ${concHtml}
           <div class="cardToolbar">
             <button class="toolBtn delayBtn${c.delayed ? ' active' : ''}" data-action="delay" data-id="${c.id}">⏸ Delay</button>
             <button class="toolBtn readyBtn${c.ready ? ' active' : ''}" data-action="ready" data-id="${c.id}">⚡ Ready</button>
@@ -285,6 +224,7 @@
               const ids = idsInOrder();
               activeId = ids.length ? ids[0] : null;
             }
+            if(typeof removeToken === 'function') removeToken(id);
             if(removed) logEvent(`${removed.name} removed from combat`);
             render();
           });
@@ -507,11 +447,9 @@
         if(!name || isNaN(init)) return;
         const c = {
           id: nextId++, name, init, notes:'', hp:null, maxHp:null, tempHp:0, ac:null, rosterId:null,
-          delayed:false, ready:false, legendaryMax:0, legendaryLeft:0,
-          legendaryResistanceMax:0, legendaryResistanceLeft:0, reactionUsed:false,
-          conditions:[], exhaustion:0,
-          concentrating:false, concentrationSpell:'', concentrationRounds:0,
-          spellSlots:{}, preparedSpells:[]
+          delayed:false, ready:false, legendaryMax:0, legendaryLeft:0, conditions:[], exhaustion:0,
+          tokenColor: null, // null = auto-assigned color; DM can override from the Remote
+          tokenSize: 1 // 1=Small/Medium, 2=Large, 3=Huge, 4=Gargantuan (squares across)
         };
         combatants.push(c);
         if(!combatStarted) refreshPreStartActive();
@@ -525,6 +463,7 @@
       document.getElementById('clearBtn').addEventListener('click', () => {
         combatants = []; activeId = null; round = 1; manualOrder = []; lairAction.triggered = false;
         combatStarted = false; condPickerOpenFor = null;
+        if(typeof clearAllTokens === 'function') clearAllTokens();
         logEvent('— Combat cleared —');
         render();
       });
@@ -541,13 +480,10 @@
         if(!ids.length) return;
         const idx = ids.indexOf(activeId);
         const nextIdx = (idx + 1) % ids.length;
-        const endedId = activeId;
-        if(nextIdx === 0 && idx !== -1){ round++; onRoundStart(); logEvent(`— Round ${round} —`); flashRoundStart(); }
+        if(nextIdx === 0 && idx !== -1){ round++; onRoundStart(); logEvent(`— Round ${round} —`); }
         activeId = ids[nextIdx];
         const nm = nameForId(activeId);
         if(nm) logEvent(`▶ ${nm}'s turn`);
-        checkLegendaryReminder(endedId);
-        checkLairReminder();
         render();
       }
       function prevTurn(){
