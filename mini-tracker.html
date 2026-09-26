@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Troxell Treasure Trove — Mini Tracker (Test)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      :root{
+        --bg:#0a0e13; --panel:#121a21; --border:#2a3944;
+        --accent:#4fb8c9; --accent-bright:#7ad4e0; --accent-2:#5ac8c0;
+        --text:#d9e1e6; --text-dim:#7c8a94; --danger:#d1605a;
+      }
+      *{box-sizing:border-box;}
+      html,body{ margin:0; padding:0; background:var(--bg); color:var(--text); font-family:'Inter',system-ui,sans-serif; }
+      h1,h2,h3{ font-family:'Cinzel',Georgia,serif; letter-spacing:0.02em; }
+      body{ padding:20px; max-width:980px; margin:0 auto; }
+      h1{ font-size:22px; color:var(--accent-bright); margin-bottom:4px; }
+      .sub{ color:var(--text-dim); font-size:13px; margin-bottom:20px; }
+      .tabBar{ display:flex; gap:8px; margin-bottom:16px; }
+      .tabBtn{
+        padding:9px 16px; border-radius:8px; border:1px solid var(--border); background:#161d24;
+        color:var(--text-dim); cursor:pointer; font-size:13px; text-transform:uppercase; letter-spacing:.05em;
+      }
+      .tabBtn.active{ border-color:var(--accent-2); color:var(--accent-2); background:rgba(90,200,192,0.1); }
+      .tabPanel{ display:none; }
+      .tabPanel.active{ display:block; }
+      .panel{ background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:16px 18px; margin-bottom:16px; }
+      .panel h3{ margin:0 0 10px; color:var(--accent-bright); font-size:15px; }
+      .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:12px; }
+      select, input[type=number]{
+        background:#0d1318; border:1px solid var(--border); border-radius:6px; color:var(--text);
+        padding:8px 10px; font-size:13px; font-family:inherit;
+      }
+      .btn{
+        padding:10px 16px; border-radius:8px; border:1px solid var(--border); background:#161d24;
+        color:var(--text); cursor:pointer; font-size:13px; font-family:inherit;
+      }
+      .btn:hover{ border-color:var(--accent); }
+      .btn.primary{ background:var(--accent); color:#062229; border-color:var(--accent); font-weight:600; }
+      .btn.primary:hover{ background:var(--accent-bright); }
+      #videoWrap{ position:relative; width:100%; background:#000; border-radius:10px; overflow:hidden; border:1px solid var(--border); }
+      #video{ display:block; width:100%; height:auto; }
+      #overlay{ position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
+      #statusLine{ font-size:12px; color:var(--text-dim); margin-top:8px; }
+      #markerReadout{ margin-top:12px; }
+      .markerRow{
+        display:flex; gap:12px; padding:6px 10px; border:1px solid var(--border); border-radius:6px;
+        background:#0d1318; margin-bottom:6px; font-size:12px; font-family:monospace;
+      }
+      .markerRow .mId{ color:var(--accent-2); font-weight:700; min-width:50px; }
+      #markerReadoutEmpty{ color:var(--text-dim); font-size:12px; }
+      .printGrid{ display:grid; grid-template-columns:repeat(4, 1fr); gap:18px; margin-top:12px; }
+      .printCard{ text-align:center; }
+      .printCard svg{ width:100%; aspect-ratio:1; border:1px solid #ccc; }
+      .printCard .idLabel{ font-family:monospace; font-size:11px; color:#000; margin-top:4px; }
+      @media print{
+        body{ background:#fff; color:#000; padding:0; }
+        .tabBar, .panel h3, #printControls, #videoTab{ display:none !important; }
+        .printCard .idLabel{ color:#000; }
+      }
+      .field{ margin-bottom:10px; }
+      .field label{ display:block; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-dim); margin-bottom:5px; }
+    </style>
+  </head>
+  <body>
+    <h1>Mini Tracker — Detection Test</h1>
+    <div class="sub">
+      A standalone test bench for the "physical minis move the digital token" idea: print some markers below,
+      stick them under a few minis, then switch to Detect and point a camera at them. This does not yet feed
+      positions into the overlay app — it's just to prove detection works with your camera, lighting, and
+      marker size before wiring that up for real.
+    </div>
+
+    <div class="tabBar">
+      <button class="tabBtn active" data-tab="detect">Detect</button>
+      <button class="tabBtn" data-tab="print">Print Markers</button>
+    </div>
+
+    <div class="tabPanel active" data-panel="detect" id="videoTab">
+      <div class="panel">
+        <h3>Camera</h3>
+        <div class="row">
+          <select id="cameraSelect"></select>
+          <button class="btn primary" id="startBtn">Start Camera</button>
+          <button class="btn" id="stopBtn" disabled>Stop</button>
+        </div>
+        <div id="videoWrap">
+          <video id="video" autoplay muted playsinline></video>
+          <canvas id="overlay"></canvas>
+        </div>
+        <div id="statusLine">Camera not started.</div>
+        <div id="markerReadout">
+          <div id="markerReadoutEmpty">No markers detected yet.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabPanel" data-panel="print">
+      <div class="panel" id="printControls">
+        <h3>Printable Markers</h3>
+        <div class="row">
+          <div class="field" style="margin-bottom:0;">
+            <label>How many markers</label>
+            <input type="number" id="markerCount" value="12" min="1" max="48">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>Starting ID</label>
+            <input type="number" id="markerStart" value="0" min="0" max="249">
+          </div>
+          <button class="btn primary" id="generateBtn" style="align-self:flex-end;">Generate</button>
+          <button class="btn" id="printBtn" style="align-self:flex-end;">Print This Sheet</button>
+        </div>
+        <div class="sub" style="margin:0;">
+          Uses the ARUCO_MIP_36h12 dictionary (250 possible IDs, 0–249) — the more robust of the two the
+          detector supports. Print at a size where each marker is at least about 1.5–2cm across for a mini's
+          base; bigger is more reliable at a distance. Write down which ID you assign to which creature.
+        </div>
+      </div>
+      <div class="printGrid" id="printGrid"></div>
+    </div>
+
+    <script src="js/vendor/cv.js"></script>
+    <script src="js/vendor/aruco.js"></script>
+    <script>
+      // ---- Tabs ----
+      document.querySelectorAll('.tabBtn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.tabBtn').forEach(b => b.classList.toggle('active', b === btn));
+          document.querySelectorAll('.tabPanel').forEach(p => p.classList.toggle('active', p.dataset.panel === btn.dataset.tab));
+        });
+      });
+
+      // ---- Print Markers ----
+      const dictionary = new AR.Dictionary('ARUCO_MIP_36h12');
+      function renderPrintGrid(){
+        const count = Math.max(1, Math.min(48, parseInt(document.getElementById('markerCount').value) || 12));
+        const start = Math.max(0, Math.min(249, parseInt(document.getElementById('markerStart').value) || 0));
+        const grid = document.getElementById('printGrid');
+        grid.innerHTML = '';
+        for(let i = 0; i < count; i++){
+          const id = start + i;
+          if(id > 249) break;
+          const card = document.createElement('div');
+          card.className = 'printCard';
+          card.innerHTML = dictionary.generateSVG(id) + `<div class="idLabel">ID ${id}</div>`;
+          grid.appendChild(card);
+        }
+      }
+      document.getElementById('generateBtn').addEventListener('click', renderPrintGrid);
+      document.getElementById('printBtn').addEventListener('click', () => window.print());
+      renderPrintGrid();
+
+      // ---- Camera detection ----
+      const video = document.getElementById('video');
+      const overlay = document.getElementById('overlay');
+      const octx = overlay.getContext('2d');
+      const cameraSelect = document.getElementById('cameraSelect');
+      const startBtn = document.getElementById('startBtn');
+      const stopBtn = document.getElementById('stopBtn');
+      const statusLine = document.getElementById('statusLine');
+      const markerReadout = document.getElementById('markerReadout');
+
+      let stream = null;
+      let detecting = false;
+      let detector = null;
+      let sampleCanvas = null, sampleCtx = null;
+
+      async function listCameras(){
+        try{
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const cams = devices.filter(d => d.kind === 'videoinput');
+          cameraSelect.innerHTML = cams.map((c, i) => `<option value="${c.deviceId}">${c.label || ('Camera ' + (i+1))}</option>`).join('');
+        }catch(err){
+          statusLine.textContent = 'Could not list cameras: ' + err.message;
+        }
+      }
+      listCameras();
+
+      startBtn.addEventListener('click', async () => {
+        try{
+          const deviceId = cameraSelect.value;
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: deviceId ? { deviceId: { exact: deviceId } } : true,
+            audio: false
+          });
+          video.srcObject = stream;
+          await video.play();
+          // permissions granted - device labels are now populated, refresh the list
+          listCameras();
+
+          sampleCanvas = document.createElement('canvas');
+          sampleCanvas.width = video.videoWidth || 640;
+          sampleCanvas.height = video.videoHeight || 480;
+          sampleCtx = sampleCanvas.getContext('2d', { willReadFrequently:true });
+          overlay.width = sampleCanvas.width;
+          overlay.height = sampleCanvas.height;
+
+          detector = new AR.Detector({ dictionaryName: 'ARUCO_MIP_36h12' });
+          detecting = true;
+          startBtn.disabled = true;
+          stopBtn.disabled = false;
+          statusLine.textContent = 'Running — point the camera at your printed markers.';
+          requestAnimationFrame(detectLoop);
+        }catch(err){
+          statusLine.textContent = 'Camera error: ' + err.message;
+        }
+      });
+
+      stopBtn.addEventListener('click', () => {
+        detecting = false;
+        if(stream){ stream.getTracks().forEach(t => t.stop()); stream = null; }
+        video.srcObject = null;
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        statusLine.textContent = 'Camera stopped.';
+        octx.clearRect(0, 0, overlay.width, overlay.height);
+      });
+
+      function markerCenter(marker){
+        let x = 0, y = 0;
+        marker.corners.forEach(p => { x += p.x; y += p.y; });
+        return { x: x / marker.corners.length, y: y / marker.corners.length };
+      }
+
+      function detectLoop(){
+        if(!detecting) return;
+        sampleCtx.drawImage(video, 0, 0, sampleCanvas.width, sampleCanvas.height);
+        const imageData = sampleCtx.getImageData(0, 0, sampleCanvas.width, sampleCanvas.height);
+        const markers = detector.detect(imageData);
+
+        octx.clearRect(0, 0, overlay.width, overlay.height);
+        octx.strokeStyle = '#7ad4e0';
+        octx.lineWidth = 3;
+        octx.fillStyle = '#7ad4e0';
+        octx.font = 'bold 16px monospace';
+
+        markers.forEach(m => {
+          octx.beginPath();
+          m.corners.forEach((p, i) => { if(i === 0) octx.moveTo(p.x, p.y); else octx.lineTo(p.x, p.y); });
+          octx.closePath();
+          octx.stroke();
+          const c = markerCenter(m);
+          octx.fillText('ID ' + m.id, c.x - 20, c.y - 12);
+        });
+
+        if(markers.length){
+          markerReadout.innerHTML = markers.map(m => {
+            const c = markerCenter(m);
+            return `<div class="markerRow"><span class="mId">ID ${m.id}</span><span>x: ${Math.round(c.x)}, y: ${Math.round(c.y)}</span><span>hamming: ${m.hammingDistance}</span></div>`;
+          }).join('');
+        } else {
+          markerReadout.innerHTML = '<div id="markerReadoutEmpty">No markers detected right now.</div>';
+        }
+
+        requestAnimationFrame(detectLoop);
+      }
+    </script>
+  </body>
+</html>

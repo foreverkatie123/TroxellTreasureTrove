@@ -18,10 +18,9 @@
       h1,h2,h3,.display{ font-family:'Cinzel',Georgia,serif; letter-spacing:0.02em; }
       body{ padding:16px; max-width:460px; }
 
-      #statusBarsRow{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
       #connBar{
         display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px;
-        flex:1 1 100%; font-size:12px; text-transform:uppercase; letter-spacing:.06em;
+        margin-bottom:14px; font-size:12px; text-transform:uppercase; letter-spacing:.06em;
         border:1px solid var(--border); background:var(--panel);
       }
       #connDot{ width:8px; height:8px; border-radius:50%; background:var(--danger); flex-shrink:0; }
@@ -30,7 +29,7 @@
 
       #fbBar{
         display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px;
-        flex:1 1 100%; font-size:12px; text-transform:uppercase; letter-spacing:.06em;
+        margin-bottom:14px; font-size:12px; text-transform:uppercase; letter-spacing:.06em;
         border:1px solid var(--border); background:var(--panel);
       }
       #fbDot{ width:8px; height:8px; border-radius:50%; background:var(--danger); flex-shrink:0; }
@@ -59,7 +58,7 @@
       }
       .barHideBtn:hover{ color:var(--danger); }
       #connBar.collapsed, #fbBar.collapsed{
-        flex:0 0 auto; width:20px; height:20px; padding:0; justify-content:center; cursor:pointer; border-radius:50%;
+        width:20px; height:20px; padding:0; justify-content:center; cursor:pointer; border-radius:50%;
       }
       #connBar.collapsed > *:not(#connDot), #fbBar.collapsed > *:not(#fbDot){ display:none !important; }
 
@@ -73,23 +72,7 @@
 
       .panel{
         background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:14px 16px;
-        position:relative;
       }
-      .panelHidden{ display:none !important; }
-      .panelPopoutBtn{
-        position:absolute; top:12px; right:14px;
-        background:none; border:1px solid var(--border); border-radius:6px;
-        color:var(--text-dim); font-size:13px; line-height:1; cursor:pointer; padding:4px 6px;
-      }
-      .panelPopoutBtn:hover{ color:var(--accent-2); border-color:var(--accent-2); }
-      .panelPoppedPlaceholder{
-        background:var(--panel); border:1px dashed var(--border); border-radius:10px;
-        padding:14px 16px; display:flex; align-items:center; justify-content:space-between;
-        gap:10px; font-size:12px; color:var(--text-dim);
-      }
-      .panelPoppedPlaceholder .btn{ width:auto; padding:7px 12px; font-size:12px; }
-      #soloPanelBackBar{ margin-bottom:14px; }
-      #soloPanelBackBar .btn{ width:auto; padding:8px 14px; }
       .panel h3{ margin:0 0 12px; color:var(--accent-bright); font-size:14px; text-transform:uppercase; letter-spacing:.08em; }
       .panel h3 .sub{ text-transform:none; letter-spacing:0; color:var(--text-dim); font-size:11px; font-weight:400; display:block; margin-top:2px; }
 
@@ -220,23 +203,10 @@
       .preparedRow .repRemove{ background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:15px; padding:4px; flex-shrink:0; }
       .preparedRow .repRemove:hover{ color:var(--danger); }
       #preparedSpellsEmpty{ font-size:12px; color:var(--text-dim); padding:4px 0 8px; }
-
-      /* ---------- Concentration save prompts (controller-only) ---------- */
       .concLine{
         margin-top:6px; font-size:11px; color:var(--accent-2); background:rgba(90,200,192,0.1);
         border:1px solid rgba(90,200,192,0.35); border-radius:6px; padding:3px 8px; display:none;
       }
-      #concAlerts{ position:sticky; top:8px; z-index:30; display:flex; flex-direction:column; gap:8px; }
-      #concAlerts:empty{ display:none; }
-      .concAlert{
-        background:var(--panel); border:1px solid var(--accent-2); border-radius:10px;
-        padding:10px 12px; box-shadow:0 6px 20px rgba(0,0,0,.5);
-      }
-      .concAlert .caTitle{ font-size:13px; font-weight:600; color:var(--accent-2); margin-bottom:2px; }
-      .concAlert .caBody{ font-size:12px; color:var(--text); margin-bottom:8px; }
-      .concAlert .caBody b{ color:var(--accent-bright); }
-      .concAlert .caBtns{ display:flex; gap:8px; }
-      .concAlert .caBtns .btn{ margin-top:0; padding:8px; font-size:12px; }
 
       /* ---------- Monster Library ---------- */
       #monsterResults{ margin-top:8px; }
@@ -363,25 +333,12 @@
       .card .iconBtn{ background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:15px; padding:2px 6px; flex-shrink:0; }
       .card .iconBtn:hover{ color:var(--accent-2); }
       .card .iconBtn.removeBtn:hover{ color:var(--danger); }
+      .card .iconBtn.tokenBtn.on{ color:var(--accent-2); }
       .cardStats{ display:flex; align-items:center; gap:6px; margin-top:7px; flex-wrap:wrap; }
       .cardStats .statText{ font-size:12px; color:var(--text-dim); flex:1 1 auto; min-width:110px; }
       .cardStats .statText.bloodied{ color:var(--danger); }
       .amtInput{ width:52px; padding:6px 6px; font-size:12px; text-align:center; flex-shrink:0; }
       .miniBtn{ width:auto; padding:6px 9px; font-size:11px; margin:0; flex-shrink:0; }
-      .reactDelayBtn.active{ border-color:#d1a15a; color:#d1a15a; background:rgba(209,161,90,0.12); }
-      .reactReadyBtn.active{ border-color:var(--accent-2); color:var(--accent-2); background:rgba(90,200,192,0.12); }
-      .cardReactRow{ display:flex; gap:6px; margin-top:7px; }
-      .miniBadge{ font-size:9px; padding:1px 6px; border-radius:8px; border:1px solid var(--border); text-transform:uppercase; letter-spacing:.04em; }
-      .miniBadge.delayed{ color:#d1a15a; border-color:#d1a15a; background:rgba(209,161,90,0.12); }
-      .miniBadge.ready{ color:var(--accent-2); border-color:var(--accent-2); background:rgba(90,200,192,0.12); }
-      .cardLrRow{ display:flex; align-items:center; gap:6px; margin-top:7px; flex-wrap:wrap; }
-      .cardLrRow .lrLabel{ font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.05em; }
-      .cardLrRow .lrMaxInput{ width:40px; padding:4px; font-size:11px; text-align:center; flex-shrink:0; }
-      .lrPips{ display:flex; gap:2px; }
-      .lrPip{ width:8px; height:8px; border-radius:50%; background:#202a32; border:1px solid var(--border); flex-shrink:0; }
-      .lrPip.filled{ background:#e0b64a; border-color:#e0b64a; }
-      .cardLrRow .miniBtn{ width:auto; padding:5px 8px; font-size:10.5px; margin:0; flex-shrink:0; }
-      .reactionBtn.used{ border-color:var(--danger); color:var(--danger); background:rgba(209,96,90,0.12); }
 
       .condChips{ display:flex; flex-wrap:wrap; gap:4px; margin-top:7px; }
       .condChips:empty{ display:none; }
@@ -519,15 +476,13 @@
   </head>
   <body>
 
-    <div id="statusBarsRow">
-      <div id="connBar"><div id="connDot"></div><div id="connText">Connecting to TV display…</div><button id="connHideBtn" class="barHideBtn" title="Hide">✕</button></div>
-      <div id="fbBar">
-        <div id="fbDot" class="pending"></div>
-        <div id="fbText">Connecting to campaign database…</div>
-        <button id="fbSignInBtn" class="hidden">Sign in with Google</button>
-        <div id="fbUserRow" class="hidden"><img id="fbUserPhoto" src="" alt=""><span id="fbUserName"></span><button id="fbSignOutBtn">Sign out</button></div>
-        <button id="fbHideBtn" class="barHideBtn" title="Hide">✕</button>
-      </div>
+    <div id="connBar"><div id="connDot"></div><div id="connText">Connecting to TV display…</div><button id="connHideBtn" class="barHideBtn" title="Hide">✕</button></div>
+    <div id="fbBar">
+      <div id="fbDot" class="pending"></div>
+      <div id="fbText">Connecting to campaign database…</div>
+      <button id="fbSignInBtn" class="hidden">Sign in with Google</button>
+      <div id="fbUserRow" class="hidden"><img id="fbUserPhoto" src="" alt=""><span id="fbUserName"></span><button id="fbSignOutBtn">Sign out</button></div>
+      <button id="fbHideBtn" class="barHideBtn" title="Hide">✕</button>
     </div>
 
     <div id="noOpener">
@@ -536,9 +491,8 @@
     </div>
 
     <div id="appBody">
-      <div id="concAlerts"></div>
 
-      <div class="panel" id="roundPanel">
+      <div class="panel">
         <div id="roundDisplay">
           <span class="num" id="roundNum">1</span>
           <span class="label">Round</span>
@@ -551,19 +505,9 @@
         </div>
       </div>
 
-      <div class="panel" id="initiativePanel">
-        <h3>Initiative &amp; Combat</h3>
+      <div class="panel">
+        <h3>Initiative &amp; Combat<span class="sub">HP / temp HP / AC live-edit here — the TV only shows names and a bloodied/down icon</span></h3>
         <div id="combatantList"></div>
-
-        <div class="divider"></div>
-        <div class="toggle">
-          <label style="margin:0;font-size:13px;">🏛 Lair Actions</label>
-          <div class="switch" id="lairToggleBtn"></div>
-        </div>
-        <div class="field" id="lairInitField" style="display:none;">
-          <label>At Initiative Count</label>
-          <input type="number" id="lairInitInput" min="1" max="30" value="20">
-        </div>
 
         <div class="divider"></div>
         <div class="field"><label>Quick add (no roster entry)</label>
@@ -842,10 +786,6 @@
         <h3>Overlay Window</h3>
         <button class="btn" id="clickThroughBtn">Enable Interaction</button>
         <div class="statusLine">Enable interaction only while drawing, measuring, or revealing fog. Disable it to pass mouse clicks to the program underneath.</div>
-        <div class="toggle">
-          <label style="margin:0;font-size:13px;">Show Grid</label>
-          <div class="switch" id="gridToggleBtn"></div>
-        </div>
         <div class="field"><label>Player display</label><select id="displaySelect"></select></div>
         <button class="btn" id="moveOverlayBtn">Move Overlay to Display</button>
       </div>
@@ -1118,111 +1058,6 @@
         let lastSnapshot = null;
         let liveTimer = null;
 
-        // ---- Panel pop-out: tear any panel out into its own real window ----
-        (function(){
-          if (!window.blackstoneDesktop) return; // desktop app only
-
-          const soloPanelId = new URLSearchParams(location.search).get('panel');
-          const slugify = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-          const hide = el => el.classList.add('panelHidden');
-
-          // Panels listed here pop out together as ONE window with ONE button.
-          // Anything not listed here still pops out individually, keyed off its own <h3>.
-          const GROUPS = [
-            { id: 'turn-initiative', label: 'Turn & Initiative', selectors: ['#roundPanel', '#initiativePanel'] }
-          ];
-
-          const groupedEls = new Set();
-          GROUPS.forEach(g => {
-            g.els = g.selectors.map(sel => document.querySelector(sel)).filter(Boolean);
-            g.els.forEach(el => groupedEls.add(el));
-          });
-
-          const allPanels = Array.from(document.querySelectorAll('#appBody > .panel'))
-            .filter(panel => !groupedEls.has(panel));
-
-          const seen = {};
-          allPanels.forEach(panel => {
-            const h3 = panel.querySelector('h3');
-            if(!h3) return;
-            const label = Array.from(h3.childNodes)
-              .filter(n => n.nodeType === Node.TEXT_NODE)
-              .map(n => n.textContent).join('').trim() || h3.textContent.trim();
-            let id = slugify(label);
-            if(seen[id]){ id = id + '-' + (++seen[id]); } else { seen[id] = 1; }
-            panel.dataset.panelId = id;
-            panel.dataset.panelLabel = label;
-          });
-
-          // ---- This window IS a popped-out panel: show only that panel ----
-          if (soloPanelId){
-            document.body.classList.add('soloPanelMode');
-            const group = GROUPS.find(g => g.id === soloPanelId);
-            if (group){
-              allPanels.forEach(hide);
-              GROUPS.forEach(g => { if(g.id !== soloPanelId) g.els.forEach(hide); });
-            } else {
-              groupedEls.forEach(hide);
-              allPanels.forEach(panel => {
-                if(panel.dataset.panelId !== soloPanelId) hide(panel);
-              });
-            }
-            const backBar = document.createElement('div');
-            backBar.id = 'soloPanelBackBar';
-            backBar.innerHTML = '<button class="btn" id="soloBackBtn">↩ Back to main window</button>';
-            document.body.insertBefore(backBar, document.getElementById('appBody'));
-            document.getElementById('soloBackBtn').addEventListener('click', () => window.close());
-            return;
-          }
-
-          // ---- Main window: add a ⤢ button + "is open in a separate window" placeholder ----
-          function addPopoutButton(anchorEl, panelId, label, placeholderAfterEl){
-            const btn = document.createElement('button');
-            btn.className = 'panelPopoutBtn';
-            btn.title = 'Open in separate window';
-            btn.textContent = '⤢';
-            btn.addEventListener('click', () => window.blackstoneDesktop.openPanelWindow(panelId));
-            anchorEl.appendChild(btn);
-
-            const placeholder = document.createElement('div');
-            placeholder.className = 'panelPoppedPlaceholder';
-            placeholder.style.display = 'none';
-            const labelEl = document.createElement('span');
-            labelEl.textContent = label + ' is open in a separate window.';
-            const bringBackBtn = document.createElement('button');
-            bringBackBtn.className = 'btn small';
-            bringBackBtn.textContent = 'Bring back';
-            bringBackBtn.addEventListener('click', () => window.blackstoneDesktop.closePanelWindow(panelId));
-            placeholder.appendChild(labelEl);
-            placeholder.appendChild(bringBackBtn);
-            placeholderAfterEl.parentNode.insertBefore(placeholder, placeholderAfterEl.nextSibling);
-            return placeholder;
-          }
-
-          const poppableEntries = [];
-
-          GROUPS.forEach(g => {
-            if(!g.els.length) return;
-            const placeholder = addPopoutButton(g.els[0], g.id, g.label, g.els[g.els.length - 1]);
-            poppableEntries.push({ id: g.id, els: g.els, placeholder });
-          });
-
-          allPanels.forEach(panel => {
-            if(!panel.dataset.panelId) return;
-            const placeholder = addPopoutButton(panel, panel.dataset.panelId, panel.dataset.panelLabel, panel);
-            poppableEntries.push({ id: panel.dataset.panelId, els: [panel], placeholder });
-          });
-
-          window.blackstoneDesktop.onPoppedPanelsChanged(list => {
-            poppableEntries.forEach(entry => {
-              const popped = list.includes(entry.id);
-              entry.els.forEach(el => el.classList.toggle('panelHidden', popped));
-              entry.placeholder.style.display = popped ? '' : 'none';
-            });
-          });
-          window.blackstoneDesktop.requestPoppedPanels();
-        })();
-
         // Closing a full-viewport fixed-position overlay can leave Electron/Chromium
         // with a stale hit-test region that still swallows clicks underneath it, even
         // though it's invisible — minimizing and restoring the window forces a repaint
@@ -1485,63 +1320,6 @@
         function controllerConditionInfo(id){ return CONTROLLER_CONDITIONS.find(c => c.id === id); }
         let condPickerOpenId = null; // combatant id whose condition picker is open — local to this device
 
-        // ---- Concentration save prompts (controller-only — never sent to the TV) ----
-        let concAlerts = []; // { id, combatantId, name, spell, dmg, dc }
-        let concAlertSeq = 1;
-
-        function isConcentrating(c){
-          return !!c && (!!c.concentrating || (Array.isArray(c.conditions) && c.conditions.includes('concentrating')));
-        }
-        function queueConcentrationPrompt(combatantId, damage){
-          if(!lastSnapshot || !(damage > 0)) return;
-          const c = lastSnapshot.combatants.find(x => x.id === combatantId);
-          if(!isConcentrating(c)) return;
-          concAlerts.push({
-            id: concAlertSeq++, combatantId, name: c.name,
-            spell: c.concentrating ? (c.concentrationSpell || '') : '',
-            dmg: damage, dc: Math.max(10, Math.floor(damage / 2))
-          });
-          renderConcAlerts();
-        }
-        function renderConcAlerts(){
-          const el = document.getElementById('concAlerts');
-          el.innerHTML = concAlerts.map(a => `
-            <div class="concAlert" data-id="${a.id}">
-              <div class="caTitle">🔮 Concentration check — ${escapeHtml(a.name)}</div>
-              <div class="caBody">Took <b>${a.dmg}</b> damage${a.spell ? ' while concentrating on ' + escapeHtml(a.spell) : ''}.
-                CON save, <b>DC ${a.dc}</b>.</div>
-              <div class="caBtns">
-                <button class="btn on caHeldBtn">✓ Held</button>
-                <button class="btn danger caLostBtn">✕ Lost it</button>
-              </div>
-            </div>
-          `).join('');
-          el.querySelectorAll('.concAlert').forEach(card => {
-            const alertId = parseInt(card.dataset.id);
-            const a = concAlerts.find(x => x.id === alertId);
-            card.querySelector('.caHeldBtn').addEventListener('click', () => {
-              concAlerts = concAlerts.filter(x => x.id !== alertId);
-              renderConcAlerts();
-            });
-            card.querySelector('.caLostBtn').addEventListener('click', () => {
-              const c = lastSnapshot && lastSnapshot.combatants.find(x => x.id === a.combatantId);
-              if(c){
-                if(c.concentrating) send('clearConcentration', { id: c.id });
-                if((c.conditions || []).includes('concentrating')) send('toggleCondition', { id: c.id, cond: 'concentrating' });
-              }
-              // concentration is gone, so any other pending checks for this creature are moot
-              concAlerts = concAlerts.filter(x => x.combatantId !== a.combatantId);
-              renderConcAlerts();
-            });
-          });
-        }
-        // Drop prompts whose creature was removed or stopped concentrating some other way
-        function pruneConcAlerts(s){
-          const before = concAlerts.length;
-          concAlerts = concAlerts.filter(a => isConcentrating(s.combatants.find(c => c.id === a.combatantId)));
-          if(concAlerts.length !== before) renderConcAlerts();
-        }
-
         function renderCombatantList(s){
           const list = document.getElementById('combatantList');
 
@@ -1571,6 +1349,7 @@
                   <div class="name"></div>
                   <button class="iconBtn condBtn" title="Conditions">🩹</button>
                   <button class="iconBtn spellBtn" title="Spellcasting">🔮</button>
+                  <button class="iconBtn tokenBtn" title="Place on map">📍</button>
                   <button class="iconBtn statBtn" title="Edit name / initiative / HP / AC">⚙</button>
                   <button class="iconBtn removeBtn" title="Remove">✕</button>
                 </div>
@@ -1580,50 +1359,31 @@
                   <button class="btn miniBtn dmgBtn">−HP</button>
                   <button class="btn miniBtn healBtn">+HP</button>
                 </div>
-                <div class="cardReactRow">
-                  <button class="btn miniBtn reactDelayBtn">⏸ Delay</button>
-                  <button class="btn miniBtn reactReadyBtn">⚡ Ready</button>
-                </div>
                 <div class="condChips"></div>
-                <div class="cardLrRow">
-                  <span class="lrLabel">LR</span>
-                  <input type="number" class="lrMaxInput" min="0" max="9" value="0" title="Legendary Resistances per day">
-                  <div class="lrPips"></div>
-                  <button class="btn miniBtn lrSpendBtn">− Spend</button>
-                  <button class="btn miniBtn lrResetBtn">↺ Reset</button>
-                  <button class="btn miniBtn reactionBtn">Reaction: Ready</button>
-                </div>
                 <div class="condPickerWrap"></div>
                 <div class="concLine"></div>
               `;
               // wire listeners ONCE, when the card is created — never re-attached on re-render
               el.querySelector('.removeBtn').addEventListener('click', () => send('removeCombatant', { id: c.id }));
               el.querySelector('.statBtn').addEventListener('click', () => openStatsModal(c.id));
-              el.querySelector('.reactDelayBtn').addEventListener('click', () => send('toggleDelayed', { id: c.id }));
-              el.querySelector('.reactReadyBtn').addEventListener('click', () => send('toggleReady', { id: c.id }));
               el.querySelector('.spellBtn').addEventListener('click', () => openSpellModal(c.id));
               el.querySelector('.condBtn').addEventListener('click', () => {
                 condPickerOpenId = condPickerOpenId === c.id ? null : c.id;
                 if(lastSnapshot) renderCombatantList(lastSnapshot);
               });
+              el.querySelector('.tokenBtn').addEventListener('click', () => {
+                const btn = el.querySelector('.tokenBtn');
+                if(btn.classList.contains('on')) send('removeToken', { id: c.id });
+                else send('placeToken', { id: c.id });
+              });
               el.querySelector('.dmgBtn').addEventListener('click', () => {
                 const amt = parseFloat(el.querySelector('.amtInput').value) || 0;
-                if(amt > 0){
-                  send('applyDamage', { id: c.id, amount: amt });
-                  queueConcentrationPrompt(c.id, amt);
-                }
+                if(amt > 0) send('applyDamage', { id: c.id, amount: amt });
               });
               el.querySelector('.healBtn').addEventListener('click', () => {
                 const amt = parseFloat(el.querySelector('.amtInput').value) || 0;
                 if(amt > 0) send('applyHeal', { id: c.id, amount: amt });
               });
-              el.querySelector('.lrMaxInput').addEventListener('change', function(){
-                const v = Math.max(0, Math.min(9, parseInt(this.value, 10) || 0));
-                send('setLegendaryResistanceMax', { id: c.id, value: v });
-              });
-              el.querySelector('.lrSpendBtn').addEventListener('click', () => send('spendLegendaryResistance', { id: c.id }));
-              el.querySelector('.lrResetBtn').addEventListener('click', () => send('resetLegendaryResistance', { id: c.id }));
-              el.querySelector('.reactionBtn').addEventListener('click', () => send('toggleReactionUsed', { id: c.id }));
               list.appendChild(el);
             }
 
@@ -1633,15 +1393,13 @@
             // update only the mutable display bits — amtInput is never touched here
             el.classList.toggle('active', c.id === s.activeId);
             el.querySelector('.initNum').textContent = c.init;
-            const nameEl = el.querySelector('.name');
-            nameEl.innerHTML = escapeHtml(c.name) +
-              (c.delayed ? ' <span class="miniBadge delayed">Delaying</span>' : '') +
-              (c.ready ? ' <span class="miniBadge ready">Ready</span>' : '');
-            el.querySelector('.reactDelayBtn').classList.toggle('active', !!c.delayed);
-            el.querySelector('.reactReadyBtn').classList.toggle('active', !!c.ready);
+            el.querySelector('.name').textContent = c.name;
             const statSpan = el.querySelector('.statText');
             statSpan.textContent = st.text;
             statSpan.classList.toggle('bloodied', st.bloodied);
+            const tokenBtn = el.querySelector('.tokenBtn');
+            tokenBtn.classList.toggle('on', !!c.hasToken);
+            tokenBtn.title = c.hasToken ? 'On map — tap to remove' : 'Place on map';
             const concLine = el.querySelector('.concLine');
             if(c.concentrating){
               concLine.textContent = `🔮 ${c.concentrationSpell || 'Concentrating'} — ${c.concentrationRounds} rd${c.concentrationRounds === 1 ? '' : 's'}`;
@@ -1650,15 +1408,6 @@
               concLine.textContent = '';
               concLine.style.display = 'none';
             }
-
-            const lrMax = c.legendaryResistanceMax || 0;
-            const lrLeft = c.legendaryResistanceLeft || 0;
-            const lrMaxInputEl = el.querySelector('.lrMaxInput');
-            if(document.activeElement !== lrMaxInputEl) lrMaxInputEl.value = lrMax;
-            el.querySelector('.lrPips').innerHTML = Array.from({length: lrMax}, (_, i) => `<span class="lrPip${i < lrLeft ? ' filled' : ''}"></span>`).join('');
-            const reactionBtnEl = el.querySelector('.reactionBtn');
-            reactionBtnEl.textContent = c.reactionUsed ? 'Reaction: Used' : 'Reaction: Ready';
-            reactionBtnEl.classList.toggle('used', !!c.reactionUsed);
 
             const conditions = c.conditions || [];
             const exhaustion = c.exhaustion || 0;
@@ -1726,15 +1475,6 @@
           
           renderCombatantList(s);
 
-          pruneConcAlerts(s);
-
-          // Lair Actions
-          const lairEnabled = !!(s.lairAction && s.lairAction.enabled);
-          document.getElementById('lairToggleBtn').classList.toggle('on', lairEnabled);
-          document.getElementById('lairInitField').style.display = lairEnabled ? '' : 'none';
-          const lairInitInput = document.getElementById('lairInitInput');
-          if(document.activeElement !== lairInitInput) lairInitInput.value = (s.lairAction && s.lairAction.initCount) || 20;
-
           // Fog
           const fogStatus = document.getElementById('fogStatus');
           const fogToggleBtn = document.getElementById('fogToggleBtn');
@@ -1748,7 +1488,6 @@
           fogResetBtn.disabled = !s.hasMask;
           fogToggleBtn.classList.toggle('on', s.fogEnabled && s.hasMask);
           fogToggleBtn.textContent = s.fogEnabled ? 'Fog: On' : 'Toggle Fog';
-          document.getElementById('gridToggleBtn').classList.toggle('on', !!s.gridOn);
 
           // Ruler
           const rulerBtn = document.getElementById('rulerBtn');
@@ -1865,13 +1604,6 @@
           showConfirm('Clear the entire initiative order?', () => send('clearAll'));
         });
 
-        document.getElementById('lairToggleBtn').addEventListener('click', () => send('toggleLairAction'));
-        document.getElementById('lairInitInput').addEventListener('change', function(){
-          const v = parseInt(this.value, 10);
-          if(!isNaN(v)) send('setLairInitCount', { value: v });
-        });
-
-        document.getElementById('gridToggleBtn').addEventListener('click', () => send('toggleGrid'));
         document.getElementById('fogToggleBtn').addEventListener('click', () => send('toggleFog'));
         document.getElementById('fogRevealBtn').addEventListener('click', () => send('revealAllFog'));
         document.getElementById('fogResetBtn').addEventListener('click', () => {

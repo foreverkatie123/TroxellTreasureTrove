@@ -1,32 +1,28 @@
 const STORAGE_KEY = 'blackstoneTvSession_v2';
       let saveTimer = null;
-
-      function buildSessionData(){
-        const rect = initDrawer.getBoundingClientRect();
-        const hudEl = document.getElementById('hud');
-        const hudRect = hudEl.getBoundingClientRect();
-        const hudMoved = hudEl.style.transform === 'none';
-        return {
-          combatants, activeId, round, nextId,
-          autoSort, manualOrder, lairAction, combatStarted,
-          combatLog, logNextId,
-          diceType, diceCount, diceModifier, diceAdvMode, logDiceRolls, rollHistory, rollNextId,
-          diceMaterial, diceTrail,
-          gridOn, gridSize, gridOpacity, gridMajor, gridColor, zoomLocked,
-          fogEnabled, shownRegions: [...shown],
-          feetPerSquare, effects, hudScale,
-          timers, nextTimerId,
-          initPos: { left: rect.left, top: rect.top },
-          hudPos: hudMoved ? { left: hudRect.left, top: hudRect.top } : null,
-          widgetShell: WidgetShell.getState()
-        };
-      }
-
       function saveSession(){
         clearTimeout(saveTimer);
         saveTimer = setTimeout(() => {
           try{
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(buildSessionData()));
+            const rect = initDrawer.getBoundingClientRect();
+            const hudEl = document.getElementById('hud');
+            const hudRect = hudEl.getBoundingClientRect();
+            const hudMoved = hudEl.style.transform === 'none';
+            const data = {
+              combatants, activeId, round, nextId,
+              autoSort, manualOrder, lairAction, combatStarted,
+              combatLog, logNextId,
+              diceType, diceCount, diceModifier, diceAdvMode, logDiceRolls, rollHistory, rollNextId,
+              diceMaterial, diceTrail,
+              gridOn, gridSize, gridOpacity, gridMajor, gridColor, zoomLocked,
+              fogEnabled, shownRegions: [...shown],
+              feetPerSquare, effects,
+              tokens, tokenNextId,
+              initPos: { left: rect.left, top: rect.top },
+              hudPos: hudMoved ? { left: hudRect.left, top: hudRect.top } : null,
+              widgetShell: WidgetShell.getState()
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
           }catch(err){
             console.warn('Session save failed:', err);
           }
@@ -43,11 +39,7 @@ const STORAGE_KEY = 'blackstoneTvSession_v2';
         if(!raw) return;
         let data;
         try{ data = JSON.parse(raw); }catch(err){ return; }
-        applySessionData(data);
-      }
 
-      // Applies a session data object (from localStorage OR a Firestore cloud save) to live state.
-      function applySessionData(data){
         combatants = (data.combatants || []).map(c => ({
           id: c.id, name: c.name, init: c.init,
           notes: c.notes !== undefined ? c.notes : (typeof c.hp === 'string' ? c.hp : ''),
@@ -61,15 +53,7 @@ const STORAGE_KEY = 'blackstoneTvSession_v2';
           legendaryMax: typeof c.legendaryMax === 'number' ? c.legendaryMax : 0,
           legendaryLeft: typeof c.legendaryLeft === 'number' ? c.legendaryLeft : (typeof c.legendaryMax === 'number' ? c.legendaryMax : 0),
           conditions: Array.isArray(c.conditions) ? c.conditions.filter(id => conditionInfo(id)) : [],
-          exhaustion: typeof c.exhaustion === 'number' ? Math.max(0, Math.min(6, c.exhaustion)) : 0,
-          concentrating: !!c.concentrating,
-          concentrationSpell: c.concentrationSpell || '',
-          concentrationRounds: typeof c.concentrationRounds === 'number' ? c.concentrationRounds : 0,
-          spellSlots: c.spellSlots && typeof c.spellSlots === 'object' ? c.spellSlots : {},
-          preparedSpells: Array.isArray(c.preparedSpells) ? c.preparedSpells : [],
-          legendaryResistanceMax: typeof c.legendaryResistanceMax === 'number' ? c.legendaryResistanceMax : 0,
-          legendaryResistanceLeft: typeof c.legendaryResistanceLeft === 'number' ? c.legendaryResistanceLeft : (typeof c.legendaryResistanceMax === 'number' ? c.legendaryResistanceMax : 0),
-          reactionUsed: !!c.reactionUsed,
+          exhaustion: typeof c.exhaustion === 'number' ? Math.max(0, Math.min(6, c.exhaustion)) : 0
         }));
         activeId = data.activeId ?? null;
         round = data.round || 1;
@@ -117,12 +101,12 @@ const STORAGE_KEY = 'blackstoneTvSession_v2';
         feetPerSquare = data.feetPerSquare || 5;
         effects = data.effects || [];
 
-        hudScale = typeof data.hudScale === 'number' ? Math.min(2.5, Math.max(0.6, data.hudScale)) : 1;
-        applyHudScale();
-
-        timers = Array.isArray(data.timers) ? data.timers : [];
-        nextTimerId = data.nextTimerId || (timers.length ? Math.max(...timers.map(t => t.id || 0)) + 1 : 1);
-        renderTimers();
+        // Token positions are in image-space, so they'll line back up correctly
+        // once the same map is reloaded - restoring them here is harmless even if
+        // no map is loaded yet (they simply have nothing to render against until then).
+        tokens = Array.isArray(data.tokens) ? data.tokens : [];
+        tokenNextId = data.tokenNextId || (tokens.length ? Math.max(...tokens.map(t => t.id || 0)) + 1 : 1);
+        if(typeof renderTokens === 'function') renderTokens();
 
         document.getElementById('gridToggle').classList.toggle('on', gridOn);
         document.getElementById('gridSize').value = gridSize;
@@ -164,8 +148,6 @@ const STORAGE_KEY = 'blackstoneTvSession_v2';
           const note = document.getElementById('restoredNote');
           if(note) note.style.display = 'block';
         }
-
-        render(); updateFogUI(); updateEffectsListUI(); renderAllEffects(); clearRuler();
       }
 
       document.getElementById('clearSessionBtn').addEventListener('click', () => {
@@ -187,8 +169,7 @@ const STORAGE_KEY = 'blackstoneTvSession_v2';
         lairConfigRowEl.style.display = 'none';
         lairInitCountEl.value = 20;
         shown = new Set(); fogEnabled = false; effects = [];
-        hudScale = 1; applyHudScale();
-        timers = []; nextTimerId = 1; renderTimers();
+        if(typeof clearAllTokens === 'function') clearAllTokens();
         WidgetShell.LAYOUT_DEFS.forEach(d => WidgetShell.resetLayout(d.id));
         render(); updateFogUI(); updateEffectsListUI(); renderAllEffects(); clearRuler();
       });

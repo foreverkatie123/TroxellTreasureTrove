@@ -61,12 +61,17 @@
       function onSourceReady(){
         emptyState.classList.add('hidden');
         maskData = null; regions = new Set();
+        // A fresh map/capture source has different coordinates than whatever was
+        // loaded before, so any placed tokens (positioned against the old image)
+        // no longer mean anything - clear them rather than leave them stranded.
+        if(typeof clearAllTokens === 'function') clearAllTokens();
         updateFogUI();
         resetView();
         drawGrid();
         resizeOverlays();
         renderFog();
         renderAllEffects();
+        if(typeof renderTokens === 'function') renderTokens();
       }
 
       function loadImageFile(file){
@@ -278,14 +283,12 @@
         return `rgba(${r},${g},${b},${a})`;
       }
 
-      const gridToggleBtn = document.getElementById('gridToggle');
-      function setGridOn(on){
-        gridOn = !!on;
-        gridToggleBtn.classList.toggle('on', gridOn);
+      document.getElementById('gridToggle').addEventListener('click', function(){
+        gridOn = !gridOn;
+        this.classList.toggle('on', gridOn);
         drawGrid();
         afterStateChange();
-      }
-      gridToggleBtn.addEventListener('click', () => setGridOn(!gridOn));
+      });
       document.getElementById('gridSize').addEventListener('input', function(){
         gridSize = parseFloat(this.value) || 88; drawGrid(); afterStateChange();
       });
@@ -326,6 +329,13 @@
         effectsLayer.setAttribute('height', imgH);
         effectsLayer.setAttribute('viewBox', `0 0 ${imgW} ${imgH}`);
         effectsLayer.style.width = imgW + 'px'; effectsLayer.style.height = imgH + 'px';
+        const tokensLayerEl = document.getElementById('tokensLayer');
+        if(tokensLayerEl){
+          tokensLayerEl.setAttribute('width', imgW);
+          tokensLayerEl.setAttribute('height', imgH);
+          tokensLayerEl.setAttribute('viewBox', `0 0 ${imgW} ${imgH}`);
+          tokensLayerEl.style.width = imgW + 'px'; tokensLayerEl.style.height = imgH + 'px';
+        }
       }
 
       loadMaskBtn.addEventListener('click', () => { if(imgW) maskFileInput.click(); });
@@ -477,26 +487,19 @@
             length:dist
           };
         }
-        if(shape === 'circle' || shape === 'cylinder') return { cx:o.x, cy:o.y, r:dist };
-        if(shape === 'cube'){
-          const side = dist;
-          const sx = dx >= 0 ? o.x : o.x - side;
-          const sy = dy >= 0 ? o.y : o.y - side;
-          return { x:sx, y:sy, w:side, h:side };
-        }
+        if(shape === 'circle') return { cx:o.x, cy:o.y, r:dist };
         return { x:Math.min(o.x,c.x), y:Math.min(o.y,c.y), w:Math.abs(dx), h:Math.abs(dy) };
       }
 
       function shapeDistance(shape, geo){
         if(shape === 'cone' || shape === 'line') return geo.length;
-        if(shape === 'circle' || shape === 'cylinder') return geo.r;
-        if(shape === 'cube') return geo.w;
+        if(shape === 'circle') return geo.r;
         return Math.max(geo.w, geo.h);
       }
 
       function labelPos(shape, geo, o, c){
-        if(shape === 'circle' || shape === 'cylinder') return { x:geo.cx, y:geo.cy };
-        if(shape === 'cube') return { x:geo.x+geo.w/2, y:geo.y+geo.h/2 };
+        if(shape === 'circle') return { x:geo.cx, y:geo.cy };
+        if(shape === 'square') return { x:geo.x+geo.w/2, y:geo.y+geo.h/2 };
         return { x:(o.x+c.x)/2, y:(o.y+c.y)/2 };
       }
 
@@ -509,7 +512,7 @@
       function shapeSvg(shape, geo, cls){
         if(shape === 'cone') return `<polygon class="${cls}" points="${geo.ox},${geo.oy} ${geo.p2x},${geo.p2y} ${geo.p3x},${geo.p3y}"/>`;
         if(shape === 'line') return `<polygon class="${cls}" points="${geo.x1},${geo.y1} ${geo.x2},${geo.y2} ${geo.x3},${geo.y3} ${geo.x4},${geo.y4}"/>`;
-        if(shape === 'circle' || shape === 'cylinder') return `<circle class="${cls}" cx="${geo.cx}" cy="${geo.cy}" r="${geo.r}"/>`;
+        if(shape === 'circle') return `<circle class="${cls}" cx="${geo.cx}" cy="${geo.cy}" r="${geo.r}"/>`;
         return `<rect class="${cls}" x="${geo.x}" y="${geo.y}" width="${geo.w}" height="${geo.h}"/>`;
       }
 
