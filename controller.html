@@ -416,6 +416,22 @@
       .exhaustionStepper button:hover{ border-color:var(--accent); }
       .exhaustionStepper .lvl{ min-width:14px; text-align:center; color:var(--accent-bright); font-weight:700; }
 
+      /* ---- Card "more" menu — folds Conditions/Resist/Spell/Stats/Token-appearance
+             buttons into one ⋯ so the card header isn't a wall of icons ---- */
+      .moreMenuWrap:empty{ display:none; }
+      .moreMenu{
+        margin-top:8px; padding:6px; background:#161d24; border:1px solid var(--border); border-radius:8px;
+        display:flex; flex-direction:column; gap:3px;
+      }
+      .moreMenuItem{
+        display:flex; align-items:center; gap:8px; text-align:left; font-size:12px;
+        padding:7px 8px; border-radius:6px; border:none; background:none; color:var(--text); cursor:pointer;
+      }
+      .moreMenuItem:hover{ background:#0d1318; color:var(--accent-2); }
+      .moreMenuItem .icon{ font-size:14px; flex-shrink:0; }
+      .moreMenuDivider{ height:1px; background:var(--border); margin:3px 2px; }
+      .moreMenuRow{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:5px 8px; font-size:12px; color:var(--text-dim); }
+
       /* ---- Lair action card (mirrors the TV overlay's) ---- */
       .lairCard{
         border-color:#5f4a99; background:#151027; border-radius:8px; padding:9px 11px; margin-bottom:8px;
@@ -433,8 +449,6 @@
       /* ---- Legendary actions (per-combatant) ---- */
       .laRow{ display:flex; align-items:center; gap:6px; margin-top:7px; max-width:100%; box-sizing:border-box; }
       .laRow label{ font-size:10px; text-transform:uppercase; color:var(--text-dim); flex-shrink:0; }
-      /* .laMaxInput{ width:40px; padding:4px; font-size:12px; text-align:center; flex-shrink:0; } */
-      /* .laPips{ display:flex; gap:2px; flex-wrap:wrap; } */
       .card .laMaxInput{ width:40px; padding:4px; font-size:12px; text-align:center; flex-shrink:0; flex-grow:0; }
       .laPips{ display:flex; gap:2px; flex-wrap:wrap; flex:1 1 auto; min-width:0; }
       .laPip{ width:8px; height:8px; border-radius:50%; background:#202a32; border:1px solid var(--border); flex-shrink:0; }
@@ -631,7 +645,6 @@
         </div>
 
         <div id="lairCardSlot"></div>
-
         <div id="combatantList"></div>
 
         <div class="divider"></div>
@@ -1652,6 +1665,7 @@
         ];
         function controllerConditionInfo(id){ return CONTROLLER_CONDITIONS.find(c => c.id === id); }
         let condPickerOpenId = null; // combatant id whose condition picker is open — local to this device
+        let moreMenuOpenId = null; // combatant id whose "⋯" more-actions menu is open — local to this device
 
         // ---- Concentration save prompts (controller-only — never sent to the TV) ----
         let concAlerts = []; // { id, combatantId, name, spell, dmg, dc }
@@ -1760,20 +1774,11 @@
                 <div class="cardTop">
                   <div class="initNum"></div>
                   <div class="name"></div>
-                  <button class="iconBtn condBtn" title="Conditions">🩹</button>
-                  <button class="iconBtn ddBtn" title="Resistances / Immunities / Vulnerabilities">🛡️</button>
-                  <button class="iconBtn spellBtn" title="Spellcasting">🔮</button>
                   <button class="iconBtn tokenBtn" title="Place on map">📍</button>
-                  <input type="color" class="tokenColorInput" title="Token color on the map">
-                  <select class="tokenSizeSelect" title="Token size on the map">
-                    <option value="1">1x</option>
-                    <option value="2">2x (Large)</option>
-                    <option value="3">3x (Huge)</option>
-                    <option value="4">4x (Gargantuan)</option>
-                  </select>
-                  <button class="iconBtn statBtn" title="Edit name / initiative / HP / AC">⚙</button>
+                  <button class="iconBtn moreBtn" title="More — conditions, resistances, spellcasting, edit, token appearance">⋯</button>
                   <button class="iconBtn removeBtn" title="Remove">✕</button>
                 </div>
+                <div class="moreMenuWrap"></div>
                 <div class="cardStats">
                   <span class="statText"></span>
                   <select class="dtypeSelect" title="Damage type (for resist/immune/vulnerable math)">
@@ -1799,26 +1804,15 @@
               `;
               // wire listeners ONCE, when the card is created — never re-attached on re-render
               el.querySelector('.removeBtn').addEventListener('click', () => send('removeCombatant', { id: c.id }));
-              el.querySelector('.statBtn').addEventListener('click', () => openStatsModal(c.id));
-              el.querySelector('.spellBtn').addEventListener('click', () => openSpellModal(c.id));
-              el.querySelector('.condBtn').addEventListener('click', () => {
+              el.querySelector('.moreBtn').addEventListener('click', () => {
                 condPickerOpenId = condPickerOpenId === c.id ? null : c.id;
-                if(lastSnapshot) renderCombatantList(lastSnapshot);
-              });
-              el.querySelector('.ddBtn').addEventListener('click', () => {
-                ddPickerOpenId = ddPickerOpenId === c.id ? null : c.id;
+                moreMenuOpenId = moreMenuOpenId === c.id ? null : c.id;
                 if(lastSnapshot) renderCombatantList(lastSnapshot);
               });
               el.querySelector('.tokenBtn').addEventListener('click', () => {
                 const btn = el.querySelector('.tokenBtn');
                 if(btn.classList.contains('on')) send('removeToken', { id: c.id });
                 else send('placeToken', { id: c.id });
-              });
-              el.querySelector('.tokenColorInput').addEventListener('input', function(){
-                send('setTokenColor', { id: c.id, color: this.value });
-              });
-              el.querySelector('.tokenSizeSelect').addEventListener('change', function(){
-                send('setTokenSize', { id: c.id, size: parseInt(this.value) });
               });
               el.querySelector('.dmgBtn').addEventListener('click', () => {
                 const amt = parseFloat(el.querySelector('.amtInput').value) || 0;
@@ -1853,13 +1847,52 @@
             const tokenBtn = el.querySelector('.tokenBtn');
             tokenBtn.classList.toggle('on', !!c.hasToken);
             tokenBtn.title = c.hasToken ? 'On map — tap to remove' : 'Place on map';
-            const tokenColorInput = el.querySelector('.tokenColorInput');
+            const moreMenuWrap = el.querySelector('.moreMenuWrap');
             if(document.activeElement !== tokenColorInput){
-              tokenColorInput.value = c.tokenColor || defaultTokenColorFor(c.id);
-            }
-            const tokenSizeSelect = el.querySelector('.tokenSizeSelect');
-            if(document.activeElement !== tokenSizeSelect){
-              tokenSizeSelect.value = String(c.tokenSize || 1);
+              if(moreMenuOpenId === c.id){
+                moreMenuWrap.innerHTML = `
+                  <div class="moreMenu">
+                    <button class="moreMenuItem" data-action="cond"><span class="icon">🩹</span>Conditions</button>
+                    <button class="moreMenuItem" data-action="dd"><span class="icon">🛡️</span>Resistances / Immunities / Vulnerabilities</button>
+                    <button class="moreMenuItem" data-action="spell"><span class="icon">🔮</span>Spellcasting</button>
+                    <button class="moreMenuItem" data-action="stats"><span class="icon">⚙</span>Edit Name / Init / HP / AC</button>
+                    <div class="moreMenuDivider"></div>
+                    <div class="moreMenuRow">
+                      <span>Token color</span>
+                tokenColorInput.value = c.tokenColor || defaultTokenColorFor(c.id);
+                      <input type="color" class="tokenColorInput" value="${c.tokenColor || defaultTokenColorFor(c.id)}">
+                    </div>
+                    <div class="moreMenuRow">
+                      <span>Token size</span>
+                      <select class="tokenSizeSelect">
+                        <option value="1"${(c.tokenSize || 1) === 1 ? ' selected' : ''}>1x</option>
+                        <option value="2"${c.tokenSize === 2 ? ' selected' : ''}>2x (Large)</option>
+                        <option value="3"${c.tokenSize === 3 ? ' selected' : ''}>3x (Huge)</option>
+                        <option value="4"${c.tokenSize === 4 ? ' selected' : ''}>4x (Gargantuan)</option>
+                      </select>
+                    </div>
+                  </div>
+                `;
+                moreMenuWrap.querySelectorAll('.moreMenuItem').forEach(item => {
+                  item.addEventListener('click', () => {
+                    const action = item.dataset.action;
+                    moreMenuOpenId = null;
+                    if(action === 'cond') condPickerOpenId = c.id;
+                    else if(action === 'dd') ddPickerOpenId = c.id;
+                    else if(action === 'spell') openSpellModal(c.id);
+                    else if(action === 'stats') openStatsModal(c.id);
+                    if(lastSnapshot) renderCombatantList(lastSnapshot);
+                  });
+                });
+                moreMenuWrap.querySelector('.tokenColorInput').addEventListener('input', function(){
+                  send('setTokenColor', { id: c.id, color: this.value });
+                });
+                moreMenuWrap.querySelector('.tokenSizeSelect').addEventListener('change', function(){
+                  send('setTokenSize', { id: c.id, size: parseInt(this.value) });
+                });
+              } else {
+                moreMenuWrap.innerHTML = '';
+              }
             }
             const concLine = el.querySelector('.concLine');
             if(c.concentrating){
