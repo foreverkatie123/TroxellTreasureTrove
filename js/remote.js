@@ -18,6 +18,13 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
 
       function findCombatant(id){ return combatants.find(c => c.id === id); }
 
+      // Keeps only recognized damage-type ids, so a bad/old payload can't poison
+      // a combatant's defense lists with junk that'll never match on applyDamage.
+      function sanitizeDefenseList(list){
+        if(!Array.isArray(list)) return [];
+        return list.filter(id => typeof damageTypeInfo === 'function' ? !!damageTypeInfo(id) : true);
+      }
+
       function clampHp(c){
         if(c.maxHp !== null && c.maxHp !== undefined){
           if(c.hp !== null && c.hp > c.maxHp) c.hp = c.maxHp;
@@ -40,7 +47,9 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
           fogEnabled, hasMask: !!maskData,
           regionsTotal: regions.size, regionsShown: shown.size,
           mode, feetPerSquare,
-          effects: effects.map(f => ({ id:f.id, shape:f.shape, dtype:f.dtype, label:f.label }))
+          effects: effects.map(f => ({ id:f.id, shape:f.shape, dtype:f.dtype, label:f.label })),
+          lairAction: { enabled: lairAction.enabled, initCount: lairAction.initCount, triggered: lairAction.triggered },
+          gridOn: typeof gridOn === 'boolean' ? gridOn : true
         };
       }
       function syncRemote(){
@@ -80,7 +89,12 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
               tempHp: typeof payload.tempHp === 'number' ? payload.tempHp : 0,
               ac: typeof payload.ac === 'number' ? payload.ac : null,
               rosterId: payload.rosterId || null,
-              delayed: false, ready: false, legendaryMax: 0, legendaryLeft: 0, conditions: [], exhaustion: 0
+              delayed: false, ready: false, legendaryMax: 0, legendaryLeft: 0,
+              legendaryResistMax: 0, legendaryResistLeft: 0, conditions: [], exhaustion: 0,
+              absorb: sanitizeDefenseList(payload.absorb),
+              resistances: sanitizeDefenseList(payload.resistances),
+              immunities: sanitizeDefenseList(payload.immunities),
+              vulnerabilities: sanitizeDefenseList(payload.vulnerabilities)
             };
             combatants.push(c);
             if(!combatStarted) refreshPreStartActive();
@@ -99,7 +113,12 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
               tempHp: typeof payload.tempHp === 'number' ? payload.tempHp : 0,
               ac: typeof payload.ac === 'number' ? payload.ac : null,
               rosterId: payload.rosterId || null,
-              delayed: false, ready: false, legendaryMax: 0, legendaryLeft: 0, conditions: [], exhaustion: 0
+              delayed: false, ready: false, legendaryMax: 0, legendaryLeft: 0,
+              legendaryResistMax: 0, legendaryResistLeft: 0, conditions: [], exhaustion: 0,
+              absorb: sanitizeDefenseList(payload.absorb),
+              resistances: sanitizeDefenseList(payload.resistances),
+              immunities: sanitizeDefenseList(payload.immunities),
+              vulnerabilities: sanitizeDefenseList(payload.vulnerabilities)
             };
             combatants.push(c);
             if(!combatStarted) refreshPreStartActive();
@@ -155,16 +174,30 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
             const c = findCombatant(payload.id);
             if(!c) break;
             let amt = Math.max(0, parseFloat(payload.amount) || 0);
+            let note = '';
+            let healAmount = 0;
+            if(payload.dtype && typeof applyDamageDefenses === 'function'){
+              const result = applyDamageDefenses(c, amt, payload.dtype);
+              amt = result.amount;
+              note = result.note;
+              healAmount = result.healAmount || 0;
+            }
             const dealt = amt;
             if(c.tempHp && c.tempHp > 0){
-              const absorbed = Math.min(c.tempHp, amt);
-              c.tempHp -= absorbed;
-              amt -= absorbed;
+              const absorbedTemp = Math.min(c.tempHp, amt);
+              c.tempHp -= absorbedTemp;
+              amt -= absorbedTemp;
             }
             if(c.hp === null || c.hp === undefined) c.hp = c.maxHp !== null ? c.maxHp : 0;
             c.hp -= amt;
+            if(healAmount > 0) c.hp += healAmount;
             clampHp(c);
-            logEvent(`💥 ${c.name} takes ${dealt} damage${typeof c.hp === 'number' ? ` (${c.hp}${c.maxHp !== null ? '/' + c.maxHp : ''} HP)` : ''}`);
+            if(healAmount > 0){
+              const info = typeof damageTypeInfo === 'function' ? damageTypeInfo(payload.dtype) : null;
+              logEvent(`🟢 ${c.name} absorbs the ${info ? info.label : payload.dtype} damage and heals ${healAmount}${typeof c.hp === 'number' ? ` (${c.hp}${c.maxHp !== null ? '/' + c.maxHp : ''} HP)` : ''}`);
+            } else {
+              logEvent(`💥 ${c.name} takes ${dealt} damage${note}${typeof c.hp === 'number' ? ` (${c.hp}${c.maxHp !== null ? '/' + c.maxHp : ''} HP)` : ''}`);
+            }
             render();
             break;
           }
@@ -182,12 +215,143 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
           case 'setCombatantStats': {
             const c = findCombatant(payload.id);
             if(!c) break;
+            if(payload.name !== undefined && payload.name !== null && payload.name !== '') c.name = payload.name;
+            if(payload.init !== undefined && payload.init !== null && payload.init !== '' && !isNaN(parseFloat(payload.init))) c.init = parseFloat(payload.init);
             if(payload.maxHp !== undefined) c.maxHp = payload.maxHp === '' || payload.maxHp === null ? null : parseFloat(payload.maxHp);
             if(payload.hp !== undefined) c.hp = payload.hp === '' || payload.hp === null ? null : parseFloat(payload.hp);
             if(payload.tempHp !== undefined) c.tempHp = payload.tempHp === '' || payload.tempHp === null ? 0 : parseFloat(payload.tempHp);
             if(payload.ac !== undefined) c.ac = payload.ac === '' || payload.ac === null ? null : parseFloat(payload.ac);
             clampHp(c);
+            logEvent(`${c.name}'s stats updated`);
             render();
+            break;
+          }
+          case 'toggleCondition': {
+            const c = findCombatant(payload.id);
+            if(!c) break;
+            if(!c.conditions) c.conditions = [];
+            const cond = payload.cond;
+            const info = conditionInfo(cond);
+            const idx = c.conditions.indexOf(cond);
+            if(idx >= 0){
+              c.conditions.splice(idx, 1);
+              logEvent(`${c.name} is no longer ${info ? info.label : cond}`);
+            } else {
+              c.conditions.push(cond);
+              logEvent(`${info ? info.icon + ' ' : ''}${c.name} is now ${info ? info.label : cond}`);
+            }
+            render();
+            break;
+          }
+          case 'setExhaustion': {
+            const c = findCombatant(payload.id);
+            if(!c) break;
+            c.exhaustion = Math.max(0, Math.min(6, parseInt(payload.value) || 0));
+            logEvent(`⚠️ ${c.name} exhaustion → ${c.exhaustion}`);
+            render();
+            break;
+          }
+          case 'setLairEnabled': {
+            lairAction.enabled = !!payload.on;
+            if(!lairAction.enabled && activeId === 'LAIR'){
+              const ids = idsInOrder();
+              activeId = ids.length ? ids[0] : null;
+            }
+            if(typeof refreshPreStartActive === 'function') refreshPreStartActive();
+            render();
+            break;
+          }
+          case 'setLairInitCount': {
+            const v = parseInt(payload.value);
+            lairAction.initCount = isNaN(v) ? 20 : v;
+            if(typeof refreshPreStartActive === 'function') refreshPreStartActive();
+            render();
+            break;
+          }
+          case 'lairTrigger': {
+            lairAction.triggered = !lairAction.triggered;
+            logEvent(lairAction.triggered ? '🏛 Lair Action used' : '🏛 Lair Action reset');
+            render();
+            break;
+          }
+          case 'spendLegendary': {
+            const c = findCombatant(payload.id);
+            if(!c) break;
+            c.legendaryLeft = Math.max(0, (c.legendaryLeft || 0) - 1);
+            logEvent(`👑 ${c.name} spends a legendary action (${c.legendaryLeft} left)`);
+            render();
+            break;
+          }
+          case 'resetLegendary': {
+            const c = findCombatant(payload.id);
+            if(!c) break;
+            c.legendaryLeft = c.legendaryMax || 0;
+            logEvent(`👑 ${c.name}'s legendary actions reset`);
+            render();
+            break;
+          }
+          case 'setLegendaryMax': {
+            const c = findCombatant(payload.id);
+            if(!c) break;
+            const v = Math.max(0, Math.min(9, parseInt(payload.value) || 0));
+            c.legendaryMax = v;
+            c.legendaryLeft = v;
+            render();
+            break;
+          }
+          case 'spendLegendaryResist': {
+            const c = findCombatant(payload.id);
+            if(!c) break;
+            c.legendaryResistLeft = Math.max(0, (c.legendaryResistLeft || 0) - 1);
+            logEvent(`🔁 ${c.name} uses a legendary resistance (${c.legendaryResistLeft} left)`);
+            render();
+            break;
+          }
+          case 'resetLegendaryResist': {
+            const c = findCombatant(payload.id);
+            if(!c) break;
+            c.legendaryResistLeft = c.legendaryResistMax || 0;
+            logEvent(`🔁 ${c.name}'s legendary resistances reset`);
+            render();
+            break;
+          }
+          case 'setLegendaryResistMax': {
+            const c = findCombatant(payload.id);
+            if(!c) break;
+            const v = Math.max(0, Math.min(9, parseInt(payload.value) || 0));
+            c.legendaryResistMax = v;
+            c.legendaryResistLeft = v;
+            render();
+            break;
+          }
+          case 'setDamageDefense': {
+            const c = findCombatant(payload.id);
+            if(!c) break;
+            const dtype = payload.dtype;
+            if(!dtype || (typeof damageTypeInfo === 'function' && !damageTypeInfo(dtype))) break;
+            const category = payload.category; // 'absorb' | 'resist' | 'immune' | 'vulnerable' | null/other clears it
+            if(!c.absorb) c.absorb = [];
+            if(!c.resistances) c.resistances = [];
+            if(!c.immunities) c.immunities = [];
+            if(!c.vulnerabilities) c.vulnerabilities = [];
+            c.absorb = c.absorb.filter(d => d !== dtype);
+            c.resistances = c.resistances.filter(d => d !== dtype);
+            c.immunities = c.immunities.filter(d => d !== dtype);
+            c.vulnerabilities = c.vulnerabilities.filter(d => d !== dtype);
+            if(category === 'absorb') c.absorb.push(dtype);
+            else if(category === 'resist') c.resistances.push(dtype);
+            else if(category === 'immune') c.immunities.push(dtype);
+            else if(category === 'vulnerable') c.vulnerabilities.push(dtype);
+            render();
+            break;
+          }
+          case 'toggleGrid': {
+            if(!imgW) break;
+            gridOn = !gridOn;
+            const gridToggleEl = document.getElementById('gridToggle');
+            if(gridToggleEl) gridToggleEl.classList.toggle('on', gridOn);
+            if(typeof drawGrid === 'function') drawGrid();
+            afterStateChange();
             break;
           }
           case 'toggleFog': if(maskData){ fogEnabled = !fogEnabled; updateFogUI(); renderFog(); } break;

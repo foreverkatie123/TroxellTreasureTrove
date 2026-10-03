@@ -18,19 +18,23 @@
       h1,h2,h3,.display{ font-family:'Cinzel',Georgia,serif; letter-spacing:0.02em; }
       body{ padding:16px; max-width:520px; }
 
-      #connBar{
-        display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px;
-        margin-bottom:14px; font-size:12px; text-transform:uppercase; letter-spacing:.06em;
-        border:1px solid var(--border); background:var(--panel);
+      #statusBars{        
+        display:flex; flex-wrap:wrap; align-items:flex-start; gap:8px; margin-bottom:14px;      
       }
-      #connDot{ width:8px; height:8px; border-radius:50%; background:var(--danger); flex-shrink:0; }
-      #connDot.live{ background:var(--accent-2); box-shadow:0 0 8px var(--accent-2); }
+
+      #connBar{        
+        display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px;        
+        flex:1 1 100%; font-size:12px; text-transform:uppercase; letter-spacing:.06em;        
+        border:1px solid var(--border); background:var(--panel);      
+      }      
+      #connDot{ width:8px; height:8px; border-radius:50%; background:var(--danger); flex-shrink:0; }      
+      #connDot.live{ background:var(--accent-2); box-shadow:0 0 8px var(--accent-2); }      
       #connText{ color:var(--text-dim); flex:1; }
 
-      #fbBar{
-        display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px;
-        margin-bottom:14px; font-size:12px; text-transform:uppercase; letter-spacing:.06em;
-        border:1px solid var(--border); background:var(--panel);
+      #fbBar{        
+        display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px;        
+        flex:1 1 100%; font-size:12px; text-transform:uppercase; letter-spacing:.06em;        
+        border:1px solid var(--border); background:var(--panel);      
       }
       #fbDot{ width:8px; height:8px; border-radius:50%; background:var(--danger); flex-shrink:0; }
       #fbDot.live{ background:var(--accent-2); box-shadow:0 0 8px var(--accent-2); }
@@ -52,13 +56,13 @@
       .hidden{ display:none !important; }
 
       /* ---------- Hide/collapse for the status bars ---------- */
-      .barHideBtn{
-        background:none; border:none; color:var(--text-dim); font-size:13px; text-transform:none;
-        letter-spacing:0; cursor:pointer; padding:2px 4px; flex-shrink:0; line-height:1;
-      }
+      .barHideBtn{        
+        background:none; border:none; color:var(--text-dim); font-size:13px; text-transform:none;        
+        letter-spacing:0; cursor:pointer; padding:2px 4px; flex-shrink:0; line-height:1;      
+      }      
       .barHideBtn:hover{ color:var(--danger); }
       #connBar.collapsed, #fbBar.collapsed{
-        width:20px; height:20px; padding:0; justify-content:center; cursor:pointer; border-radius:50%;
+        flex:0 0 auto; width:20px; height:20px; padding:0; justify-content:center; cursor:pointer; border-radius:50%;
       }
       #connBar.collapsed > *:not(#connDot), #fbBar.collapsed > *:not(#fbDot){ display:none !important; }
 
@@ -81,6 +85,16 @@
         color:var(--text-dim); font-size:13px; line-height:1; cursor:pointer; padding:4px 6px;
       }
       .panelPopoutBtn:hover{ color:var(--accent-2); border-color:var(--accent-2); }
+      .panelCollapseBtn{
+        position:absolute; top:12px; right:40px;
+        background:none; border:1px solid var(--border); border-radius:6px;
+        color:var(--text-dim); font-size:13px; line-height:1; cursor:pointer; padding:4px 7px;
+      }
+      .panelCollapseBtn:hover{ color:var(--accent-2); border-color:var(--accent-2); }
+      .panel.collapsed{ padding-bottom:14px; }
+      .panel.collapsed > *:not(h3){ display:none !important; }
+      .panel.collapsed h3{ margin-bottom:0; }
+      .panel.collapsed h3 .sub{ display:none; }
       .panelPoppedPlaceholder{
         background:var(--panel); border:1px dashed var(--border); border-radius:10px;
         padding:14px 16px; display:flex; align-items:center; justify-content:space-between;
@@ -361,6 +375,7 @@
       .card .iconBtn:hover{ color:var(--accent-2); }
       .card .iconBtn.removeBtn:hover{ color:var(--danger); }
       .card .iconBtn.tokenBtn.on{ color:var(--accent-2); }
+      .card .iconBtn.moreBtn.on{ color:var(--accent-2); background:#0d1318; border-color:var(--accent-2); }
       .card input.tokenColorInput{
         width:20px; height:20px; padding:0; border:1px solid var(--border); border-radius:50%;
         cursor:pointer; background:none; flex-shrink:0; -webkit-appearance:none; margin:0 1px;
@@ -411,6 +426,90 @@
       }
       .exhaustionStepper button:hover{ border-color:var(--accent); }
       .exhaustionStepper .lvl{ min-width:14px; text-align:center; color:var(--accent-bright); font-weight:700; }
+
+      /* ---- Card "more" menu — folds Conditions/Resist/Spell/Stats/Token-appearance
+             buttons into one ⋯ so the card header isn't a wall of icons ---- */
+      .moreMenuWrap:empty{ display:none; }
+      .moreMenu{
+        margin-top:8px; padding:6px; background:#161d24; border:1px solid var(--border); border-radius:8px;
+        display:flex; flex-direction:column; gap:3px;
+      }
+      .moreMenuHeader{
+        display:flex; align-items:center; justify-content:space-between;
+        padding:2px 4px 4px; margin-bottom:2px; border-bottom:1px solid var(--border);
+      }
+      .moreMenuHeader span{ font-size:11px; font-weight:700; color:var(--text-dim); text-transform:uppercase; letter-spacing:.03em; }
+      .moreMenuCloseBtn{
+        width:22px; height:22px; border-radius:6px; border:1px solid var(--border);
+        background:#0d1318; color:var(--text); cursor:pointer; font-size:13px; line-height:1;
+      }
+      .moreMenuCloseBtn:hover{ color:var(--accent-2); border-color:var(--accent-2); }
+      .moreMenuItem{
+        display:flex; align-items:center; gap:8px; text-align:left; font-size:12px;
+        padding:7px 8px; border-radius:6px; border:none; background:none; color:var(--text); cursor:pointer;
+      }
+      .moreMenuItem:hover{ background:#0d1318; color:var(--accent-2); }
+      .moreMenuItem .icon{ font-size:14px; flex-shrink:0; }
+      .moreMenuDivider{ height:1px; background:var(--border); margin:3px 2px; }
+      .moreMenuRow{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:5px 8px; font-size:12px; color:var(--text-dim); }
+
+      /* ---- Lair action card (mirrors the TV overlay's) ---- */
+      .lairCard{
+        border-color:#5f4a99; background:#151027; border-radius:8px; padding:9px 11px; margin-bottom:8px;
+      }
+      .lairCard.active{ border-color:#c9a8ff; box-shadow:0 0 0 1px #c9a8ff inset; }
+      .lairCardTop{ display:flex; align-items:center; gap:8px; }
+      .lairTitle{ flex:1; font-family:'Cinzel',serif; font-size:15px; color:#c9a8ff; }
+      .lairInitTag{ font-size:11px; color:var(--text-dim); }
+      .lairCard .toolBtn{
+        margin-top:7px; width:100%; padding:7px; border-radius:6px; border:1px solid var(--border);
+        background:#0d1318; color:var(--text); cursor:pointer; font-size:12px;
+      }
+      .lairCard .toolBtn.active{ border-color:var(--accent-2); color:var(--accent-2); background:rgba(90,200,192,0.1); }
+
+      /* ---- Legendary actions (per-combatant) ---- */
+      .laRow{ display:flex; align-items:center; gap:6px; margin-top:7px; max-width:100%; box-sizing:border-box; }
+      .laRow label{ font-size:10px; text-transform:uppercase; color:var(--text-dim); flex-shrink:0; }
+      .card .laMaxInput, .card .lrMaxInput{ width:40px; padding:4px; font-size:12px; text-align:center; flex-shrink:0; flex-grow:0; }
+      .laPips{ display:flex; gap:2px; flex-wrap:wrap; flex:1 1 auto; min-width:0; }
+      .laPip{ width:8px; height:8px; border-radius:50%; background:#202a32; border:1px solid var(--border); flex-shrink:0; }
+      .laPip.filled{ background:#e0b64a; border-color:#e0b64a; }
+      .laMiniBtn{
+        width:20px; height:20px; border-radius:5px; border:1px solid var(--border);
+        background:#0d1318; color:var(--text); cursor:pointer; font-size:12px; line-height:1; flex-shrink:0;
+      }
+      .laMiniBtn:hover{ border-color:var(--accent); }
+      .lrPips .laPip.filled{ background:#9d7ce0; border-color:#9d7ce0; }
+
+      /* ---- Damage absorb / resistances / immunities / vulnerabilities ---- */
+      .ddChips{ display:flex; flex-wrap:wrap; gap:4px; margin-top:7px; }
+      .ddChips:empty{ display:none; }
+      .ddChip{
+        display:flex; align-items:center; gap:3px; font-size:10px; padding:3px 7px; border-radius:20px;
+        background:#0d1318; border:1px solid var(--border); color:var(--text-dim); cursor:pointer;
+      }
+      .ddChip.absorb{ border-color: #6ec26e; color:#6ec26e; }
+      .ddChip.resist{ border-color:#5aa8c8; color:#5aa8c8; }
+      .ddChip.immune{ border-color:#ffffff; color:#ffffff; }
+      .ddChip.vulnerable{ border-color:var(--danger); color:var(--danger); }
+      .ddPickerWrap:empty{ display:none; }
+      .ddPicker{
+        display:grid; grid-template-columns:repeat(auto-fit, minmax(74px, 1fr)); gap:5px;
+        margin-top:8px; padding:8px; background:#161d24; border:1px solid var(--border); border-radius:8px;
+      }
+      .ddPickerItem{ display:flex; flex-direction:column; gap:3px; }
+      .ddPickerItem .ddLabel{ font-size:10px; color:var(--text-dim); display:flex; align-items:center; gap:3px; }
+      .ddPickerItem .ddBtns{ display:flex; gap:2px; }
+      .ddPickerItem .ddBtns button{
+        flex:1; font-size:9px; padding:3px 0; border-radius:4px; border:1px solid var(--border);
+        background:#0d1318; color:var(--text-dim); cursor:pointer;
+      }
+      .ddPickerItem .ddBtns button.on.absorb{ border-color:#6ec26e; color:#6ec26e; background:rgba(90,168,200,0.12); }
+      .ddPickerItem .ddBtns button.on.resist{ border-color:#5aa8c8; color:#5aa8c8; background:rgba(90,168,200,0.12); }
+      .ddPickerItem .ddBtns button.on.immune{ border-color:#ffffff; color:#ffffff; background:rgba(110,194,110,0.12); }
+      .ddPickerItem .ddBtns button.on.vulnerable{ border-color:var(--danger); color:var(--danger); background:rgba(224,90,90,0.12); }
+      .dtypeSelect{ max-width:92px; font-size:11px; }
+
 
       .fxCard{
         background:#0d1318; border:1px solid var(--border); border-radius:8px;
@@ -526,14 +625,16 @@
   </head>
   <body>
 
-     <div id="connBar"><div id="connDot"></div><div id="connText">Connecting to TV display…</div><button id="connHideBtn" class="barHideBtn" title="Hide">✕</button></div>
-    <div id="fbBar">
-      <div id="fbDot" class="pending"></div>
-      <div id="fbText">Connecting to campaign database…</div>
-      <button id="fbSignInBtn" class="hidden">Sign in with Google</button>
-      <div id="fbUserRow" class="hidden"><img id="fbUserPhoto" src="" alt=""><span id="fbUserName"></span><button id="fbSignOutBtn">Sign out</button></div>
-      <button id="fbHideBtn" class="barHideBtn" title="Hide">✕</button>
-    </div>
+    <div id="statusBars">
+      <div id="connBar"><div id="connDot"></div><div id="connText">Connecting to TV display…</div><button id="connHideBtn" class="barHideBtn" title="Hide">✕</button></div>
+      <div id="fbBar">
+        <div id="fbDot" class="pending"></div>
+        <div id="fbText">Connecting to campaign database…</div>
+        <button id="fbSignInBtn" class="hidden">Sign in with Google</button>
+        <div id="fbUserRow" class="hidden"><img id="fbUserPhoto" src="" alt=""><span id="fbUserName"></span><button id="fbSignOutBtn">Sign out</button></div>
+        <button id="fbHideBtn" class="barHideBtn" title="Hide">✕</button>
+      </div>
+     </div>
 
     <div id="noOpener">
       <h2>No TV Display Found</h2>
@@ -557,6 +658,17 @@
 
       <div class="panel" id="initiativePanel">
         <h3>Initiative &amp; Combat</h3>
+
+        <div class="toggle">
+          <label style="margin:0;font-size:13px;">🏛 Lair Actions</label>
+          <div class="switch" id="lairToggle"></div>
+        </div>
+        <div class="field" id="lairConfigRow" style="display:none;">
+          <label>At Initiative Count</label>
+          <input type="number" id="lairInitCount" value="20" min="1" max="30">
+        </div>
+
+        <div id="lairCardSlot"></div>
         <div id="combatantList"></div>
 
         <div class="divider"></div>
@@ -575,7 +687,7 @@
         <button class="btn danger" id="clearAllBtn">Clear All</button>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="dicePanel">
         <h3>Dice <span class="sub">Rolls happen right here on your device — nothing shows on the TV unless you choose to log it</span></h3>
         <div class="diceTypeGrid" id="rdDiceTypeGrid">
           <button class="diceTypeBtn" data-sides="4">d4</button>
@@ -803,6 +915,11 @@
       </div>
 
       <div class="panel">
+        <h3>Map Grid</h3>
+        <button class="btn" id="gridToggleBtn" disabled>Toggle Grid</button>
+      </div>
+
+      <div class="panel">
         <h3>Ruler</h3>
         <button class="btn" id="rulerBtn" disabled>Ruler Mode</button>
       </div>
@@ -840,7 +957,7 @@
         <button class="btn" id="moveOverlayBtn">Move Overlay to Display</button>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="miniTrackerPanel">
         <h3>Mini Tracker <span class="sub">Beta — camera detection test. Doesn't move tokens yet, just proves markers are readable.</span></h3>
         <div class="row2">
           <button class="diceTypeBtn active" id="mtModeArucoBtn" style="flex:1;padding:10px;">Aruco Markers</button>
@@ -1074,6 +1191,9 @@
           </div>
           <div class="field"><label>Senses</label><input type="text" id="fSenses" placeholder="darkvision 60 ft, ..."></div>
           <div class="field"><label>Languages</label><input type="text" id="fLanguages"></div>
+
+          <div class="field" style="margin-bottom:6px;"><label>Damage Absorb / Resistances / Immunities / Vulnerabilities</label></div>
+          <div class="ddPicker" id="fDamageDefenseGrid"></div>
         </div>
 
         <div class="tabPanel" data-panel="abilities">
@@ -1158,6 +1278,41 @@
 
         let lastSnapshot = null;
         let liveTimer = null;
+
+        // ---- Panel minimize: collapse panels you don't use down to just their
+        // title bar. Purely a per-device UI preference (localStorage), never
+        // synced to the TV or other devices. ----
+        (function(){
+          function makeCollapsible(panelEl, storageKey, defaultCollapsed){
+            if(!panelEl) return;
+            const h3 = panelEl.querySelector('h3');
+            if(!h3) return;
+            let collapsed = !!defaultCollapsed;
+            try{
+              const saved = localStorage.getItem(storageKey);
+              if(saved !== null) collapsed = saved === '1';
+            }catch(err){}
+            const btn = document.createElement('button');
+            btn.className = 'panelCollapseBtn';
+            function apply(){
+              panelEl.classList.toggle('collapsed', collapsed);
+              btn.textContent = collapsed ? '▸' : '▾';
+              btn.title = collapsed ? 'Expand this section' : 'Minimize this section';
+            }
+            btn.addEventListener('click', () => {
+              collapsed = !collapsed;
+              try{ localStorage.setItem(storageKey, collapsed ? '1' : '0'); }catch(err){}
+              apply();
+            });
+            apply();
+            h3.appendChild(btn);
+          }
+          makeCollapsible(document.getElementById('dicePanel'), 'blackstonePanelCollapsed_dice');
+          makeCollapsible(document.getElementById('miniTrackerPanel'), 'blackstonePanelCollapsed_miniTracker');
+          makeCollapsible(document.getElementById('weatherPanel'), 'blackstonePanelCollapsed_weather');
+          makeCollapsible(document.getElementById('tavernPanel'), 'blackstonePanelCollapsed_tavern');
+          makeCollapsible(document.getElementById('treasurePanel'), 'blackstonePanelCollapsed_treasure');
+        })();
 
         // ---- Panel pop-out: tear any panel out into its own real window ----
         (function(){
@@ -1530,6 +1685,34 @@
                     bloodied: c.hp !== null && c.hp !== undefined && c.maxHp && c.hp <= c.maxHp/2 };
         }
 
+        // ---- Damage types (absorb / resistances / immunities / vulnerabilities) ----
+        const CONTROLLER_DAMAGE_TYPES = [
+          { id:'acid', label:'Acid', icon:'🧪' },
+          { id:'bludgeoning', label:'Bludgeoning', icon:'🔨' },
+          { id:'cold', label:'Cold', icon:'❄️' },
+          { id:'fire', label:'Fire', icon:'🔥' },
+          { id:'force', label:'Force', icon:'💥' },
+          { id:'lightning', label:'Lightning', icon:'⚡' },
+          { id:'necrotic', label:'Necrotic', icon:'💀' },
+          { id:'piercing', label:'Piercing', icon:'🏹' },
+          { id:'poison', label:'Poison', icon:'☠️' },
+          { id:'psychic', label:'Psychic', icon:'🧠' },
+          { id:'radiant', label:'Radiant', icon:'✨' },
+          { id:'slashing', label:'Slashing', icon:'🗡️' },
+          { id:'thunder', label:'Thunder', icon:'🌩️' },
+          { id:'one', label:'+1', icon:'1️⃣' },
+          { id:'two', label:'+2', icon:'2️⃣' }
+        ];
+        function controllerDamageTypeInfo(id){ return CONTROLLER_DAMAGE_TYPES.find(d => d.id === id); }
+        function defenseCategoryFor(c, dtype){
+          if((c.absorb || []).includes(dtype)) return 'absorb';
+          if((c.immunities || []).includes(dtype)) return 'immune';
+          if((c.resistances || []).includes(dtype)) return 'resist';
+          if((c.vulnerabilities || []).includes(dtype)) return 'vulnerable';
+          return null;
+        }
+        let ddPickerOpenId = null; // combatant id whose absorb/resist/immune/vulnerable picker is open — local to this device
+
         const CONTROLLER_CONDITIONS = [
           { id:'blinded', label:'Blinded', icon:'🙈' },
           { id:'charmed', label:'Charmed', icon:'💞' },
@@ -1549,6 +1732,7 @@
         ];
         function controllerConditionInfo(id){ return CONTROLLER_CONDITIONS.find(c => c.id === id); }
         let condPickerOpenId = null; // combatant id whose condition picker is open — local to this device
+        let moreMenuOpenId = null; // combatant id whose "⋯" more-actions menu is open — local to this device
 
         // ---- Concentration save prompts (controller-only — never sent to the TV) ----
         let concAlerts = []; // { id, combatantId, name, spell, dmg, dc }
@@ -1607,6 +1791,29 @@
           if(concAlerts.length !== before) renderConcAlerts();
         }
 
+        function renderLairCard(s){
+          const slot = document.getElementById('lairCardSlot');
+          const la = s.lairAction;
+          if(!la || !la.enabled){ slot.innerHTML = ''; return; }
+          if(!slot.firstElementChild){
+            slot.innerHTML = `
+              <div class="lairCard">
+                <div class="lairCardTop">
+                  <span class="lairTitle">🏛 Lair Action</span>
+                  <span class="lairInitTag"></span>
+                </div>
+                <button class="toolBtn lairTriggerBtn"></button>
+              </div>
+            `;
+            slot.querySelector('.lairTriggerBtn').addEventListener('click', () => send('lairTrigger'));
+          }
+          slot.querySelector('.lairCard').classList.toggle('active', s.activeId === 'LAIR');
+          slot.querySelector('.lairInitTag').textContent = 'init ' + la.initCount;
+          const btn = slot.querySelector('.lairTriggerBtn');
+          btn.classList.toggle('active', la.triggered);
+          btn.textContent = la.triggered ? '✓ Used this round' : 'Mark Used';
+        }
+
         function renderCombatantList(s){
           const list = document.getElementById('combatantList');
 
@@ -1634,35 +1841,46 @@
                 <div class="cardTop">
                   <div class="initNum"></div>
                   <div class="name"></div>
-                  <button class="iconBtn condBtn" title="Conditions">🩹</button>
-                  <button class="iconBtn spellBtn" title="Spellcasting">🔮</button>
                   <button class="iconBtn tokenBtn" title="Place on map">📍</button>
-                  <input type="color" class="tokenColorInput" title="Token color on the map">
-                  <select class="tokenSizeSelect" title="Token size on the map">
-                    <option value="1">1x</option>
-                    <option value="2">2x (Large)</option>
-                    <option value="3">3x (Huge)</option>
-                    <option value="4">4x (Gargantuan)</option>
-                  </select>
-                  <button class="iconBtn statBtn" title="Edit name / initiative / HP / AC">⚙</button>
+                  <button class="iconBtn moreBtn" title="More — conditions, resistances, spellcasting, edit, token appearance">⋯</button>
                   <button class="iconBtn removeBtn" title="Remove">✕</button>
                 </div>
+                <div class="moreMenuWrap"></div>
                 <div class="cardStats">
                   <span class="statText"></span>
+                  <select class="dtypeSelect" title="Damage type (for absorb/resist/immune/vulnerable math)">
+                    <option value="">Untyped</option>
+                    ${CONTROLLER_DAMAGE_TYPES.map(d => `<option value="${d.id}">${d.icon} ${d.label}</option>`).join('')}
+                  </select>
                   <input type="number" class="amtInput" placeholder="amt" min="0" value="1">
                   <button class="btn miniBtn dmgBtn">−HP</button>
                   <button class="btn miniBtn healBtn">+HP</button>
                 </div>
+                <div class="laRow">
+                  <label>Legendary</label>
+                  <input type="number" class="laMaxInput" min="0" max="9" value="0" title="Legendary actions per round (0 = none)">
+                  <div class="laPips"></div>
+                  <button class="laMiniBtn laSpendBtn" title="Spend a legendary action">−</button>
+                  <button class="laMiniBtn laResetBtn" title="Reset to full">↺</button>
+                </div>
+                <div class="laRow">
+                  <label>Leg. Resist</label>
+                  <input type="number" class="lrMaxInput" min="0" max="9" value="0" title="Legendary resistances per day (0 = none) — doesn't reset each round, only when you reset it">
+                  <div class="laPips lrPips"></div>
+                  <button class="laMiniBtn lrSpendBtn" title="Use a legendary resistance">−</button>
+                  <button class="laMiniBtn lrResetBtn" title="Reset to full (new day/rest)">↺</button>
+                </div>
                 <div class="condChips"></div>
                 <div class="condPickerWrap"></div>
+                <div class="ddChips"></div>
+                <div class="ddPickerWrap"></div>
                 <div class="concLine"></div>
               `;
               // wire listeners ONCE, when the card is created — never re-attached on re-render
               el.querySelector('.removeBtn').addEventListener('click', () => send('removeCombatant', { id: c.id }));
-              el.querySelector('.statBtn').addEventListener('click', () => openStatsModal(c.id));
-              el.querySelector('.spellBtn').addEventListener('click', () => openSpellModal(c.id));
-              el.querySelector('.condBtn').addEventListener('click', () => {
-                condPickerOpenId = condPickerOpenId === c.id ? null : c.id;
+              el.querySelector('.moreBtn').addEventListener('click', () => {
+                // condPickerOpenId = condPickerOpenId === c.id ? null : c.id;
+                moreMenuOpenId = moreMenuOpenId === c.id ? null : c.id;
                 if(lastSnapshot) renderCombatantList(lastSnapshot);
               });
               el.querySelector('.tokenBtn').addEventListener('click', () => {
@@ -1670,23 +1888,29 @@
                 if(btn.classList.contains('on')) send('removeToken', { id: c.id });
                 else send('placeToken', { id: c.id });
               });
-              el.querySelector('.tokenColorInput').addEventListener('input', function(){
-                send('setTokenColor', { id: c.id, color: this.value });
-              });
-              el.querySelector('.tokenSizeSelect').addEventListener('change', function(){
-                send('setTokenSize', { id: c.id, size: parseInt(this.value) });
-              });
               el.querySelector('.dmgBtn').addEventListener('click', () => {
                 const amt = parseFloat(el.querySelector('.amtInput').value) || 0;
+                const dtype = el.querySelector('.dtypeSelect').value || null;
                 if(amt > 0){
-                  send('applyDamage', { id: c.id, amount: amt });
+                  send('applyDamage', { id: c.id, amount: amt, dtype });
                   queueConcentrationPrompt(c.id, amt);
+                  
                 }
               });
               el.querySelector('.healBtn').addEventListener('click', () => {
                 const amt = parseFloat(el.querySelector('.amtInput').value) || 0;
                 if(amt > 0) send('applyHeal', { id: c.id, amount: amt });
               });
+              el.querySelector('.laMaxInput').addEventListener('change', function(){
+                send('setLegendaryMax', { id: c.id, value: parseInt(this.value) });
+              });
+              el.querySelector('.laSpendBtn').addEventListener('click', () => send('spendLegendary', { id: c.id }));
+              el.querySelector('.laResetBtn').addEventListener('click', () => send('resetLegendary', { id: c.id }));
+              el.querySelector('.lrMaxInput').addEventListener('change', function(){
+                send('setLegendaryResistMax', { id: c.id, value: parseInt(this.value) });
+              });
+              el.querySelector('.lrSpendBtn').addEventListener('click', () => send('spendLegendaryResist', { id: c.id }));
+              el.querySelector('.lrResetBtn').addEventListener('click', () => send('resetLegendaryResist', { id: c.id }));
               list.appendChild(el);
             }
 
@@ -1703,13 +1927,62 @@
             const tokenBtn = el.querySelector('.tokenBtn');
             tokenBtn.classList.toggle('on', !!c.hasToken);
             tokenBtn.title = c.hasToken ? 'On map — tap to remove' : 'Place on map';
-            const tokenColorInput = el.querySelector('.tokenColorInput');
-            if(document.activeElement !== tokenColorInput){
-              tokenColorInput.value = c.tokenColor || defaultTokenColorFor(c.id);
-            }
-            const tokenSizeSelect = el.querySelector('.tokenSizeSelect');
-            if(document.activeElement !== tokenSizeSelect){
-              tokenSizeSelect.value = String(c.tokenSize || 1);
+            const moreMenuWrap = el.querySelector('.moreMenuWrap');
+            el.querySelector('.moreBtn').classList.toggle('on', moreMenuOpenId === c.id);
+            const activeInMenu = document.activeElement && moreMenuWrap.contains(document.activeElement);
+            const editingInsideMenu = activeInMenu && ['INPUT', 'SELECT'].includes(document.activeElement.tagName);
+            if(!editingInsideMenu){
+              if(moreMenuOpenId === c.id){
+                moreMenuWrap.innerHTML = `
+                  <div class="moreMenu">
+                    <div class="moreMenuHeader">
+                      <span>Actions</span>
+                      <button class="moreMenuCloseBtn" title="Close">✕</button>
+                    </div>
+                    <button class="moreMenuItem" data-action="cond"><span class="icon">🩹</span>Conditions</button>
+                    <button class="moreMenuItem" data-action="dd"><span class="icon">🛡️</span>Absorb / Resistances / Immunities / Vulnerabilities</button>
+                    <button class="moreMenuItem" data-action="spell"><span class="icon">🔮</span>Spellcasting</button>
+                    <button class="moreMenuItem" data-action="stats"><span class="icon">⚙</span>Edit Name / Init / HP / AC</button>
+                    <div class="moreMenuDivider"></div>
+                    <div class="moreMenuRow">
+                      <span>Token color</span>
+                      <input type="color" class="tokenColorInput" value="${c.tokenColor || defaultTokenColorFor(c.id)}">
+                    </div>
+                    <div class="moreMenuRow">
+                      <span>Token size</span>
+                      <select class="tokenSizeSelect">
+                        <option value="1"${(c.tokenSize || 1) === 1 ? ' selected' : ''}>1x</option>
+                        <option value="2"${c.tokenSize === 2 ? ' selected' : ''}>2x (Large)</option>
+                        <option value="3"${c.tokenSize === 3 ? ' selected' : ''}>3x (Huge)</option>
+                        <option value="4"${c.tokenSize === 4 ? ' selected' : ''}>4x (Gargantuan)</option>
+                      </select>
+                    </div>
+                  </div>
+                `;
+                moreMenuWrap.querySelector('.moreMenuCloseBtn').addEventListener('click', () => {
+                  moreMenuOpenId = null;
+                  if(lastSnapshot) renderCombatantList(lastSnapshot);
+                });
+                moreMenuWrap.querySelectorAll('.moreMenuItem').forEach(item => {
+                  item.addEventListener('click', () => {
+                    const action = item.dataset.action;
+                    moreMenuOpenId = null;
+                    if(action === 'cond') condPickerOpenId = c.id;
+                    else if(action === 'dd') ddPickerOpenId = c.id;
+                    else if(action === 'spell') openSpellModal(c.id);
+                    else if(action === 'stats') openStatsModal(c.id);
+                    if(lastSnapshot) renderCombatantList(lastSnapshot);
+                  });
+                });
+                moreMenuWrap.querySelector('.tokenColorInput').addEventListener('input', function(){
+                  send('setTokenColor', { id: c.id, color: this.value });
+                });
+                moreMenuWrap.querySelector('.tokenSizeSelect').addEventListener('change', function(){
+                  send('setTokenSize', { id: c.id, size: parseInt(this.value) });
+                });
+              } else {
+                moreMenuWrap.innerHTML = '';
+              }
             }
             const concLine = el.querySelector('.concLine');
             if(c.concentrating){
@@ -1772,17 +2045,129 @@
             } else {
               pickerWrap.innerHTML = '';
             }
+
+            // Legendary actions
+            const legendaryMax = c.legendaryMax || 0;
+            const legendaryLeft = c.legendaryLeft || 0;
+            const laMaxInput = el.querySelector('.laMaxInput');
+            if(document.activeElement !== laMaxInput) laMaxInput.value = legendaryMax;
+            el.querySelector('.laPips').innerHTML = legendaryMax > 0
+              ? Array.from({length: legendaryMax}, (_, i) => `<span class="laPip${i < legendaryLeft ? ' filled' : ''}"></span>`).join('')
+              : '';
+            el.querySelector('.laPips').title = legendaryMax > 0 ? `${legendaryLeft} of ${legendaryMax} legendary actions left` : '';
+
+            // Legendary resistances (per day — doesn't auto-refill each round)
+            const legendaryResistMax = c.legendaryResistMax || 0;
+            const legendaryResistLeft = c.legendaryResistLeft || 0;
+            const lrMaxInput = el.querySelector('.lrMaxInput');
+            if(document.activeElement !== lrMaxInput) lrMaxInput.value = legendaryResistMax;
+            el.querySelector('.lrPips').innerHTML = legendaryResistMax > 0
+              ? Array.from({length: legendaryResistMax}, (_, i) => `<span class="laPip${i < legendaryResistLeft ? ' filled' : ''}"></span>`).join('')
+              : '';
+            el.querySelector('.lrPips').title = legendaryResistMax > 0 ? `${legendaryResistLeft} of ${legendaryResistMax} legendary resistances left` : '';
+
+            // Absorb / resistances / immunities / vulnerabilities
+            const absorb = c.absorb || [];
+            const resistances = c.resistances || [];
+            const immunities = c.immunities || [];
+            const vulnerabilities = c.vulnerabilities || [];
+            const ddChipsEl = el.querySelector('.ddChips');
+            ddChipsEl.innerHTML = [
+              ...absorb.map(id => {
+                const info = controllerDamageTypeInfo(id);
+                if(!info) return '';
+                return `<span class="ddChip absorb" data-dtype="${id}" title="Absorb — heals instead of damaging; tap to clear"><span class="icon">${info.icon}</span>${info.label}</span>`;
+              }),
+              ...immunities.map(id => {
+                const info = controllerDamageTypeInfo(id);
+                if(!info) return '';
+                return `<span class="ddChip immune" data-dtype="${id}" title="Immune — tap to clear"><span class="icon">${info.icon}</span>${info.label}</span>`;
+              }),
+              ...resistances.map(id => {
+                const info = controllerDamageTypeInfo(id);
+                if(!info) return '';
+                return `<span class="ddChip resist" data-dtype="${id}" title="Resistant — tap to clear"><span class="icon">${info.icon}</span>${info.label}</span>`;
+              }),
+              ...vulnerabilities.map(id => {
+                const info = controllerDamageTypeInfo(id);
+                if(!info) return '';
+                return `<span class="ddChip vulnerable" data-dtype="${id}" title="Vulnerable — tap to clear"><span class="icon">${info.icon}</span>${info.label}</span>`;
+              })
+            ].filter(Boolean).join('');
+            ddChipsEl.querySelectorAll('.ddChip').forEach(chip => {
+              chip.addEventListener('click', () => send('setDamageDefense', { id: c.id, dtype: chip.dataset.dtype, category: null }));
+            });
+
+            const ddPickerWrap = el.querySelector('.ddPickerWrap');
+            if(ddPickerOpenId === c.id){
+              ddPickerWrap.innerHTML = `
+                <div class="ddPicker">
+                  ${CONTROLLER_DAMAGE_TYPES.map(d => {
+                    const active = defenseCategoryFor(c, d.id);
+                    return `
+                      <div class="ddPickerItem">
+                        <div class="ddLabel"><span>${d.icon}</span>${d.label}</div>
+                        <div class="ddBtns">
+                          <button data-dtype="${d.id}" data-cat="absorb" class="${active === 'absorb' ? 'on absorb' : ''}" title="Absorb (heals for the damage instead)">A</button>
+                          <button data-dtype="${d.id}" data-cat="resist" class="${active === 'resist' ? 'on resist' : ''}" title="Resistant (half damage)">R</button>
+                          <button data-dtype="${d.id}" data-cat="immune" class="${active === 'immune' ? 'on immune' : ''}" title="Immune (no damage)">I</button>
+                          <button data-dtype="${d.id}" data-cat="vulnerable" class="${active === 'vulnerable' ? 'on vulnerable' : ''}" title="Vulnerable (double damage)">V</button>
+                        </div>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              `;
+              ddPickerWrap.querySelectorAll('.ddBtns button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                  const dtype = btn.dataset.dtype;
+                  const cat = btn.dataset.cat;
+                  const alreadyOn = btn.classList.contains('on');
+                  send('setDamageDefense', { id: c.id, dtype, category: alreadyOn ? null : cat });
+                });
+              });
+            } else {
+              ddPickerWrap.innerHTML = '';
+            }
           });
         }
+
+        // Close the "⋯" more-menu (and the conditions / resist-immune-vuln
+        // pickers it opens) when clicking anywhere outside them, or on Escape —
+        // previously the only way to close them was re-clicking the exact
+        // trigger button, which wasn't obvious.
+        document.addEventListener('click', (e) => {
+          if(!moreMenuOpenId && !condPickerOpenId && !ddPickerOpenId) return;
+          if(e.target.closest('.moreMenuWrap, .moreBtn, .condPickerWrap, .ddPickerWrap')) return;
+          moreMenuOpenId = null;
+          condPickerOpenId = null;
+          ddPickerOpenId = null;
+          if(lastSnapshot) renderCombatantList(lastSnapshot);
+        }, true);
+        document.addEventListener('keydown', (e) => {
+          if(e.key !== 'Escape') return;
+          if(!moreMenuOpenId && !condPickerOpenId && !ddPickerOpenId) return;
+          moreMenuOpenId = null;
+          condPickerOpenId = null;
+          ddPickerOpenId = null;
+          if(lastSnapshot) renderCombatantList(lastSnapshot);
+        });
 
         function renderSnapshot(s){
           document.getElementById('roundNum').textContent = s.round;
           const active = s.combatants.find(c => c.id === s.activeId);
-          document.getElementById('activeName').textContent = active ? active.name : '—';
+          document.getElementById('activeName').textContent = s.activeId === 'LAIR' ? '🏛 Lair Action' : (active ? active.name : '—');
           const onDeck = s.combatants.find(c => c.id === s.onDeckId);
           document.getElementById('onDeckNameInner').textContent = onDeck ? onDeck.name : '—';
 
           const list = document.getElementById('combatantList');
+
+          if(s.lairAction){
+            lairToggleBtn.classList.toggle('on', s.lairAction.enabled);
+            lairConfigRowEl.style.display = s.lairAction.enabled ? '' : 'none';
+            if(document.activeElement !== lairInitCountInput) lairInitCountInput.value = s.lairAction.initCount;
+          }
+          renderLairCard(s);
 
           pruneConcAlerts(s);
           
@@ -1801,6 +2186,12 @@
           fogResetBtn.disabled = !s.hasMask;
           fogToggleBtn.classList.toggle('on', s.fogEnabled && s.hasMask);
           fogToggleBtn.textContent = s.fogEnabled ? 'Fog: On' : 'Toggle Fog';
+
+          // Grid
+          const gridToggleBtn = document.getElementById('gridToggleBtn');
+          gridToggleBtn.disabled = !s.mapLoaded;
+          gridToggleBtn.classList.toggle('on', !!s.gridOn);
+          gridToggleBtn.textContent = s.gridOn ? 'Grid: On' : 'Grid: Off';
 
           // Ruler
           const rulerBtn = document.getElementById('rulerBtn');
@@ -1917,6 +2308,17 @@
           showConfirm('Clear the entire initiative order?', () => send('clearAll'));
         });
 
+        const lairToggleBtn = document.getElementById('lairToggle');
+        const lairConfigRowEl = document.getElementById('lairConfigRow');
+        const lairInitCountInput = document.getElementById('lairInitCount');
+        lairToggleBtn.addEventListener('click', () => {
+          const on = !lairToggleBtn.classList.contains('on');
+          send('setLairEnabled', { on });
+        });
+        lairInitCountInput.addEventListener('change', () => {
+          send('setLairInitCount', { value: parseInt(lairInitCountInput.value) });
+        });
+
         document.getElementById('fogToggleBtn').addEventListener('click', () => send('toggleFog'));
         document.getElementById('fogRevealBtn').addEventListener('click', () => send('revealAllFog'));
         document.getElementById('fogResetBtn').addEventListener('click', () => {
@@ -1927,6 +2329,8 @@
           const nowOn = lastSnapshot && lastSnapshot.mode === 'ruler';
           send('setRulerMode', { on: !nowOn });
         });
+
+        document.getElementById('gridToggleBtn').addEventListener('click', () => send('toggleGrid'));
 
         document.getElementById('fxArmBtn').addEventListener('click', () => {
           if(lastSnapshot && lastSnapshot.mode === 'spell'){
@@ -2343,7 +2747,8 @@
             profBonus: 2,
             saveProf: { str:false, dex:false, con:false, int:false, wis:false, cha:false },
             skillProf: {}, // skillName -> 0 none / 1 prof / 2 expertise
-            actions: [], spellNote: '', spells: [], inventory: [], features: [], notes: ''
+            actions: [], spellNote: '', spells: [], inventory: [], features: [], notes: '',
+            absorb: [], resistances: [], immunities: [], vulnerabilities: []
           };
         }
 
@@ -2412,7 +2817,8 @@
               send('addCombatantFromRoster', {
                 name: creature.name || 'Unnamed', init,
                 hp, maxHp: creature.hpMax, tempHp: 0,
-                ac: creature.ac, notes: creature.classRace || '', rosterId: creature.isPlayer ? null : creature.id
+                ac: creature.ac, notes: creature.classRace || '', rosterId: creature.isPlayer ? null : creature.id,
+                absorb: creature.absorb || [], resistances: creature.resistances || [], immunities: creature.immunities || [], vulnerabilities: creature.vulnerabilities || []
               });
               initInput.value = '';
               initInput.style.borderColor = '';
@@ -2480,6 +2886,7 @@
           document.getElementById('fProfBonus').value = c.profBonus;
           document.getElementById('fSpellNote').value = c.spellNote;
           document.getElementById('fNotes').value = c.notes;
+          renderDamageDefenseTab();
           renderAbilitiesTab();
           renderSkillsTab();
           renderRepeatable('actionsList', c.actions, [
@@ -2520,6 +2927,47 @@
           editingCreature.profBonus = parseInt(this.value) || 0;
           renderAbilitiesTab(); renderSkillsTab();
         });
+
+        function renderDamageDefenseTab(){
+          const c = editingCreature;
+          if(!c.absorb) c.absorb = [];
+          if(!c.resistances) c.resistances = [];
+          if(!c.immunities) c.immunities = [];
+          if(!c.vulnerabilities) c.vulnerabilities = [];
+          const grid = document.getElementById('fDamageDefenseGrid');
+          grid.innerHTML = CONTROLLER_DAMAGE_TYPES.map(d => {
+            const active = defenseCategoryFor(c, d.id);
+            return `
+              <div class="ddPickerItem">
+                <div class="ddLabel"><span>${d.icon}</span>${d.label}</div>
+                <div class="ddBtns">
+                  <button data-dtype="${d.id}" data-cat="absorb" class="${active === 'absorb' ? 'on absorb' : ''}" title="Absorb (heals for the damage instead)">A</button>
+                  <button data-dtype="${d.id}" data-cat="resist" class="${active === 'resist' ? 'on resist' : ''}" title="Resistant (half damage)">R</button>
+                  <button data-dtype="${d.id}" data-cat="immune" class="${active === 'immune' ? 'on immune' : ''}" title="Immune (no damage)">I</button>
+                  <button data-dtype="${d.id}" data-cat="vulnerable" class="${active === 'vulnerable' ? 'on vulnerable' : ''}" title="Vulnerable (double damage)">V</button>
+                </div>
+              </div>
+            `;
+          }).join('');
+          grid.querySelectorAll('.ddBtns button').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const dtype = btn.dataset.dtype;
+              const cat = btn.dataset.cat;
+              const alreadyOn = btn.classList.contains('on');
+              c.absorb = c.absorb.filter(d => d !== dtype);
+              c.resistances = c.resistances.filter(d => d !== dtype);
+              c.immunities = c.immunities.filter(d => d !== dtype);
+              c.vulnerabilities = c.vulnerabilities.filter(d => d !== dtype);
+              if(!alreadyOn){
+                if(cat === 'absorb') c.absorb.push(dtype);
+                else if(cat === 'resist') c.resistances.push(dtype);
+                else if(cat === 'immune') c.immunities.push(dtype);
+                else if(cat === 'vulnerable') c.vulnerabilities.push(dtype);
+              }
+              renderDamageDefenseTab();
+            });
+          });
+        }
 
         function renderAbilitiesTab(){
           const c = editingCreature;

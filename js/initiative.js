@@ -19,6 +19,36 @@
       function conditionInfo(id){ return CONDITIONS.find(c => c.id === id); }
       let condPickerOpenFor = null; // combatant id whose condition picker is currently expanded
 
+      // ---------------- Damage types / resistances ----------------
+      const DAMAGE_TYPES = [
+        { id:'acid', label:'Acid', icon:'🧪' },
+        { id:'bludgeoning', label:'Bludgeoning', icon:'🔨' },
+        { id:'cold', label:'Cold', icon:'❄️' },
+        { id:'fire', label:'Fire', icon:'🔥' },
+        { id:'force', label:'Force', icon:'💥' },
+        { id:'lightning', label:'Lightning', icon:'⚡' },
+        { id:'necrotic', label:'Necrotic', icon:'💀' },
+        { id:'piercing', label:'Piercing', icon:'🏹' },
+        { id:'poison', label:'Poison', icon:'☠️' },
+        { id:'psychic', label:'Psychic', icon:'🧠' },
+        { id:'radiant', label:'Radiant', icon:'✨' },
+        { id:'slashing', label:'Slashing', icon:'🗡️' },
+        { id:'thunder', label:'Thunder', icon:'🌩️' }
+      ];
+      function damageTypeInfo(id){ return DAMAGE_TYPES.find(d => d.id === id); }
+      // Applies a combatant's resistances/immunities/vulnerabilities to a raw damage
+      // amount of a given type. Untyped damage (no dtype) is never modified.
+      function applyDamageDefenses(c, amt, dtype){
+        if(!dtype || !c) return { amount: amt, note: '' };
+        const info = damageTypeInfo(dtype);
+        const label = info ? info.label : dtype;
+        if((c.absorb || []).includes(dtype)) return { amount: 0, note: ` (absorbed ${label})`, healAmount: amt };
+        if((c.immunities || []).includes(dtype)) return { amount: 0, note: ` (immune to ${label})` };
+        if((c.resistances || []).includes(dtype)) return { amount: Math.floor(amt / 2), note: ` (resisted ${label})` };
+        if((c.vulnerabilities || []).includes(dtype)) return { amount: amt * 2, note: ` (vulnerable to ${label})` };
+        return { amount: amt, note: '' };
+      }
+
       // ---------------- Initiative / Combatants ----------------
       // Combatant shape: { id, name, init, notes, hp, maxHp, tempHp, ac, rosterId,
       //                     delayed, ready, legendaryMax, legendaryLeft }
@@ -134,6 +164,15 @@
              <button class="laMiniBtn" data-action="spend" data-id="${c.id}" title="Spend a legendary action">−</button>
              <button class="laMiniBtn" data-action="reset" data-id="${c.id}" title="Reset to full">↺</button>`
           : '';
+        const legendaryResistMax = c.legendaryResistMax || 0;
+        const legendaryResistLeft = c.legendaryResistLeft || 0;
+        const resistPips = legendaryResistMax > 0
+          ? `<div class="laPips lrPips" title="${legendaryResistLeft} of ${legendaryResistMax} legendary resistances left">${
+              Array.from({length: legendaryResistMax}, (_, i) => `<span class="laPip${i < legendaryResistLeft ? ' filled' : ''}"></span>`).join('')
+            }</div>
+             <button class="laMiniBtn" data-action="spendResist" data-id="${c.id}" title="Use a legendary resistance">−</button>
+             <button class="laMiniBtn" data-action="resetResist" data-id="${c.id}" title="Reset to full (new day/rest)">↺</button>`
+          : '';
 
         const conditions = c.conditions || [];
         const exhaustion = c.exhaustion || 0;
@@ -187,6 +226,11 @@
               <label>LA</label>
               <input type="number" class="laMaxInput" min="0" max="9" value="${legendaryMax}" data-id="${c.id}" title="Legendary actions per round (0 = none)">
               ${pips}
+            </div>
+            <div class="laBox lrBox">
+              <label>LR</label>
+              <input type="number" class="lrMaxInput" min="0" max="9" value="${legendaryResistMax}" data-id="${c.id}" title="Legendary resistances per day (0 = none) — doesn't reset each round, only when you reset it">
+              ${resistPips}
             </div>
           </div>
           ${pickerHtml}
@@ -281,6 +325,34 @@
             const v = Math.max(0, Math.min(9, parseInt(input.value) || 0));
             c.legendaryMax = v;
             c.legendaryLeft = v;
+            render();
+          });
+        });
+        listEl.querySelectorAll('[data-action="spendResist"]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const c = combatants.find(x => x.id === parseInt(btn.dataset.id));
+            if(!c) return;
+            c.legendaryResistLeft = Math.max(0, (c.legendaryResistLeft || 0) - 1);
+            logEvent(`🔁 ${c.name} uses a legendary resistance (${c.legendaryResistLeft} left)`);
+            render();
+          });
+        });
+        listEl.querySelectorAll('[data-action="resetResist"]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const c = combatants.find(x => x.id === parseInt(btn.dataset.id));
+            if(!c) return;
+            c.legendaryResistLeft = c.legendaryResistMax || 0;
+            logEvent(`🔁 ${c.name}'s legendary resistances reset`);
+            render();
+          });
+        });
+        listEl.querySelectorAll('.lrMaxInput').forEach(input => {
+          input.addEventListener('change', () => {
+            const c = combatants.find(x => x.id === parseInt(input.dataset.id));
+            if(!c) return;
+            const v = Math.max(0, Math.min(9, parseInt(input.value) || 0));
+            c.legendaryResistMax = v;
+            c.legendaryResistLeft = v;
             render();
           });
         });
@@ -447,7 +519,9 @@
         if(!name || isNaN(init)) return;
         const c = {
           id: nextId++, name, init, notes:'', hp:null, maxHp:null, tempHp:0, ac:null, rosterId:null,
-          delayed:false, ready:false, legendaryMax:0, legendaryLeft:0, conditions:[], exhaustion:0,
+          delayed:false, ready:false, legendaryMax:0, legendaryLeft:0,
+          legendaryResistMax:0, legendaryResistLeft:0, conditions:[], exhaustion:0,
+          absorb:[], resistances:[], immunities:[], vulnerabilities:[],
           tokenColor: null, // null = auto-assigned color; DM can override from the Remote
           tokenSize: 1 // 1=Small/Medium, 2=Large, 3=Huge, 4=Gargantuan (squares across)
         };
