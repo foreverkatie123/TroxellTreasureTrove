@@ -90,6 +90,7 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
               ac: typeof payload.ac === 'number' ? payload.ac : null,
               rosterId: payload.rosterId || null,
               delayed: false, ready: false, legendaryMax: 0, legendaryLeft: 0, conditions: [], exhaustion: 0,
+              absorb: sanitizeDefenseList(payload.absorb),
               resistances: sanitizeDefenseList(payload.resistances),
               immunities: sanitizeDefenseList(payload.immunities),
               vulnerabilities: sanitizeDefenseList(payload.vulnerabilities)
@@ -112,6 +113,7 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
               ac: typeof payload.ac === 'number' ? payload.ac : null,
               rosterId: payload.rosterId || null,
               delayed: false, ready: false, legendaryMax: 0, legendaryLeft: 0, conditions: [], exhaustion: 0,
+              absorb: sanitizeDefenseList(payload.absorb),
               resistances: sanitizeDefenseList(payload.resistances),
               immunities: sanitizeDefenseList(payload.immunities),
               vulnerabilities: sanitizeDefenseList(payload.vulnerabilities)
@@ -171,21 +173,29 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
             if(!c) break;
             let amt = Math.max(0, parseFloat(payload.amount) || 0);
             let note = '';
+            let healAmount = 0;
             if(payload.dtype && typeof applyDamageDefenses === 'function'){
               const result = applyDamageDefenses(c, amt, payload.dtype);
               amt = result.amount;
               note = result.note;
+              healAmount = result.healAmount || 0;
             }
             const dealt = amt;
             if(c.tempHp && c.tempHp > 0){
-              const absorbed = Math.min(c.tempHp, amt);
-              c.tempHp -= absorbed;
-              amt -= absorbed;
+              const absorbedTemp = Math.min(c.tempHp, amt);
+              c.tempHp -= absorbedTemp;
+              amt -= absorbedTemp;
             }
             if(c.hp === null || c.hp === undefined) c.hp = c.maxHp !== null ? c.maxHp : 0;
             c.hp -= amt;
+            if(healAmount > 0) c.hp += healAmount;
             clampHp(c);
-            logEvent(`💥 ${c.name} takes ${dealt} damage${note}${typeof c.hp === 'number' ? ` (${c.hp}${c.maxHp !== null ? '/' + c.maxHp : ''} HP)` : ''}`);
+            if(healAmount > 0){
+              const info = typeof damageTypeInfo === 'function' ? damageTypeInfo(payload.dtype) : null;
+              logEvent(`🟢 ${c.name} absorbs the ${info ? info.label : payload.dtype} damage and heals ${healAmount}${typeof c.hp === 'number' ? ` (${c.hp}${c.maxHp !== null ? '/' + c.maxHp : ''} HP)` : ''}`);
+            } else {
+              logEvent(`💥 ${c.name} takes ${dealt} damage${note}${typeof c.hp === 'number' ? ` (${c.hp}${c.maxHp !== null ? '/' + c.maxHp : ''} HP)` : ''}`);
+            }
             render();
             break;
           }
@@ -292,14 +302,17 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
             if(!c) break;
             const dtype = payload.dtype;
             if(!dtype || (typeof damageTypeInfo === 'function' && !damageTypeInfo(dtype))) break;
-            const category = payload.category; // 'resist' | 'immune' | 'vulnerable' | null/other clears it
+            const category = payload.category; // 'absorb' | 'resist' | 'immune' | 'vulnerable' | null/other clears it
+            if(!c.absorb) c.absorb = [];
             if(!c.resistances) c.resistances = [];
             if(!c.immunities) c.immunities = [];
             if(!c.vulnerabilities) c.vulnerabilities = [];
+            c.absorb = c.absorb.filter(d => d !== dtype);
             c.resistances = c.resistances.filter(d => d !== dtype);
             c.immunities = c.immunities.filter(d => d !== dtype);
             c.vulnerabilities = c.vulnerabilities.filter(d => d !== dtype);
-            if(category === 'resist') c.resistances.push(dtype);
+            if(category === 'absorb') c.absorb.push(dtype);
+            else if(category === 'resist') c.resistances.push(dtype);
             else if(category === 'immune') c.immunities.push(dtype);
             else if(category === 'vulnerable') c.vulnerabilities.push(dtype);
             render();

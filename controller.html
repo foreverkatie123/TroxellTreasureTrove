@@ -375,6 +375,7 @@
       .card .iconBtn:hover{ color:var(--accent-2); }
       .card .iconBtn.removeBtn:hover{ color:var(--danger); }
       .card .iconBtn.tokenBtn.on{ color:var(--accent-2); }
+      .card .iconBtn.moreBtn.on{ color:var(--accent-2); background:#0d1318; border-color:var(--accent-2); }
       .card input.tokenColorInput{
         width:20px; height:20px; padding:0; border:1px solid var(--border); border-radius:50%;
         cursor:pointer; background:none; flex-shrink:0; -webkit-appearance:none; margin:0 1px;
@@ -433,6 +434,16 @@
         margin-top:8px; padding:6px; background:#161d24; border:1px solid var(--border); border-radius:8px;
         display:flex; flex-direction:column; gap:3px;
       }
+      .moreMenuHeader{
+        display:flex; align-items:center; justify-content:space-between;
+        padding:2px 4px 4px; margin-bottom:2px; border-bottom:1px solid var(--border);
+      }
+      .moreMenuHeader span{ font-size:11px; font-weight:700; color:var(--text-dim); text-transform:uppercase; letter-spacing:.03em; }
+      .moreMenuCloseBtn{
+        width:22px; height:22px; border-radius:6px; border:1px solid var(--border);
+        background:#0d1318; color:var(--text); cursor:pointer; font-size:13px; line-height:1;
+      }
+      .moreMenuCloseBtn:hover{ color:var(--accent-2); border-color:var(--accent-2); }
       .moreMenuItem{
         display:flex; align-items:center; gap:8px; text-align:left; font-size:12px;
         padding:7px 8px; border-radius:6px; border:none; background:none; color:var(--text); cursor:pointer;
@@ -469,15 +480,16 @@
       }
       .laMiniBtn:hover{ border-color:var(--accent); }
 
-      /* ---- Damage resistances / immunities / vulnerabilities ---- */
+      /* ---- Damage absorb / resistances / immunities / vulnerabilities ---- */
       .ddChips{ display:flex; flex-wrap:wrap; gap:4px; margin-top:7px; }
       .ddChips:empty{ display:none; }
       .ddChip{
         display:flex; align-items:center; gap:3px; font-size:10px; padding:3px 7px; border-radius:20px;
         background:#0d1318; border:1px solid var(--border); color:var(--text-dim); cursor:pointer;
       }
+      .ddChip.absorb{ border-color: #6ec26e; color:#6ec26e; }
       .ddChip.resist{ border-color:#5aa8c8; color:#5aa8c8; }
-      .ddChip.immune{ border-color:#6ec26e; color:#6ec26e; }
+      .ddChip.immune{ border-color:#ffffff; color:#ffffff; }
       .ddChip.vulnerable{ border-color:var(--danger); color:var(--danger); }
       .ddPickerWrap:empty{ display:none; }
       .ddPicker{
@@ -491,8 +503,9 @@
         flex:1; font-size:9px; padding:3px 0; border-radius:4px; border:1px solid var(--border);
         background:#0d1318; color:var(--text-dim); cursor:pointer;
       }
+      .ddPickerItem .ddBtns button.on.absorb{ border-color:#6ec26e; color:#6ec26e; background:rgba(90,168,200,0.12); }
       .ddPickerItem .ddBtns button.on.resist{ border-color:#5aa8c8; color:#5aa8c8; background:rgba(90,168,200,0.12); }
-      .ddPickerItem .ddBtns button.on.immune{ border-color:#6ec26e; color:#6ec26e; background:rgba(110,194,110,0.12); }
+      .ddPickerItem .ddBtns button.on.immune{ border-color:#ffffff; color:#ffffff; background:rgba(110,194,110,0.12); }
       .ddPickerItem .ddBtns button.on.vulnerable{ border-color:var(--danger); color:var(--danger); background:rgba(224,90,90,0.12); }
       .dtypeSelect{ max-width:92px; font-size:11px; }
 
@@ -1178,7 +1191,7 @@
           <div class="field"><label>Senses</label><input type="text" id="fSenses" placeholder="darkvision 60 ft, ..."></div>
           <div class="field"><label>Languages</label><input type="text" id="fLanguages"></div>
 
-          <div class="field" style="margin-bottom:6px;"><label>Damage Resistances / Immunities / Vulnerabilities</label></div>
+          <div class="field" style="margin-bottom:6px;"><label>Damage Absorb / Resistances / Immunities / Vulnerabilities</label></div>
           <div class="ddPicker" id="fDamageDefenseGrid"></div>
         </div>
 
@@ -1671,7 +1684,7 @@
                     bloodied: c.hp !== null && c.hp !== undefined && c.maxHp && c.hp <= c.maxHp/2 };
         }
 
-        // ---- Damage types (resistances / immunities / vulnerabilities) ----
+        // ---- Damage types (absorb / resistances / immunities / vulnerabilities) ----
         const CONTROLLER_DAMAGE_TYPES = [
           { id:'acid', label:'Acid', icon:'🧪' },
           { id:'bludgeoning', label:'Bludgeoning', icon:'🔨' },
@@ -1685,16 +1698,19 @@
           { id:'psychic', label:'Psychic', icon:'🧠' },
           { id:'radiant', label:'Radiant', icon:'✨' },
           { id:'slashing', label:'Slashing', icon:'🗡️' },
-          { id:'thunder', label:'Thunder', icon:'🌩️' }
+          { id:'thunder', label:'Thunder', icon:'🌩️' },
+          { id:'one', label:'+1', icon:'1️⃣' },
+          { id:'two', label:'+2', icon:'2️⃣' }
         ];
         function controllerDamageTypeInfo(id){ return CONTROLLER_DAMAGE_TYPES.find(d => d.id === id); }
         function defenseCategoryFor(c, dtype){
+          if((c.absorb || []).includes(dtype)) return 'absorb';
           if((c.immunities || []).includes(dtype)) return 'immune';
           if((c.resistances || []).includes(dtype)) return 'resist';
           if((c.vulnerabilities || []).includes(dtype)) return 'vulnerable';
           return null;
         }
-        let ddPickerOpenId = null; // combatant id whose resist/immune/vulnerable picker is open — local to this device
+        let ddPickerOpenId = null; // combatant id whose absorb/resist/immune/vulnerable picker is open — local to this device
 
         const CONTROLLER_CONDITIONS = [
           { id:'blinded', label:'Blinded', icon:'🙈' },
@@ -1831,7 +1847,7 @@
                 <div class="moreMenuWrap"></div>
                 <div class="cardStats">
                   <span class="statText"></span>
-                  <select class="dtypeSelect" title="Damage type (for resist/immune/vulnerable math)">
+                  <select class="dtypeSelect" title="Damage type (for absorb/resist/immune/vulnerable math)">
                     <option value="">Untyped</option>
                     ${CONTROLLER_DAMAGE_TYPES.map(d => `<option value="${d.id}">${d.icon} ${d.label}</option>`).join('')}
                   </select>
@@ -1898,14 +1914,19 @@
             tokenBtn.classList.toggle('on', !!c.hasToken);
             tokenBtn.title = c.hasToken ? 'On map — tap to remove' : 'Place on map';
             const moreMenuWrap = el.querySelector('.moreMenuWrap');
+            el.querySelector('.moreBtn').classList.toggle('on', moreMenuOpenId === c.id);
             const existingColorInput = moreMenuWrap.querySelector('.tokenColorInput');
             const editingColorInput = existingColorInput && document.activeElement === existingColorInput;
             if(!editingColorInput){
               if(moreMenuOpenId === c.id){
                 moreMenuWrap.innerHTML = `
                   <div class="moreMenu">
+                    <div class="moreMenuHeader">
+                      <span>Actions</span>
+                      <button class="moreMenuCloseBtn" title="Close">✕</button>
+                    </div>
                     <button class="moreMenuItem" data-action="cond"><span class="icon">🩹</span>Conditions</button>
-                    <button class="moreMenuItem" data-action="dd"><span class="icon">🛡️</span>Resistances / Immunities / Vulnerabilities</button>
+                    <button class="moreMenuItem" data-action="dd"><span class="icon">🛡️</span> Absorb / Resistances / Immunities / Vulnerabilities</button>
                     <button class="moreMenuItem" data-action="spell"><span class="icon">🔮</span>Spellcasting</button>
                     <button class="moreMenuItem" data-action="stats"><span class="icon">⚙</span>Edit Name / Init / HP / AC</button>
                     <div class="moreMenuDivider"></div>
@@ -1924,6 +1945,10 @@
                     </div>
                   </div>
                 `;
+                moreMenuWrap.querySelector('.moreMenuCloseBtn').addEventListener('click', () => {
+                  moreMenuOpenId = null;
+                  if(lastSnapshot) renderCombatantList(lastSnapshot);
+                });
                 moreMenuWrap.querySelectorAll('.moreMenuItem').forEach(item => {
                   item.addEventListener('click', () => {
                     const action = item.dataset.action;
@@ -2017,12 +2042,18 @@
               : '';
             el.querySelector('.laPips').title = legendaryMax > 0 ? `${legendaryLeft} of ${legendaryMax} legendary actions left` : '';
 
-            // Resistances / immunities / vulnerabilities
+            // Absorb / Resistances / immunities / vulnerabilities
+            const absorb = c.absorb || [];
             const resistances = c.resistances || [];
             const immunities = c.immunities || [];
             const vulnerabilities = c.vulnerabilities || [];
             const ddChipsEl = el.querySelector('.ddChips');
             ddChipsEl.innerHTML = [
+              ...absorb.map(id => {
+                const info = controllerDamageTypeInfo(id);
+                if(!info) return '';
+                return `<span class="ddChip absorb" data-dtype="${id}" title="Absorb — heals instead of damaging; tap to clear"><span class="icon">${info.icon}</span>${info.label}</span>`;
+              }),
               ...immunities.map(id => {
                 const info = controllerDamageTypeInfo(id);
                 if(!info) return '';
@@ -2053,6 +2084,7 @@
                       <div class="ddPickerItem">
                         <div class="ddLabel"><span>${d.icon}</span>${d.label}</div>
                         <div class="ddBtns">
+                          <button data-dtype="${d.id}" data-cat="absorb" class="${active === 'absorb' ? 'on absorb' : ''}" title="Absorb (heals for the damage instead)">A</button>
                           <button data-dtype="${d.id}" data-cat="resist" class="${active === 'resist' ? 'on resist' : ''}" title="Resistant (half damage)">R</button>
                           <button data-dtype="${d.id}" data-cat="immune" class="${active === 'immune' ? 'on immune' : ''}" title="Immune (no damage)">I</button>
                           <button data-dtype="${d.id}" data-cat="vulnerable" class="${active === 'vulnerable' ? 'on vulnerable' : ''}" title="Vulnerable (double damage)">V</button>
@@ -2073,6 +2105,26 @@
             } else {
               ddPickerWrap.innerHTML = '';
             }
+            // Close the "⋯" more-menu (and the conditions / resist-immune-vuln
+            // pickers it opens) when clicking anywhere outside them, or on Escape —
+            // previously the only way to close them was re-clicking the exact
+            // trigger button, which wasn't obvious.
+            document.addEventListener('click', (e) => {
+              if(!moreMenuOpenId && !condPickerOpenId && !ddPickerOpenId) return;
+              if(e.target.closest('.moreMenuWrap, .moreBtn, .condPickerWrap, .ddPickerWrap')) return;
+              moreMenuOpenId = null;
+              condPickerOpenId = null;
+              ddPickerOpenId = null;
+              if(lastSnapshot) renderCombatantList(lastSnapshot);
+            });
+            document.addEventListener('keydown', (e) => {
+              if(e.key !== 'Escape') return;
+              if(!moreMenuOpenId && !condPickerOpenId && !ddPickerOpenId) return;
+              moreMenuOpenId = null;
+              condPickerOpenId = null;
+              ddPickerOpenId = null;
+              if(lastSnapshot) renderCombatantList(lastSnapshot);
+            });
           });
         }
 
@@ -2671,7 +2723,7 @@
             saveProf: { str:false, dex:false, con:false, int:false, wis:false, cha:false },
             skillProf: {}, // skillName -> 0 none / 1 prof / 2 expertise
             actions: [], spellNote: '', spells: [], inventory: [], features: [], notes: '',
-            resistances: [], immunities: [], vulnerabilities: []
+            absorb: [], resistances: [], immunities: [], vulnerabilities: []
           };
         }
 
@@ -2741,7 +2793,7 @@
                 name: creature.name || 'Unnamed', init,
                 hp, maxHp: creature.hpMax, tempHp: 0,
                 ac: creature.ac, notes: creature.classRace || '', rosterId: creature.isPlayer ? null : creature.id,
-                resistances: creature.resistances || [], immunities: creature.immunities || [], vulnerabilities: creature.vulnerabilities || []
+                absorb: creature.absorb || [], resistances: creature.resistances || [], immunities: creature.immunities || [], vulnerabilities: creature.vulnerabilities || []
               });
               initInput.value = '';
               initInput.style.borderColor = '';
@@ -2853,6 +2905,7 @@
 
         function renderDamageDefenseTab(){
           const c = editingCreature;
+          if(!c.absorb) c.absorb = [];
           if(!c.resistances) c.resistances = [];
           if(!c.immunities) c.immunities = [];
           if(!c.vulnerabilities) c.vulnerabilities = [];
@@ -2863,6 +2916,7 @@
               <div class="ddPickerItem">
                 <div class="ddLabel"><span>${d.icon}</span>${d.label}</div>
                 <div class="ddBtns">
+                  <button data-dtype="${d.id}" data-cat="absorb" class="${active === 'absorb' ? 'on absorb' : ''}" title="Absorb (heals for the damage instead)">A</button>
                   <button data-dtype="${d.id}" data-cat="resist" class="${active === 'resist' ? 'on resist' : ''}" title="Resistant (half damage)">R</button>
                   <button data-dtype="${d.id}" data-cat="immune" class="${active === 'immune' ? 'on immune' : ''}" title="Immune (no damage)">I</button>
                   <button data-dtype="${d.id}" data-cat="vulnerable" class="${active === 'vulnerable' ? 'on vulnerable' : ''}" title="Vulnerable (double damage)">V</button>
@@ -2875,12 +2929,15 @@
               const dtype = btn.dataset.dtype;
               const cat = btn.dataset.cat;
               const alreadyOn = btn.classList.contains('on');
+              c.absorb = c.absorb.filter(d => d !== dtype);
               c.resistances = c.resistances.filter(d => d !== dtype);
               c.immunities = c.immunities.filter(d => d !== dtype);
               c.vulnerabilities = c.vulnerabilities.filter(d => d !== dtype);
               if(!alreadyOn){
-                if(cat === 'resist') c.resistances.push(dtype);
+               if(cat === 'absorb') c.absorb.push(dtype);
+                else if(cat === 'resist') c.resistances.push(dtype);
                 else if(cat === 'immune') c.immunities.push(dtype);
+                else if(cat === 'absorb') c.absorb.push(dtype);
                 else if(cat === 'vulnerable') c.vulnerabilities.push(dtype);
               }
               renderDamageDefenseTab();

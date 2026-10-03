@@ -42,6 +42,7 @@
         if(!dtype || !c) return { amount: amt, note: '' };
         const info = damageTypeInfo(dtype);
         const label = info ? info.label : dtype;
+        if((c.absorb || []).includes(dtype)) return { amount: 0, note: ` (absorbed ${label})`, healAmount: amt };
         if((c.immunities || []).includes(dtype)) return { amount: 0, note: ` (immune to ${label})` };
         if((c.resistances || []).includes(dtype)) return { amount: Math.floor(amt / 2), note: ` (resisted ${label})` };
         if((c.vulnerabilities || []).includes(dtype)) return { amount: amt * 2, note: ` (vulnerable to ${label})` };
@@ -477,7 +478,7 @@
         const c = {
           id: nextId++, name, init, notes:'', hp:null, maxHp:null, tempHp:0, ac:null, rosterId:null,
           delayed:false, ready:false, legendaryMax:0, legendaryLeft:0, conditions:[], exhaustion:0,
-          resistances:[], immunities:[], vulnerabilities:[],
+          absorb:[], resistances:[], immunities:[], vulnerabilities:[],
           tokenColor: null, // null = auto-assigned color; DM can override from the Remote
           tokenSize: 1 // 1=Small/Medium, 2=Large, 3=Huge, 4=Gargantuan (squares across)
         };
