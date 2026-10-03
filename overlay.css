@@ -91,9 +91,18 @@
         padding:10px 24px; z-index:48; display:flex; align-items:center; gap:20px;
         backdrop-filter:blur(4px); pointer-events:auto; white-space:nowrap;
         cursor:move; touch-action:none; transition:opacity .15s ease;
+        transform-origin:top center;
       }
       #hud.dragging{ transition:none; opacity:0.85; }
       #hud.hidden{ display:none; }
+      #hud .hudResizeHandle{
+        position:absolute; right:-4px; bottom:-4px; width:16px; height:16px;
+        border-radius:50%; background:#161d24; border:1px solid var(--border);
+        color:var(--text-dim); font-size:10px; line-height:1; display:flex;
+        align-items:center; justify-content:center; cursor:nwse-resize; touch-action:none;
+      }
+      #hud .hudResizeHandle:hover{ border-color:var(--accent-2); color:var(--accent-2); }
+      #hud.resizing{ transition:none; }
       #hud .hudRound{ font-family:'Cinzel',serif; color:var(--text-dim); font-size:12px; text-transform:uppercase; letter-spacing:.08em; }
       #hud .hudRound span{ color:var(--accent-bright); font-size:20px; margin-left:5px; }
       #hud .hudActive{ font-family:'Cinzel',serif; color:var(--accent-2); font-size:20px; font-weight:700; }
