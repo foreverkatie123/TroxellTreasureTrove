@@ -1893,10 +1893,7 @@
                 const dtype = el.querySelector('.dtypeSelect').value || null;
                 if(amt > 0){
                   send('applyDamage', { id: c.id, amount: amt, dtype });
-                  console.log(dtype);
-                  if(dtype != 'absorb'){
-                    queueConcentrationPrompt(c.id, amt);
-                  }
+                  queueConcentrationPrompt(c.id, amt);
                   
                 }
               });
@@ -1932,9 +1929,9 @@
             tokenBtn.title = c.hasToken ? 'On map — tap to remove' : 'Place on map';
             const moreMenuWrap = el.querySelector('.moreMenuWrap');
             el.querySelector('.moreBtn').classList.toggle('on', moreMenuOpenId === c.id);
-            const existingColorInput = moreMenuWrap.querySelector('.tokenColorInput');
-            const editingColorInput = existingColorInput && document.activeElement === existingColorInput;
-            if(!editingColorInput){
+            const activeInMenu = document.activeElement && moreMenuWrap.contains(document.activeElement);
+            const editingInsideMenu = activeInMenu && ['INPUT', 'SELECT'].includes(document.activeElement.tagName);
+            if(!editingInsideMenu){
               if(moreMenuOpenId === c.id){
                 moreMenuWrap.innerHTML = `
                   <div class="moreMenu">
@@ -1943,7 +1940,7 @@
                       <button class="moreMenuCloseBtn" title="Close">✕</button>
                     </div>
                     <button class="moreMenuItem" data-action="cond"><span class="icon">🩹</span>Conditions</button>
-                    <button class="moreMenuItem" data-action="dd"><span class="icon">🛡️</span> Absorb / Resistances / Immunities / Vulnerabilities</button>
+                    <button class="moreMenuItem" data-action="dd"><span class="icon">🛡️</span>Absorb / Resistances / Immunities / Vulnerabilities</button>
                     <button class="moreMenuItem" data-action="spell"><span class="icon">🔮</span>Spellcasting</button>
                     <button class="moreMenuItem" data-action="stats"><span class="icon">⚙</span>Edit Name / Init / HP / AC</button>
                     <div class="moreMenuDivider"></div>
@@ -2069,7 +2066,7 @@
               : '';
             el.querySelector('.lrPips').title = legendaryResistMax > 0 ? `${legendaryResistLeft} of ${legendaryResistMax} legendary resistances left` : '';
 
-            // Absorb / Resistances / immunities / vulnerabilities
+            // Absorb / resistances / immunities / vulnerabilities
             const absorb = c.absorb || [];
             const resistances = c.resistances || [];
             const immunities = c.immunities || [];
@@ -2146,7 +2143,7 @@
           condPickerOpenId = null;
           ddPickerOpenId = null;
           if(lastSnapshot) renderCombatantList(lastSnapshot);
-        });
+        }, true);
         document.addEventListener('keydown', (e) => {
           if(e.key !== 'Escape') return;
           if(!moreMenuOpenId && !condPickerOpenId && !ddPickerOpenId) return;
@@ -2962,7 +2959,7 @@
               c.immunities = c.immunities.filter(d => d !== dtype);
               c.vulnerabilities = c.vulnerabilities.filter(d => d !== dtype);
               if(!alreadyOn){
-               if(cat === 'absorb') c.absorb.push(dtype);
+                if(cat === 'absorb') c.absorb.push(dtype);
                 else if(cat === 'resist') c.resistances.push(dtype);
                 else if(cat === 'immune') c.immunities.push(dtype);
                 else if(cat === 'vulnerable') c.vulnerabilities.push(dtype);
