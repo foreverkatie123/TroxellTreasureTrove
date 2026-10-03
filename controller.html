@@ -85,6 +85,16 @@
         color:var(--text-dim); font-size:13px; line-height:1; cursor:pointer; padding:4px 6px;
       }
       .panelPopoutBtn:hover{ color:var(--accent-2); border-color:var(--accent-2); }
+      .panelCollapseBtn{
+        position:absolute; top:12px; right:40px;
+        background:none; border:1px solid var(--border); border-radius:6px;
+        color:var(--text-dim); font-size:13px; line-height:1; cursor:pointer; padding:4px 7px;
+      }
+      .panelCollapseBtn:hover{ color:var(--accent-2); border-color:var(--accent-2); }
+      .panel.collapsed{ padding-bottom:14px; }
+      .panel.collapsed > *:not(h3){ display:none !important; }
+      .panel.collapsed h3{ margin-bottom:0; }
+      .panel.collapsed h3 .sub{ display:none; }
       .panelPoppedPlaceholder{
         background:var(--panel); border:1px dashed var(--border); border-radius:10px;
         padding:14px 16px; display:flex; align-items:center; justify-content:space-between;
@@ -663,7 +673,7 @@
         <button class="btn danger" id="clearAllBtn">Clear All</button>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="dicePanel">
         <h3>Dice <span class="sub">Rolls happen right here on your device — nothing shows on the TV unless you choose to log it</span></h3>
         <div class="diceTypeGrid" id="rdDiceTypeGrid">
           <button class="diceTypeBtn" data-sides="4">d4</button>
@@ -891,6 +901,11 @@
       </div>
 
       <div class="panel">
+        <h3>Map Grid</h3>
+        <button class="btn" id="gridToggleBtn" disabled>Toggle Grid</button>
+      </div>
+
+      <div class="panel">
         <h3>Ruler</h3>
         <button class="btn" id="rulerBtn" disabled>Ruler Mode</button>
       </div>
@@ -928,7 +943,7 @@
         <button class="btn" id="moveOverlayBtn">Move Overlay to Display</button>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="miniTrackerPanel">
         <h3>Mini Tracker <span class="sub">Beta — camera detection test. Doesn't move tokens yet, just proves markers are readable.</span></h3>
         <div class="row2">
           <button class="diceTypeBtn active" id="mtModeArucoBtn" style="flex:1;padding:10px;">Aruco Markers</button>
@@ -1249,6 +1264,41 @@
 
         let lastSnapshot = null;
         let liveTimer = null;
+
+        // ---- Panel minimize: collapse panels you don't use down to just their
+        // title bar. Purely a per-device UI preference (localStorage), never
+        // synced to the TV or other devices. ----
+        (function(){
+          function makeCollapsible(panelEl, storageKey, defaultCollapsed){
+            if(!panelEl) return;
+            const h3 = panelEl.querySelector('h3');
+            if(!h3) return;
+            let collapsed = !!defaultCollapsed;
+            try{
+              const saved = localStorage.getItem(storageKey);
+              if(saved !== null) collapsed = saved === '1';
+            }catch(err){}
+            const btn = document.createElement('button');
+            btn.className = 'panelCollapseBtn';
+            function apply(){
+              panelEl.classList.toggle('collapsed', collapsed);
+              btn.textContent = collapsed ? '▸' : '▾';
+              btn.title = collapsed ? 'Expand this section' : 'Minimize this section';
+            }
+            btn.addEventListener('click', () => {
+              collapsed = !collapsed;
+              try{ localStorage.setItem(storageKey, collapsed ? '1' : '0'); }catch(err){}
+              apply();
+            });
+            apply();
+            h3.appendChild(btn);
+          }
+          makeCollapsible(document.getElementById('dicePanel'), 'blackstonePanelCollapsed_dice');
+          makeCollapsible(document.getElementById('miniTrackerPanel'), 'blackstonePanelCollapsed_miniTracker');
+          makeCollapsible(document.getElementById('weatherPanel'), 'blackstonePanelCollapsed_weather');
+          makeCollapsible(document.getElementById('tavernPanel'), 'blackstonePanelCollapsed_tavern');
+          makeCollapsible(document.getElementById('treasurePanel'), 'blackstonePanelCollapsed_treasure');
+        })();
 
         // ---- Panel pop-out: tear any panel out into its own real window ----
         (function(){
@@ -1805,7 +1855,7 @@
               // wire listeners ONCE, when the card is created — never re-attached on re-render
               el.querySelector('.removeBtn').addEventListener('click', () => send('removeCombatant', { id: c.id }));
               el.querySelector('.moreBtn').addEventListener('click', () => {
-                condPickerOpenId = condPickerOpenId === c.id ? null : c.id;
+                // condPickerOpenId = condPickerOpenId === c.id ? null : c.id;
                 moreMenuOpenId = moreMenuOpenId === c.id ? null : c.id;
                 if(lastSnapshot) renderCombatantList(lastSnapshot);
               });
@@ -1848,7 +1898,9 @@
             tokenBtn.classList.toggle('on', !!c.hasToken);
             tokenBtn.title = c.hasToken ? 'On map — tap to remove' : 'Place on map';
             const moreMenuWrap = el.querySelector('.moreMenuWrap');
-            if(document.activeElement !== tokenColorInput){
+            const existingColorInput = moreMenuWrap.querySelector('.tokenColorInput');
+            const editingColorInput = existingColorInput && document.activeElement === existingColorInput;
+            if(!editingColorInput){
               if(moreMenuOpenId === c.id){
                 moreMenuWrap.innerHTML = `
                   <div class="moreMenu">
@@ -1859,7 +1911,6 @@
                     <div class="moreMenuDivider"></div>
                     <div class="moreMenuRow">
                       <span>Token color</span>
-                tokenColorInput.value = c.tokenColor || defaultTokenColorFor(c.id);
                       <input type="color" class="tokenColorInput" value="${c.tokenColor || defaultTokenColorFor(c.id)}">
                     </div>
                     <div class="moreMenuRow">
@@ -2059,6 +2110,12 @@
           fogToggleBtn.classList.toggle('on', s.fogEnabled && s.hasMask);
           fogToggleBtn.textContent = s.fogEnabled ? 'Fog: On' : 'Toggle Fog';
 
+          // Grid
+          const gridToggleBtn = document.getElementById('gridToggleBtn');
+          gridToggleBtn.disabled = !s.mapLoaded;
+          gridToggleBtn.classList.toggle('on', !!s.gridOn);
+          gridToggleBtn.textContent = s.gridOn ? 'Grid: On' : 'Grid: Off';
+
           // Ruler
           const rulerBtn = document.getElementById('rulerBtn');
           rulerBtn.disabled = !s.mapLoaded;
@@ -2195,6 +2252,8 @@
           const nowOn = lastSnapshot && lastSnapshot.mode === 'ruler';
           send('setRulerMode', { on: !nowOn });
         });
+
+        document.getElementById('gridToggleBtn').addEventListener('click', () => send('toggleGrid'));
 
         document.getElementById('fxArmBtn').addEventListener('click', () => {
           if(lastSnapshot && lastSnapshot.mode === 'spell'){
