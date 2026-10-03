@@ -48,7 +48,8 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
           regionsTotal: regions.size, regionsShown: shown.size,
           mode, feetPerSquare,
           effects: effects.map(f => ({ id:f.id, shape:f.shape, dtype:f.dtype, label:f.label })),
-          lairAction: { enabled: lairAction.enabled, initCount: lairAction.initCount, triggered: lairAction.triggered }
+          lairAction: { enabled: lairAction.enabled, initCount: lairAction.initCount, triggered: lairAction.triggered },
+          gridOn: typeof gridOn === 'boolean' ? gridOn : true
         };
       }
       function syncRemote(){
@@ -302,6 +303,15 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
             else if(category === 'immune') c.immunities.push(dtype);
             else if(category === 'vulnerable') c.vulnerabilities.push(dtype);
             render();
+            break;
+          }
+          case 'toggleGrid': {
+            if(!imgW) break;
+            gridOn = !gridOn;
+            const gridToggleEl = document.getElementById('gridToggle');
+            if(gridToggleEl) gridToggleEl.classList.toggle('on', gridOn);
+            if(typeof drawGrid === 'function') drawGrid();
+            afterStateChange();
             break;
           }
           case 'toggleFog': if(maskData){ fogEnabled = !fogEnabled; updateFogUI(); renderFog(); } break;
