@@ -470,7 +470,7 @@
       /* ---- Legendary actions (per-combatant) ---- */
       .laRow{ display:flex; align-items:center; gap:6px; margin-top:7px; max-width:100%; box-sizing:border-box; }
       .laRow label{ font-size:10px; text-transform:uppercase; color:var(--text-dim); flex-shrink:0; }
-      .card .laMaxInput{ width:40px; padding:4px; font-size:12px; text-align:center; flex-shrink:0; flex-grow:0; }
+      .card .laMaxInput, .card .lrMaxInput{ width:40px; padding:4px; font-size:12px; text-align:center; flex-shrink:0; flex-grow:0; }
       .laPips{ display:flex; gap:2px; flex-wrap:wrap; flex:1 1 auto; min-width:0; }
       .laPip{ width:8px; height:8px; border-radius:50%; background:#202a32; border:1px solid var(--border); flex-shrink:0; }
       .laPip.filled{ background:#e0b64a; border-color:#e0b64a; }
@@ -479,6 +479,7 @@
         background:#0d1318; color:var(--text); cursor:pointer; font-size:12px; line-height:1; flex-shrink:0;
       }
       .laMiniBtn:hover{ border-color:var(--accent); }
+      .lrPips .laPip.filled{ background:#9d7ce0; border-color:#9d7ce0; }
 
       /* ---- Damage absorb / resistances / immunities / vulnerabilities ---- */
       .ddChips{ display:flex; flex-wrap:wrap; gap:4px; margin-top:7px; }
@@ -1862,6 +1863,13 @@
                   <button class="laMiniBtn laSpendBtn" title="Spend a legendary action">−</button>
                   <button class="laMiniBtn laResetBtn" title="Reset to full">↺</button>
                 </div>
+                <div class="laRow">
+                  <label>Leg. Resist</label>
+                  <input type="number" class="lrMaxInput" min="0" max="9" value="0" title="Legendary resistances per day (0 = none) — doesn't reset each round, only when you reset it">
+                  <div class="laPips lrPips"></div>
+                  <button class="laMiniBtn lrSpendBtn" title="Use a legendary resistance">−</button>
+                  <button class="laMiniBtn lrResetBtn" title="Reset to full (new day/rest)">↺</button>
+                </div>
                 <div class="condChips"></div>
                 <div class="condPickerWrap"></div>
                 <div class="ddChips"></div>
@@ -1885,7 +1893,11 @@
                 const dtype = el.querySelector('.dtypeSelect').value || null;
                 if(amt > 0){
                   send('applyDamage', { id: c.id, amount: amt, dtype });
-                  queueConcentrationPrompt(c.id, amt);
+                  console.log(dtype);
+                  if(dtype != 'absorb'){
+                    queueConcentrationPrompt(c.id, amt);
+                  }
+                  
                 }
               });
               el.querySelector('.healBtn').addEventListener('click', () => {
@@ -1897,6 +1909,11 @@
               });
               el.querySelector('.laSpendBtn').addEventListener('click', () => send('spendLegendary', { id: c.id }));
               el.querySelector('.laResetBtn').addEventListener('click', () => send('resetLegendary', { id: c.id }));
+              el.querySelector('.lrMaxInput').addEventListener('change', function(){
+                send('setLegendaryResistMax', { id: c.id, value: parseInt(this.value) });
+              });
+              el.querySelector('.lrSpendBtn').addEventListener('click', () => send('spendLegendaryResist', { id: c.id }));
+              el.querySelector('.lrResetBtn').addEventListener('click', () => send('resetLegendaryResist', { id: c.id }));
               list.appendChild(el);
             }
 
@@ -2042,6 +2059,16 @@
               : '';
             el.querySelector('.laPips').title = legendaryMax > 0 ? `${legendaryLeft} of ${legendaryMax} legendary actions left` : '';
 
+            // Legendary resistances (per day — doesn't auto-refill each round)
+            const legendaryResistMax = c.legendaryResistMax || 0;
+            const legendaryResistLeft = c.legendaryResistLeft || 0;
+            const lrMaxInput = el.querySelector('.lrMaxInput');
+            if(document.activeElement !== lrMaxInput) lrMaxInput.value = legendaryResistMax;
+            el.querySelector('.lrPips').innerHTML = legendaryResistMax > 0
+              ? Array.from({length: legendaryResistMax}, (_, i) => `<span class="laPip${i < legendaryResistLeft ? ' filled' : ''}"></span>`).join('')
+              : '';
+            el.querySelector('.lrPips').title = legendaryResistMax > 0 ? `${legendaryResistLeft} of ${legendaryResistMax} legendary resistances left` : '';
+
             // Absorb / Resistances / immunities / vulnerabilities
             const absorb = c.absorb || [];
             const resistances = c.resistances || [];
@@ -2105,28 +2132,29 @@
             } else {
               ddPickerWrap.innerHTML = '';
             }
-            // Close the "⋯" more-menu (and the conditions / resist-immune-vuln
-            // pickers it opens) when clicking anywhere outside them, or on Escape —
-            // previously the only way to close them was re-clicking the exact
-            // trigger button, which wasn't obvious.
-            document.addEventListener('click', (e) => {
-              if(!moreMenuOpenId && !condPickerOpenId && !ddPickerOpenId) return;
-              if(e.target.closest('.moreMenuWrap, .moreBtn, .condPickerWrap, .ddPickerWrap')) return;
-              moreMenuOpenId = null;
-              condPickerOpenId = null;
-              ddPickerOpenId = null;
-              if(lastSnapshot) renderCombatantList(lastSnapshot);
-            });
-            document.addEventListener('keydown', (e) => {
-              if(e.key !== 'Escape') return;
-              if(!moreMenuOpenId && !condPickerOpenId && !ddPickerOpenId) return;
-              moreMenuOpenId = null;
-              condPickerOpenId = null;
-              ddPickerOpenId = null;
-              if(lastSnapshot) renderCombatantList(lastSnapshot);
-            });
           });
         }
+
+        // Close the "⋯" more-menu (and the conditions / resist-immune-vuln
+        // pickers it opens) when clicking anywhere outside them, or on Escape —
+        // previously the only way to close them was re-clicking the exact
+        // trigger button, which wasn't obvious.
+        document.addEventListener('click', (e) => {
+          if(!moreMenuOpenId && !condPickerOpenId && !ddPickerOpenId) return;
+          if(e.target.closest('.moreMenuWrap, .moreBtn, .condPickerWrap, .ddPickerWrap')) return;
+          moreMenuOpenId = null;
+          condPickerOpenId = null;
+          ddPickerOpenId = null;
+          if(lastSnapshot) renderCombatantList(lastSnapshot);
+        });
+        document.addEventListener('keydown', (e) => {
+          if(e.key !== 'Escape') return;
+          if(!moreMenuOpenId && !condPickerOpenId && !ddPickerOpenId) return;
+          moreMenuOpenId = null;
+          condPickerOpenId = null;
+          ddPickerOpenId = null;
+          if(lastSnapshot) renderCombatantList(lastSnapshot);
+        });
 
         function renderSnapshot(s){
           document.getElementById('roundNum').textContent = s.round;
@@ -2937,7 +2965,6 @@
                if(cat === 'absorb') c.absorb.push(dtype);
                 else if(cat === 'resist') c.resistances.push(dtype);
                 else if(cat === 'immune') c.immunities.push(dtype);
-                else if(cat === 'absorb') c.absorb.push(dtype);
                 else if(cat === 'vulnerable') c.vulnerabilities.push(dtype);
               }
               renderDamageDefenseTab();
