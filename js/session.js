@@ -54,6 +54,9 @@ const STORAGE_KEY = 'blackstoneTvSession_v2';
           legendaryLeft: typeof c.legendaryLeft === 'number' ? c.legendaryLeft : (typeof c.legendaryMax === 'number' ? c.legendaryMax : 0),
           conditions: Array.isArray(c.conditions) ? c.conditions.filter(id => conditionInfo(id)) : [],
           exhaustion: typeof c.exhaustion === 'number' ? Math.max(0, Math.min(6, c.exhaustion)) : 0,
+          resistances: Array.isArray(c.resistances) ? c.resistances.filter(id => damageTypeInfo(id)) : [],
+          immunities: Array.isArray(c.immunities) ? c.immunities.filter(id => damageTypeInfo(id)) : [],
+          vulnerabilities: Array.isArray(c.vulnerabilities) ? c.vulnerabilities.filter(id => damageTypeInfo(id)) : [],
           tokenColor: typeof c.tokenColor === 'string' ? c.tokenColor : null,
           tokenSize: typeof c.tokenSize === 'number' ? c.tokenSize : 1
         }));

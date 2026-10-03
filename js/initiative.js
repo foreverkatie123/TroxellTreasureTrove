@@ -19,6 +19,35 @@
       function conditionInfo(id){ return CONDITIONS.find(c => c.id === id); }
       let condPickerOpenFor = null; // combatant id whose condition picker is currently expanded
 
+      // ---------------- Damage types / resistances ----------------
+      const DAMAGE_TYPES = [
+        { id:'acid', label:'Acid', icon:'🧪' },
+        { id:'bludgeoning', label:'Bludgeoning', icon:'🔨' },
+        { id:'cold', label:'Cold', icon:'❄️' },
+        { id:'fire', label:'Fire', icon:'🔥' },
+        { id:'force', label:'Force', icon:'💥' },
+        { id:'lightning', label:'Lightning', icon:'⚡' },
+        { id:'necrotic', label:'Necrotic', icon:'💀' },
+        { id:'piercing', label:'Piercing', icon:'🏹' },
+        { id:'poison', label:'Poison', icon:'☠️' },
+        { id:'psychic', label:'Psychic', icon:'🧠' },
+        { id:'radiant', label:'Radiant', icon:'✨' },
+        { id:'slashing', label:'Slashing', icon:'🗡️' },
+        { id:'thunder', label:'Thunder', icon:'🌩️' }
+      ];
+      function damageTypeInfo(id){ return DAMAGE_TYPES.find(d => d.id === id); }
+      // Applies a combatant's resistances/immunities/vulnerabilities to a raw damage
+      // amount of a given type. Untyped damage (no dtype) is never modified.
+      function applyDamageDefenses(c, amt, dtype){
+        if(!dtype || !c) return { amount: amt, note: '' };
+        const info = damageTypeInfo(dtype);
+        const label = info ? info.label : dtype;
+        if((c.immunities || []).includes(dtype)) return { amount: 0, note: ` (immune to ${label})` };
+        if((c.resistances || []).includes(dtype)) return { amount: Math.floor(amt / 2), note: ` (resisted ${label})` };
+        if((c.vulnerabilities || []).includes(dtype)) return { amount: amt * 2, note: ` (vulnerable to ${label})` };
+        return { amount: amt, note: '' };
+      }
+
       // ---------------- Initiative / Combatants ----------------
       // Combatant shape: { id, name, init, notes, hp, maxHp, tempHp, ac, rosterId,
       //                     delayed, ready, legendaryMax, legendaryLeft }
@@ -448,6 +477,7 @@
         const c = {
           id: nextId++, name, init, notes:'', hp:null, maxHp:null, tempHp:0, ac:null, rosterId:null,
           delayed:false, ready:false, legendaryMax:0, legendaryLeft:0, conditions:[], exhaustion:0,
+          resistances:[], immunities:[], vulnerabilities:[],
           tokenColor: null, // null = auto-assigned color; DM can override from the Remote
           tokenSize: 1 // 1=Small/Medium, 2=Large, 3=Huge, 4=Gargantuan (squares across)
         };
