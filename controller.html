@@ -18,19 +18,23 @@
       h1,h2,h3,.display{ font-family:'Cinzel',Georgia,serif; letter-spacing:0.02em; }
       body{ padding:16px; max-width:520px; }
 
-      #connBar{
-        display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px;
-        margin-bottom:14px; font-size:12px; text-transform:uppercase; letter-spacing:.06em;
-        border:1px solid var(--border); background:var(--panel);
+      #statusBars{        
+        display:flex; flex-wrap:wrap; align-items:flex-start; gap:8px; margin-bottom:14px;      
       }
-      #connDot{ width:8px; height:8px; border-radius:50%; background:var(--danger); flex-shrink:0; }
-      #connDot.live{ background:var(--accent-2); box-shadow:0 0 8px var(--accent-2); }
+
+      #connBar{        
+        display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px;        
+        flex:1 1 100%; font-size:12px; text-transform:uppercase; letter-spacing:.06em;        
+        border:1px solid var(--border); background:var(--panel);      
+      }      
+      #connDot{ width:8px; height:8px; border-radius:50%; background:var(--danger); flex-shrink:0; }      
+      #connDot.live{ background:var(--accent-2); box-shadow:0 0 8px var(--accent-2); }      
       #connText{ color:var(--text-dim); flex:1; }
 
-      #fbBar{
-        display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px;
-        margin-bottom:14px; font-size:12px; text-transform:uppercase; letter-spacing:.06em;
-        border:1px solid var(--border); background:var(--panel);
+      #fbBar{        
+        display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px;        
+        flex:1 1 100%; font-size:12px; text-transform:uppercase; letter-spacing:.06em;        
+        border:1px solid var(--border); background:var(--panel);      
       }
       #fbDot{ width:8px; height:8px; border-radius:50%; background:var(--danger); flex-shrink:0; }
       #fbDot.live{ background:var(--accent-2); box-shadow:0 0 8px var(--accent-2); }
@@ -52,13 +56,13 @@
       .hidden{ display:none !important; }
 
       /* ---------- Hide/collapse for the status bars ---------- */
-      .barHideBtn{
-        background:none; border:none; color:var(--text-dim); font-size:13px; text-transform:none;
-        letter-spacing:0; cursor:pointer; padding:2px 4px; flex-shrink:0; line-height:1;
-      }
+      .barHideBtn{        
+        background:none; border:none; color:var(--text-dim); font-size:13px; text-transform:none;        
+        letter-spacing:0; cursor:pointer; padding:2px 4px; flex-shrink:0; line-height:1;      
+      }      
       .barHideBtn:hover{ color:var(--danger); }
       #connBar.collapsed, #fbBar.collapsed{
-        width:20px; height:20px; padding:0; justify-content:center; cursor:pointer; border-radius:50%;
+        flex:0 0 auto; width:20px; height:20px; padding:0; justify-content:center; cursor:pointer; border-radius:50%;
       }
       #connBar.collapsed > *:not(#connDot), #fbBar.collapsed > *:not(#fbDot){ display:none !important; }
 
@@ -412,6 +416,61 @@
       .exhaustionStepper button:hover{ border-color:var(--accent); }
       .exhaustionStepper .lvl{ min-width:14px; text-align:center; color:var(--accent-bright); font-weight:700; }
 
+      /* ---- Lair action card (mirrors the TV overlay's) ---- */
+      .lairCard{
+        border-color:#5f4a99; background:#151027; border-radius:8px; padding:9px 11px; margin-bottom:8px;
+      }
+      .lairCard.active{ border-color:#c9a8ff; box-shadow:0 0 0 1px #c9a8ff inset; }
+      .lairCardTop{ display:flex; align-items:center; gap:8px; }
+      .lairTitle{ flex:1; font-family:'Cinzel',serif; font-size:15px; color:#c9a8ff; }
+      .lairInitTag{ font-size:11px; color:var(--text-dim); }
+      .lairCard .toolBtn{
+        margin-top:7px; width:100%; padding:7px; border-radius:6px; border:1px solid var(--border);
+        background:#0d1318; color:var(--text); cursor:pointer; font-size:12px;
+      }
+      .lairCard .toolBtn.active{ border-color:var(--accent-2); color:var(--accent-2); background:rgba(90,200,192,0.1); }
+
+      /* ---- Legendary actions (per-combatant) ---- */
+      .laRow{ display:flex; align-items:center; gap:6px; margin-top:7px; }
+      .laRow label{ font-size:10px; text-transform:uppercase; color:var(--text-dim); flex-shrink:0; }
+      .laMaxInput{ width:40px; padding:4px; font-size:12px; text-align:center; flex-shrink:0; }
+      .laPips{ display:flex; gap:2px; flex-wrap:wrap; }
+      .laPip{ width:8px; height:8px; border-radius:50%; background:#202a32; border:1px solid var(--border); flex-shrink:0; }
+      .laPip.filled{ background:#e0b64a; border-color:#e0b64a; }
+      .laMiniBtn{
+        width:20px; height:20px; border-radius:5px; border:1px solid var(--border);
+        background:#0d1318; color:var(--text); cursor:pointer; font-size:12px; line-height:1; flex-shrink:0;
+      }
+      .laMiniBtn:hover{ border-color:var(--accent); }
+
+      /* ---- Damage resistances / immunities / vulnerabilities ---- */
+      .ddChips{ display:flex; flex-wrap:wrap; gap:4px; margin-top:7px; }
+      .ddChips:empty{ display:none; }
+      .ddChip{
+        display:flex; align-items:center; gap:3px; font-size:10px; padding:3px 7px; border-radius:20px;
+        background:#0d1318; border:1px solid var(--border); color:var(--text-dim); cursor:pointer;
+      }
+      .ddChip.resist{ border-color:#5aa8c8; color:#5aa8c8; }
+      .ddChip.immune{ border-color:#6ec26e; color:#6ec26e; }
+      .ddChip.vulnerable{ border-color:var(--danger); color:var(--danger); }
+      .ddPickerWrap:empty{ display:none; }
+      .ddPicker{
+        display:grid; grid-template-columns:repeat(auto-fit, minmax(74px, 1fr)); gap:5px;
+        margin-top:8px; padding:8px; background:#161d24; border:1px solid var(--border); border-radius:8px;
+      }
+      .ddPickerItem{ display:flex; flex-direction:column; gap:3px; }
+      .ddPickerItem .ddLabel{ font-size:10px; color:var(--text-dim); display:flex; align-items:center; gap:3px; }
+      .ddPickerItem .ddBtns{ display:flex; gap:2px; }
+      .ddPickerItem .ddBtns button{
+        flex:1; font-size:9px; padding:3px 0; border-radius:4px; border:1px solid var(--border);
+        background:#0d1318; color:var(--text-dim); cursor:pointer;
+      }
+      .ddPickerItem .ddBtns button.on.resist{ border-color:#5aa8c8; color:#5aa8c8; background:rgba(90,168,200,0.12); }
+      .ddPickerItem .ddBtns button.on.immune{ border-color:#6ec26e; color:#6ec26e; background:rgba(110,194,110,0.12); }
+      .ddPickerItem .ddBtns button.on.vulnerable{ border-color:var(--danger); color:var(--danger); background:rgba(224,90,90,0.12); }
+      .dtypeSelect{ max-width:92px; font-size:11px; }
+
+
       .fxCard{
         background:#0d1318; border:1px solid var(--border); border-radius:8px;
         padding:8px 10px; display:flex; align-items:center; gap:9px; margin-bottom:7px;
@@ -526,14 +585,16 @@
   </head>
   <body>
 
-     <div id="connBar"><div id="connDot"></div><div id="connText">Connecting to TV display…</div><button id="connHideBtn" class="barHideBtn" title="Hide">✕</button></div>
-    <div id="fbBar">
-      <div id="fbDot" class="pending"></div>
-      <div id="fbText">Connecting to campaign database…</div>
-      <button id="fbSignInBtn" class="hidden">Sign in with Google</button>
-      <div id="fbUserRow" class="hidden"><img id="fbUserPhoto" src="" alt=""><span id="fbUserName"></span><button id="fbSignOutBtn">Sign out</button></div>
-      <button id="fbHideBtn" class="barHideBtn" title="Hide">✕</button>
-    </div>
+    <div id="statusBars">
+      <div id="connBar"><div id="connDot"></div><div id="connText">Connecting to TV display…</div><button id="connHideBtn" class="barHideBtn" title="Hide">✕</button></div>
+      <div id="fbBar">
+        <div id="fbDot" class="pending"></div>
+        <div id="fbText">Connecting to campaign database…</div>
+        <button id="fbSignInBtn" class="hidden">Sign in with Google</button>
+        <div id="fbUserRow" class="hidden"><img id="fbUserPhoto" src="" alt=""><span id="fbUserName"></span><button id="fbSignOutBtn">Sign out</button></div>
+        <button id="fbHideBtn" class="barHideBtn" title="Hide">✕</button>
+      </div>
+     </div>
 
     <div id="noOpener">
       <h2>No TV Display Found</h2>
@@ -557,6 +618,19 @@
 
       <div class="panel" id="initiativePanel">
         <h3>Initiative &amp; Combat</h3>
+
+        <div class="toggle">
+          <label style="margin:0;font-size:13px;">🏛 Lair Actions</label>
+          <div class="switch" id="lairToggle"></div>
+        </div>
+        <div class="field" id="lairConfigRow" style="display:none;">
+          <label>At Initiative Count</label>
+          <input type="number" id="lairInitCount" value="20" min="1" max="30">
+        </div>
+
+        <div id="lairCardSlot"></div>
+         <div id="combatantList"></div>
+
         <div id="combatantList"></div>
 
         <div class="divider"></div>
@@ -1074,6 +1148,9 @@
           </div>
           <div class="field"><label>Senses</label><input type="text" id="fSenses" placeholder="darkvision 60 ft, ..."></div>
           <div class="field"><label>Languages</label><input type="text" id="fLanguages"></div>
+
+          <div class="field" style="margin-bottom:6px;"><label>Damage Resistances / Immunities / Vulnerabilities</label></div>
+          <div class="ddPicker" id="fDamageDefenseGrid"></div>
         </div>
 
         <div class="tabPanel" data-panel="abilities">
@@ -1530,6 +1607,31 @@
                     bloodied: c.hp !== null && c.hp !== undefined && c.maxHp && c.hp <= c.maxHp/2 };
         }
 
+        // ---- Damage types (resistances / immunities / vulnerabilities) ----
+        const CONTROLLER_DAMAGE_TYPES = [
+          { id:'acid', label:'Acid', icon:'🧪' },
+          { id:'bludgeoning', label:'Bludgeoning', icon:'🔨' },
+          { id:'cold', label:'Cold', icon:'❄️' },
+          { id:'fire', label:'Fire', icon:'🔥' },
+          { id:'force', label:'Force', icon:'💥' },
+          { id:'lightning', label:'Lightning', icon:'⚡' },
+          { id:'necrotic', label:'Necrotic', icon:'💀' },
+          { id:'piercing', label:'Piercing', icon:'🏹' },
+          { id:'poison', label:'Poison', icon:'☠️' },
+          { id:'psychic', label:'Psychic', icon:'🧠' },
+          { id:'radiant', label:'Radiant', icon:'✨' },
+          { id:'slashing', label:'Slashing', icon:'🗡️' },
+          { id:'thunder', label:'Thunder', icon:'🌩️' }
+        ];
+        function controllerDamageTypeInfo(id){ return CONTROLLER_DAMAGE_TYPES.find(d => d.id === id); }
+        function defenseCategoryFor(c, dtype){
+          if((c.immunities || []).includes(dtype)) return 'immune';
+          if((c.resistances || []).includes(dtype)) return 'resist';
+          if((c.vulnerabilities || []).includes(dtype)) return 'vulnerable';
+          return null;
+        }
+        let ddPickerOpenId = null; // combatant id whose resist/immune/vulnerable picker is open — local to this device
+
         const CONTROLLER_CONDITIONS = [
           { id:'blinded', label:'Blinded', icon:'🙈' },
           { id:'charmed', label:'Charmed', icon:'💞' },
@@ -1607,6 +1709,29 @@
           if(concAlerts.length !== before) renderConcAlerts();
         }
 
+        function renderLairCard(s){
+          const slot = document.getElementById('lairCardSlot');
+          const la = s.lairAction;
+          if(!la || !la.enabled){ slot.innerHTML = ''; return; }
+          if(!slot.firstElementChild){
+            slot.innerHTML = `
+              <div class="lairCard">
+                <div class="lairCardTop">
+                  <span class="lairTitle">🏛 Lair Action</span>
+                  <span class="lairInitTag"></span>
+                </div>
+                <button class="toolBtn lairTriggerBtn"></button>
+              </div>
+            `;
+            slot.querySelector('.lairTriggerBtn').addEventListener('click', () => send('lairTrigger'));
+          }
+          slot.querySelector('.lairCard').classList.toggle('active', s.activeId === 'LAIR');
+          slot.querySelector('.lairInitTag').textContent = 'init ' + la.initCount;
+          const btn = slot.querySelector('.lairTriggerBtn');
+          btn.classList.toggle('active', la.triggered);
+          btn.textContent = la.triggered ? '✓ Used this round' : 'Mark Used';
+        }
+
         function renderCombatantList(s){
           const list = document.getElementById('combatantList');
 
@@ -1635,6 +1760,7 @@
                   <div class="initNum"></div>
                   <div class="name"></div>
                   <button class="iconBtn condBtn" title="Conditions">🩹</button>
+                  <button class="iconBtn ddBtn" title="Resistances / Immunities / Vulnerabilities">🛡️</button>
                   <button class="iconBtn spellBtn" title="Spellcasting">🔮</button>
                   <button class="iconBtn tokenBtn" title="Place on map">📍</button>
                   <input type="color" class="tokenColorInput" title="Token color on the map">
@@ -1649,12 +1775,47 @@
                 </div>
                 <div class="cardStats">
                   <span class="statText"></span>
+                  <select class="dtypeSelect" title="Damage type (for resist/immune/vulnerable math)">
+                    <option value="">Untyped</option>
+                    ${CONTROLLER_DAMAGE_TYPES.map(d => `<option value="${d.id}">${d.icon} ${d.label}</option>`).join('')}
+                  </select>
                   <input type="number" class="amtInput" placeholder="amt" min="0" value="1">
                   <button class="btn miniBtn dmgBtn">−HP</button>
                   <button class="btn miniBtn healBtn">+HP</button>
                 </div>
+                <div class="laRow">
+                  <label>Legendary</label>
+                  <input type="number" class="laMaxInput" min="0" max="9" value="0" title="Legendary actions per round (0 = none)">
+                  <div class="laPips"></div>
+                  <button class="laMiniBtn laSpendBtn" title="Spend a legendary action">−</button>
+                  <button class="laMiniBtn laResetBtn" title="Reset to full">↺</button>
+                </div>
                 <div class="condChips"></div>
                 <div class="condPickerWrap"></div>
+                <div class="ddChips"></div>
+                <div class="ddPickerWrap"></div>
+                <div class="laRow">
+                  <label>Legendary</label>
+                  <input type="number" class="laMaxInput" min="0" max="9" value="0" title="Legendary actions per round (0 = none)">
+                  <div class="laPips"></div>
+                  <button class="laMiniBtn laSpendBtn" title="Spend a legendary action">−</button>
+                  <button class="laMiniBtn laResetBtn" title="Reset to full">↺</button>
+                </div>
+                <div class="condChips"></div>
+                <div class="condPickerWrap"></div>
+                <div class="ddChips"></div>
+                <div class="ddPickerWrap"></div>
+                <div class="laRow">
+                  <label>Legendary</label>
+                  <input type="number" class="laMaxInput" min="0" max="9" value="0" title="Legendary actions per round (0 = none)">
+                  <div class="laPips"></div>
+                  <button class="laMiniBtn laSpendBtn" title="Spend a legendary action">−</button>
+                  <button class="laMiniBtn laResetBtn" title="Reset to full">↺</button>
+                </div>
+                <div class="condChips"></div>
+                <div class="condPickerWrap"></div>
+                <div class="ddChips"></div>
+                <div class="ddPickerWrap"></div>
                 <div class="concLine"></div>
               `;
               // wire listeners ONCE, when the card is created — never re-attached on re-render
@@ -1663,6 +1824,10 @@
               el.querySelector('.spellBtn').addEventListener('click', () => openSpellModal(c.id));
               el.querySelector('.condBtn').addEventListener('click', () => {
                 condPickerOpenId = condPickerOpenId === c.id ? null : c.id;
+                if(lastSnapshot) renderCombatantList(lastSnapshot);
+              });
+              el.querySelector('.ddBtn').addEventListener('click', () => {
+                ddPickerOpenId = ddPickerOpenId === c.id ? null : c.id;
                 if(lastSnapshot) renderCombatantList(lastSnapshot);
               });
               el.querySelector('.tokenBtn').addEventListener('click', () => {
@@ -1678,8 +1843,9 @@
               });
               el.querySelector('.dmgBtn').addEventListener('click', () => {
                 const amt = parseFloat(el.querySelector('.amtInput').value) || 0;
+                const dtype = el.querySelector('.dtypeSelect').value || null;
                 if(amt > 0){
-                  send('applyDamage', { id: c.id, amount: amt });
+                  send('applyDamage', { id: c.id, amount: amt, dtype });
                   queueConcentrationPrompt(c.id, amt);
                 }
               });
@@ -1687,6 +1853,11 @@
                 const amt = parseFloat(el.querySelector('.amtInput').value) || 0;
                 if(amt > 0) send('applyHeal', { id: c.id, amount: amt });
               });
+              el.querySelector('.laMaxInput').addEventListener('change', function(){
+                send('setLegendaryMax', { id: c.id, value: parseInt(this.value) });
+              });
+              el.querySelector('.laSpendBtn').addEventListener('click', () => send('spendLegendary', { id: c.id }));
+              el.querySelector('.laResetBtn').addEventListener('click', () => send('resetLegendary', { id: c.id }));
               list.appendChild(el);
             }
 
@@ -1772,17 +1943,93 @@
             } else {
               pickerWrap.innerHTML = '';
             }
+
+            // Legendary actions
+            const legendaryMax = c.legendaryMax || 0;
+            const legendaryLeft = c.legendaryLeft || 0;
+            const laMaxInput = el.querySelector('.laMaxInput');
+            if(document.activeElement !== laMaxInput) laMaxInput.value = legendaryMax;
+            el.querySelector('.laPips').innerHTML = legendaryMax > 0
+              ? Array.from({length: legendaryMax}, (_, i) => `<span class="laPip${i < legendaryLeft ? ' filled' : ''}"></span>`).join('')
+              : '';
+            el.querySelector('.laPips').title = legendaryMax > 0 ? `${legendaryLeft} of ${legendaryMax} legendary actions left` : '';
+
+            // Resistances / immunities / vulnerabilities
+            const resistances = c.resistances || [];
+            const immunities = c.immunities || [];
+            const vulnerabilities = c.vulnerabilities || [];
+            const ddChipsEl = el.querySelector('.ddChips');
+            ddChipsEl.innerHTML = [
+              ...immunities.map(id => {
+                const info = controllerDamageTypeInfo(id);
+                if(!info) return '';
+                return `<span class="ddChip immune" data-dtype="${id}" title="Immune — tap to clear"><span class="icon">${info.icon}</span>${info.label}</span>`;
+              }),
+              ...resistances.map(id => {
+                const info = controllerDamageTypeInfo(id);
+                if(!info) return '';
+                return `<span class="ddChip resist" data-dtype="${id}" title="Resistant — tap to clear"><span class="icon">${info.icon}</span>${info.label}</span>`;
+              }),
+              ...vulnerabilities.map(id => {
+                const info = controllerDamageTypeInfo(id);
+                if(!info) return '';
+                return `<span class="ddChip vulnerable" data-dtype="${id}" title="Vulnerable — tap to clear"><span class="icon">${info.icon}</span>${info.label}</span>`;
+              })
+            ].filter(Boolean).join('');
+            ddChipsEl.querySelectorAll('.ddChip').forEach(chip => {
+              chip.addEventListener('click', () => send('setDamageDefense', { id: c.id, dtype: chip.dataset.dtype, category: null }));
+            });
+
+            const ddPickerWrap = el.querySelector('.ddPickerWrap');
+            if(ddPickerOpenId === c.id){
+              ddPickerWrap.innerHTML = `
+                <div class="ddPicker">
+                  ${CONTROLLER_DAMAGE_TYPES.map(d => {
+                    const active = defenseCategoryFor(c, d.id);
+                    return `
+                      <div class="ddPickerItem">
+                        <div class="ddLabel"><span>${d.icon}</span>${d.label}</div>
+                        <div class="ddBtns">
+                          <button data-dtype="${d.id}" data-cat="resist" class="${active === 'resist' ? 'on resist' : ''}" title="Resistant (half damage)">R</button>
+                          <button data-dtype="${d.id}" data-cat="immune" class="${active === 'immune' ? 'on immune' : ''}" title="Immune (no damage)">I</button>
+                          <button data-dtype="${d.id}" data-cat="vulnerable" class="${active === 'vulnerable' ? 'on vulnerable' : ''}" title="Vulnerable (double damage)">V</button>
+                        </div>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              `;
+              ddPickerWrap.querySelectorAll('.ddBtns button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                  const dtype = btn.dataset.dtype;
+                  const cat = btn.dataset.cat;
+                  const alreadyOn = btn.classList.contains('on');
+                  send('setDamageDefense', { id: c.id, dtype, category: alreadyOn ? null : cat });
+                });
+              });
+            } else {
+              ddPickerWrap.innerHTML = '';
+            }
           });
         }
 
         function renderSnapshot(s){
           document.getElementById('roundNum').textContent = s.round;
           const active = s.combatants.find(c => c.id === s.activeId);
-          document.getElementById('activeName').textContent = active ? active.name : '—';
+          document.getElementById('activeName').textContent = s.activeId === 'LAIR' ? '🏛 Lair Action' : (active ? active.name : '—');
           const onDeck = s.combatants.find(c => c.id === s.onDeckId);
           document.getElementById('onDeckNameInner').textContent = onDeck ? onDeck.name : '—';
 
           const list = document.getElementById('combatantList');
+
+          if(s.lairAction){
+            lairToggleBtn.classList.toggle('on', s.lairAction.enabled);
+            lairConfigRowEl.style.display = s.lairAction.enabled ? '' : 'none';
+            if(document.activeElement !== lairInitCountInput) lairInitCountInput.value = s.lairAction.initCount;
+          }
+          renderLairCard(s);
+
+          pruneConcAlerts(s);
 
           pruneConcAlerts(s);
           
@@ -1915,6 +2162,17 @@
         document.getElementById('addInit').addEventListener('keydown', e => { if(e.key === 'Enter') addCombatant(); });
         document.getElementById('clearAllBtn').addEventListener('click', () => {
           showConfirm('Clear the entire initiative order?', () => send('clearAll'));
+        });
+
+        const lairToggleBtn = document.getElementById('lairToggle');
+        const lairConfigRowEl = document.getElementById('lairConfigRow');
+        const lairInitCountInput = document.getElementById('lairInitCount');
+        lairToggleBtn.addEventListener('click', () => {
+          const on = !lairToggleBtn.classList.contains('on');
+          send('setLairEnabled', { on });
+        });
+        lairInitCountInput.addEventListener('change', () => {
+          send('setLairInitCount', { value: parseInt(lairInitCountInput.value) });
         });
 
         document.getElementById('fogToggleBtn').addEventListener('click', () => send('toggleFog'));
@@ -2343,7 +2601,8 @@
             profBonus: 2,
             saveProf: { str:false, dex:false, con:false, int:false, wis:false, cha:false },
             skillProf: {}, // skillName -> 0 none / 1 prof / 2 expertise
-            actions: [], spellNote: '', spells: [], inventory: [], features: [], notes: ''
+            actions: [], spellNote: '', spells: [], inventory: [], features: [], notes: '',
+            resistances: [], immunities: [], vulnerabilities: []
           };
         }
 
@@ -2412,7 +2671,8 @@
               send('addCombatantFromRoster', {
                 name: creature.name || 'Unnamed', init,
                 hp, maxHp: creature.hpMax, tempHp: 0,
-                ac: creature.ac, notes: creature.classRace || '', rosterId: creature.isPlayer ? null : creature.id
+                ac: creature.ac, notes: creature.classRace || '', rosterId: creature.isPlayer ? null : creature.id,
+                resistances: creature.resistances || [], immunities: creature.immunities || [], vulnerabilities: creature.vulnerabilities || []
               });
               initInput.value = '';
               initInput.style.borderColor = '';
@@ -2480,6 +2740,7 @@
           document.getElementById('fProfBonus').value = c.profBonus;
           document.getElementById('fSpellNote').value = c.spellNote;
           document.getElementById('fNotes').value = c.notes;
+          renderDamageDefenseTab();
           renderAbilitiesTab();
           renderSkillsTab();
           renderRepeatable('actionsList', c.actions, [
@@ -2520,6 +2781,43 @@
           editingCreature.profBonus = parseInt(this.value) || 0;
           renderAbilitiesTab(); renderSkillsTab();
         });
+
+        function renderDamageDefenseTab(){
+          const c = editingCreature;
+          if(!c.resistances) c.resistances = [];
+          if(!c.immunities) c.immunities = [];
+          if(!c.vulnerabilities) c.vulnerabilities = [];
+          const grid = document.getElementById('fDamageDefenseGrid');
+          grid.innerHTML = CONTROLLER_DAMAGE_TYPES.map(d => {
+            const active = defenseCategoryFor(c, d.id);
+            return `
+              <div class="ddPickerItem">
+                <div class="ddLabel"><span>${d.icon}</span>${d.label}</div>
+                <div class="ddBtns">
+                  <button data-dtype="${d.id}" data-cat="resist" class="${active === 'resist' ? 'on resist' : ''}" title="Resistant (half damage)">R</button>
+                  <button data-dtype="${d.id}" data-cat="immune" class="${active === 'immune' ? 'on immune' : ''}" title="Immune (no damage)">I</button>
+                  <button data-dtype="${d.id}" data-cat="vulnerable" class="${active === 'vulnerable' ? 'on vulnerable' : ''}" title="Vulnerable (double damage)">V</button>
+                </div>
+              </div>
+            `;
+          }).join('');
+          grid.querySelectorAll('.ddBtns button').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const dtype = btn.dataset.dtype;
+              const cat = btn.dataset.cat;
+              const alreadyOn = btn.classList.contains('on');
+              c.resistances = c.resistances.filter(d => d !== dtype);
+              c.immunities = c.immunities.filter(d => d !== dtype);
+              c.vulnerabilities = c.vulnerabilities.filter(d => d !== dtype);
+              if(!alreadyOn){
+                if(cat === 'resist') c.resistances.push(dtype);
+                else if(cat === 'immune') c.immunities.push(dtype);
+                else if(cat === 'vulnerable') c.vulnerabilities.push(dtype);
+              }
+              renderDamageDefenseTab();
+            });
+          });
+        }
 
         function renderAbilitiesTab(){
           const c = editingCreature;
