@@ -1929,9 +1929,9 @@
             tokenBtn.title = c.hasToken ? 'On map — tap to remove' : 'Place on map';
             const moreMenuWrap = el.querySelector('.moreMenuWrap');
             el.querySelector('.moreBtn').classList.toggle('on', moreMenuOpenId === c.id);
-            const existingColorInput = moreMenuWrap.querySelector('.tokenColorInput');
-            const editingColorInput = existingColorInput && document.activeElement === existingColorInput;
-            if(!editingColorInput){
+            const activeInMenu = document.activeElement && moreMenuWrap.contains(document.activeElement);
+            const editingInsideMenu = activeInMenu && ['INPUT', 'SELECT'].includes(document.activeElement.tagName);
+            if(!editingInsideMenu){
               if(moreMenuOpenId === c.id){
                 moreMenuWrap.innerHTML = `
                   <div class="moreMenu">
