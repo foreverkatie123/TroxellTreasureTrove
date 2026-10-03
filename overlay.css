@@ -483,6 +483,8 @@
         background:#0d1318; color:var(--text-dim); cursor:pointer;
       }
       .laMiniBtn:hover{ border-color:var(--accent); color:var(--text); }
+      .laBox.lrBox{ margin-left:0; }
+      .lrPips .laPip.filled{ background:#9d7ce0; border-color:#9d7ce0; }
 
       .card.lairCard{ border-color:#5f4a99; background:#151027; }
       .card.lairCard.active{

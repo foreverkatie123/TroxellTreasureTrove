@@ -89,7 +89,8 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
               tempHp: typeof payload.tempHp === 'number' ? payload.tempHp : 0,
               ac: typeof payload.ac === 'number' ? payload.ac : null,
               rosterId: payload.rosterId || null,
-              delayed: false, ready: false, legendaryMax: 0, legendaryLeft: 0, conditions: [], exhaustion: 0,
+              delayed: false, ready: false, legendaryMax: 0, legendaryLeft: 0,
+              legendaryResistMax: 0, legendaryResistLeft: 0, conditions: [], exhaustion: 0,
               absorb: sanitizeDefenseList(payload.absorb),
               resistances: sanitizeDefenseList(payload.resistances),
               immunities: sanitizeDefenseList(payload.immunities),
@@ -112,7 +113,8 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
               tempHp: typeof payload.tempHp === 'number' ? payload.tempHp : 0,
               ac: typeof payload.ac === 'number' ? payload.ac : null,
               rosterId: payload.rosterId || null,
-              delayed: false, ready: false, legendaryMax: 0, legendaryLeft: 0, conditions: [], exhaustion: 0,
+              delayed: false, ready: false, legendaryMax: 0, legendaryLeft: 0,
+              legendaryResistMax: 0, legendaryResistLeft: 0, conditions: [], exhaustion: 0,
               absorb: sanitizeDefenseList(payload.absorb),
               resistances: sanitizeDefenseList(payload.resistances),
               immunities: sanitizeDefenseList(payload.immunities),
@@ -294,6 +296,31 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
             const v = Math.max(0, Math.min(9, parseInt(payload.value) || 0));
             c.legendaryMax = v;
             c.legendaryLeft = v;
+            render();
+            break;
+          }
+          case 'spendLegendaryResist': {
+            const c = findCombatant(payload.id);
+            if(!c) break;
+            c.legendaryResistLeft = Math.max(0, (c.legendaryResistLeft || 0) - 1);
+            logEvent(`🔁 ${c.name} uses a legendary resistance (${c.legendaryResistLeft} left)`);
+            render();
+            break;
+          }
+          case 'resetLegendaryResist': {
+            const c = findCombatant(payload.id);
+            if(!c) break;
+            c.legendaryResistLeft = c.legendaryResistMax || 0;
+            logEvent(`🔁 ${c.name}'s legendary resistances reset`);
+            render();
+            break;
+          }
+          case 'setLegendaryResistMax': {
+            const c = findCombatant(payload.id);
+            if(!c) break;
+            const v = Math.max(0, Math.min(9, parseInt(payload.value) || 0));
+            c.legendaryResistMax = v;
+            c.legendaryResistLeft = v;
             render();
             break;
           }
