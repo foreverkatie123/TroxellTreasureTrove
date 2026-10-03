@@ -431,10 +431,12 @@
       .lairCard .toolBtn.active{ border-color:var(--accent-2); color:var(--accent-2); background:rgba(90,200,192,0.1); }
 
       /* ---- Legendary actions (per-combatant) ---- */
-      .laRow{ display:flex; align-items:center; gap:6px; margin-top:7px; }
+      .laRow{ display:flex; align-items:center; gap:6px; margin-top:7px; max-width:100%; box-sizing:border-box; }
       .laRow label{ font-size:10px; text-transform:uppercase; color:var(--text-dim); flex-shrink:0; }
-      .laMaxInput{ width:40px; padding:4px; font-size:12px; text-align:center; flex-shrink:0; }
-      .laPips{ display:flex; gap:2px; flex-wrap:wrap; }
+      /* .laMaxInput{ width:40px; padding:4px; font-size:12px; text-align:center; flex-shrink:0; } */
+      /* .laPips{ display:flex; gap:2px; flex-wrap:wrap; } */
+      .card .laMaxInput{ width:40px; padding:4px; font-size:12px; text-align:center; flex-shrink:0; flex-grow:0; }
+      .laPips{ display:flex; gap:2px; flex-wrap:wrap; flex:1 1 auto; min-width:0; }
       .laPip{ width:8px; height:8px; border-radius:50%; background:#202a32; border:1px solid var(--border); flex-shrink:0; }
       .laPip.filled{ background:#e0b64a; border-color:#e0b64a; }
       .laMiniBtn{
@@ -629,7 +631,6 @@
         </div>
 
         <div id="lairCardSlot"></div>
-         <div id="combatantList"></div>
 
         <div id="combatantList"></div>
 
@@ -1794,28 +1795,6 @@
                 <div class="condPickerWrap"></div>
                 <div class="ddChips"></div>
                 <div class="ddPickerWrap"></div>
-                <div class="laRow">
-                  <label>Legendary</label>
-                  <input type="number" class="laMaxInput" min="0" max="9" value="0" title="Legendary actions per round (0 = none)">
-                  <div class="laPips"></div>
-                  <button class="laMiniBtn laSpendBtn" title="Spend a legendary action">−</button>
-                  <button class="laMiniBtn laResetBtn" title="Reset to full">↺</button>
-                </div>
-                <div class="condChips"></div>
-                <div class="condPickerWrap"></div>
-                <div class="ddChips"></div>
-                <div class="ddPickerWrap"></div>
-                <div class="laRow">
-                  <label>Legendary</label>
-                  <input type="number" class="laMaxInput" min="0" max="9" value="0" title="Legendary actions per round (0 = none)">
-                  <div class="laPips"></div>
-                  <button class="laMiniBtn laSpendBtn" title="Spend a legendary action">−</button>
-                  <button class="laMiniBtn laResetBtn" title="Reset to full">↺</button>
-                </div>
-                <div class="condChips"></div>
-                <div class="condPickerWrap"></div>
-                <div class="ddChips"></div>
-                <div class="ddPickerWrap"></div>
                 <div class="concLine"></div>
               `;
               // wire listeners ONCE, when the card is created — never re-attached on re-render
@@ -2028,8 +2007,6 @@
             if(document.activeElement !== lairInitCountInput) lairInitCountInput.value = s.lairAction.initCount;
           }
           renderLairCard(s);
-
-          pruneConcAlerts(s);
 
           pruneConcAlerts(s);
           
