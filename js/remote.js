@@ -49,7 +49,8 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
           mode, feetPerSquare,
           effects: effects.map(f => ({ id:f.id, shape:f.shape, dtype:f.dtype, label:f.label })),
           lairAction: { enabled: lairAction.enabled, initCount: lairAction.initCount, triggered: lairAction.triggered },
-          gridOn: typeof gridOn === 'boolean' ? gridOn : true
+          gridOn: typeof gridOn === 'boolean' ? gridOn : true,
+          hudScale: typeof hudScale === 'number' ? hudScale : 1
         };
       }
       function syncRemote(){
