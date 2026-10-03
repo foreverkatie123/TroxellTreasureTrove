@@ -7,7 +7,6 @@ const STORAGE_KEY = 'blackstoneTvSession_v2';
             const rect = initDrawer.getBoundingClientRect();
             const hudEl = document.getElementById('hud');
             const hudRect = hudEl.getBoundingClientRect();
-            const hudMoved = hudEl.style.transform === 'none';
             const data = {
               combatants, activeId, round, nextId,
               autoSort, manualOrder, lairAction, combatStarted,
@@ -19,7 +18,8 @@ const STORAGE_KEY = 'blackstoneTvSession_v2';
               feetPerSquare, effects,
               tokens, tokenNextId,
               initPos: { left: rect.left, top: rect.top },
-              hudPos: hudMoved ? { left: hudRect.left, top: hudRect.top } : null,
+              hudPos: hudCustomPositioned ? { left: hudRect.left, top: hudRect.top } : null,
+              hudScale,
               widgetShell: WidgetShell.getState()
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -141,6 +141,7 @@ const STORAGE_KEY = 'blackstoneTvSession_v2';
         }
         if(typeof renderLayoutPanel === 'function') renderLayoutPanel();
 
+        hudScale = typeof data.hudScale === 'number' ? Math.min(2.5, Math.max(0.6, data.hudScale)) : 1;
         if(data.hudPos && typeof data.hudPos.left === 'number'){
           const hudEl = document.getElementById('hud');
           const maxX = Math.max(4, window.innerWidth - 4);
@@ -149,8 +150,9 @@ const STORAGE_KEY = 'blackstoneTvSession_v2';
           const y = Math.min(Math.max(4, data.hudPos.top), maxY);
           hudEl.style.left = x + 'px';
           hudEl.style.top = y + 'px';
-          hudEl.style.transform = 'none';
+          hudCustomPositioned = true;
         }
+        if(typeof applyHudTransform === 'function') applyHudTransform();
 
         if(combatants.length){
           const note = document.getElementById('restoredNote');

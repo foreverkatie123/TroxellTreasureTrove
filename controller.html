@@ -1014,7 +1014,8 @@
         </div>
         <div class="field">
           <label>HUD size <span id="hudScaleLabel" style="color:var(--text);text-transform:none;letter-spacing:0;">100%</span></label>
-          <input type="range" id="hudScaleSlider" min="0.6" max="2.5" step="0.05" value="1">
+          <span style="font-size:11px;color:var(--text-dim);">Drag the handle on the HUD itself (on the TV display) to resize it — not set from here.</span>
+          <!-- <input type="range" id="hudScaleSlider" min="0.6" max="2.5" step="0.05" value="1"> -->
         </div>
       </div>
 
@@ -1799,7 +1800,7 @@
             slot.innerHTML = `
               <div class="lairCard">
                 <div class="lairCardTop">
-                  <span class="lairTitle">🏛 Lair Action</span>
+                  <span class="lairTitle">Lair Action</span>
                   <span class="lairInitTag"></span>
                 </div>
                 <button class="toolBtn lairTriggerBtn"></button>
@@ -2229,12 +2230,14 @@
           if(document.activeElement !== fpsInput) fpsInput.value = s.feetPerSquare;
 
           // HUD size (don't clobber while user is dragging the slider)
-          const hudSlider = document.getElementById('hudScaleSlider');
-          if(document.activeElement !== hudSlider){
+          //const hudSlider = document.getElementById('hudScaleSlider');
+          const hs = typeof s.hudScale === 'number' ? s.hudScale : 1;
+          document.getElementById('hudScaleLabel').textContent = Math.round(hs * 100) + '%';
+          /* if(document.activeElement !== hudSlider){
             const hs = typeof s.hudScale === 'number' ? s.hudScale : 1;
             hudSlider.value = hs;
             document.getElementById('hudScaleLabel').textContent = Math.round(hs * 100) + '%';
-          }
+          } */
 
           // Combat log (shared with the TV)
           const logListEl = document.getElementById('logList');
@@ -2348,11 +2351,11 @@
           if(!isNaN(v) && v > 0) send('setFeetPerSquare', { value: v });
         });
 
-        document.getElementById('hudScaleSlider').addEventListener('input', function(){
+        /* document.getElementById('hudScaleSlider').addEventListener('input', function(){
           const v = parseFloat(this.value);
           document.getElementById('hudScaleLabel').textContent = Math.round(v * 100) + '%';
           if(!isNaN(v)) send('setHudScale', { value: v });
-        });
+        }); */
 
         // ---- Campaigns (switch/create, recent list, friendly names) ----
         const CAMPAIGN_NAME_KEY = 'blackstoneCampaignNames_v1'; // { [id]: name } — local cache of friendly names
