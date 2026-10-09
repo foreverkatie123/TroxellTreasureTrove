@@ -48,6 +48,7 @@ const STORAGE_KEY = 'blackstoneTvSession_v2';
           tempHp: typeof c.tempHp === 'number' ? c.tempHp : 0,
           ac: typeof c.ac === 'number' ? c.ac : null,
           rosterId: c.rosterId || null,
+          monsterKey: typeof c.monsterKey === 'string' ? c.monsterKey : null,
           delayed: !!c.delayed,
           ready: !!c.ready,
           legendaryReact: typeof c.legendaryReact === 'boolean' ? c.legendaryReact : undefined,

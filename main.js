@@ -179,11 +179,14 @@ function createPanelWindow(panelId) {
     return;
   }
   const primary = screen.getPrimaryDisplay();
+  // Creature detail pop-outs ("combatant-<id>") get a wider, taller window since
+  // they show a full stat block; other panels keep the compact size.
+  const isCreature = String(panelId).startsWith('combatant-');
   const win = new BrowserWindow({
-    width: 380,
-    height: Math.min(720, primary.workArea.height),
-    x: primary.workArea.x + 40,
-    y: primary.workArea.y + 40,
+    width: isCreature ? 480 : 380,
+    height: Math.min(isCreature ? 860 : 720, primary.workArea.height),
+    x: primary.workArea.x + 40 + (isCreature ? 30 * Object.keys(panelWindows).length : 0),
+    y: primary.workArea.y + 40 + (isCreature ? 30 * Object.keys(panelWindows).length : 0),
     title: 'Troxell Remote — ' + panelId,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
