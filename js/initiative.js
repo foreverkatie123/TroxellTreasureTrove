@@ -33,8 +33,16 @@
         { id:'psychic', label:'Psychic', icon:'🧠' },
         { id:'radiant', label:'Radiant', icon:'✨' },
         { id:'slashing', label:'Slashing', icon:'🗡️' },
-        { id:'thunder', label:'Thunder', icon:'🌩️' }
+        { id:'thunder', label:'Thunder', icon:'🌩️' },
+        { id:'one', label:'+1 Weapon', icon:'1️⃣' },
+        { id:'two', label:'+2 Weapon', icon:'2️⃣' }
       ];
+      // A creature shows Legendary Actions / Resistance rows only if flagged legendary.
+      // Creatures with no explicit flag (older sessions) fall back to "has any max set".
+      function isLegendary(c){
+        if(typeof c.legendary === 'boolean') return c.legendary;
+        return (c.legendaryMax || 0) > 0 || (c.legendaryResistMax || 0) > 0;
+      }
       function damageTypeInfo(id){ return DAMAGE_TYPES.find(d => d.id === id); }
       // Applies a combatant's resistances/immunities/vulnerabilities to a raw damage
       // amount of a given type. Untyped damage (no dtype) is never modified.
@@ -222,6 +230,7 @@
             <button class="toolBtn delayBtn${c.delayed ? ' active' : ''}" data-action="delay" data-id="${c.id}">⏸ Delay</button>
             <button class="toolBtn readyBtn${c.ready ? ' active' : ''}" data-action="ready" data-id="${c.id}">⚡ Ready</button>
             <button class="toolBtn${pickerOpen ? ' active' : ''}" data-action="toggleCondPicker" data-id="${c.id}">🩹 Condition</button>
+            ${isLegendary(c) ? `
             <div class="laBox">
               <label>LA</label>
               <input type="number" class="laMaxInput" min="0" max="9" value="${legendaryMax}" data-id="${c.id}" title="Legendary actions per round (0 = none)">
@@ -232,6 +241,7 @@
               <input type="number" class="lrMaxInput" min="0" max="9" value="${legendaryResistMax}" data-id="${c.id}" title="Legendary resistances per day (0 = none) — doesn't reset each round, only when you reset it">
               ${resistPips}
             </div>
+            ` : ''}
           </div>
           ${pickerHtml}
         `;

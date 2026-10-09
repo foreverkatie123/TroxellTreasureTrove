@@ -50,6 +50,7 @@ const STORAGE_KEY = 'blackstoneTvSession_v2';
           rosterId: c.rosterId || null,
           delayed: !!c.delayed,
           ready: !!c.ready,
+          legendary: typeof c.legendary === 'boolean' ? c.legendary : undefined,
           legendaryMax: typeof c.legendaryMax === 'number' ? c.legendaryMax : 0,
           legendaryLeft: typeof c.legendaryLeft === 'number' ? c.legendaryLeft : (typeof c.legendaryMax === 'number' ? c.legendaryMax : 0),
           legendaryResistMax: typeof c.legendaryResistMax === 'number' ? c.legendaryResistMax : 0,

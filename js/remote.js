@@ -316,6 +316,15 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
             render();
             break;
           }
+          case 'setLegendary': {
+            // Shows/hides the Legendary Actions + Resistance rows for this creature.
+            // Values are kept when hidden, so toggling back on restores them.
+            const c = findCombatant(payload.id);
+            if(!c) break;
+            c.legendary = !!payload.value;
+            render();
+            break;
+          }
           case 'setLegendaryResistMax': {
             const c = findCombatant(payload.id);
             if(!c) break;
