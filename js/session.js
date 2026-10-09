@@ -4,6 +4,7 @@ const STORAGE_KEY = 'blackstoneTvSession_v2';
         clearTimeout(saveTimer);
         saveTimer = setTimeout(() => {
           try{
+            if(typeof syncAllGroups === 'function') syncAllGroups();
             const rect = initDrawer.getBoundingClientRect();
             const hudEl = document.getElementById('hud');
             const hudRect = hudEl.getBoundingClientRect();
@@ -48,8 +49,24 @@ const STORAGE_KEY = 'blackstoneTvSession_v2';
           tempHp: typeof c.tempHp === 'number' ? c.tempHp : 0,
           ac: typeof c.ac === 'number' ? c.ac : null,
           rosterId: c.rosterId || null,
+          monsterKey: typeof c.monsterKey === 'string' ? c.monsterKey : null,
+          group: (c.group && Array.isArray(c.group.members) && c.group.members.length) ? {
+            sel: Math.min(Math.max(0, parseInt(c.group.sel) || 0), c.group.members.length - 1),
+            members: c.group.members.map(m => ({
+              name: String(m.name || ''),
+              hp: typeof m.hp === 'number' ? m.hp : null,
+              maxHp: typeof m.maxHp === 'number' ? m.maxHp : null,
+              tempHp: typeof m.tempHp === 'number' ? m.tempHp : 0,
+              conditions: Array.isArray(m.conditions) ? m.conditions.filter(id => conditionInfo(id)) : [],
+              exhaustion: typeof m.exhaustion === 'number' ? m.exhaustion : 0
+            }))
+          } : undefined,
           delayed: !!c.delayed,
           ready: !!c.ready,
+          legendaryReact: typeof c.legendaryReact === 'boolean' ? c.legendaryReact : undefined,
+          legendaryReactMax: typeof c.legendaryReactMax === 'number' ? c.legendaryReactMax : 0,
+          legendaryReactLeft: typeof c.legendaryReactLeft === 'number' ? c.legendaryReactLeft : (typeof c.legendaryReactMax === 'number' ? c.legendaryReactMax : 0),
+          legendary: typeof c.legendary === 'boolean' ? c.legendary : undefined,
           legendaryMax: typeof c.legendaryMax === 'number' ? c.legendaryMax : 0,
           legendaryLeft: typeof c.legendaryLeft === 'number' ? c.legendaryLeft : (typeof c.legendaryMax === 'number' ? c.legendaryMax : 0),
           legendaryResistMax: typeof c.legendaryResistMax === 'number' ? c.legendaryResistMax : 0,
