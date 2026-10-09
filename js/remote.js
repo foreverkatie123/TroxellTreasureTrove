@@ -90,8 +90,9 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
               tempHp: typeof payload.tempHp === 'number' ? payload.tempHp : 0,
               ac: typeof payload.ac === 'number' ? payload.ac : null,
               rosterId: payload.rosterId || null,
+              monsterKey: typeof payload.monsterKey === 'string' ? payload.monsterKey : null,
               delayed: false, ready: false, legendaryMax: 0, legendaryLeft: 0,
-              legendaryResistMax: 0, legendaryResistLeft: 0, conditions: [], exhaustion: 0,
+              legendaryResistMax: 0, legendaryResistLeft: 0, legendaryReactMax: 0, legendaryReactLeft: 0, conditions: [], exhaustion: 0,
               absorb: sanitizeDefenseList(payload.absorb),
               resistances: sanitizeDefenseList(payload.resistances),
               immunities: sanitizeDefenseList(payload.immunities),
@@ -114,8 +115,9 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
               tempHp: typeof payload.tempHp === 'number' ? payload.tempHp : 0,
               ac: typeof payload.ac === 'number' ? payload.ac : null,
               rosterId: payload.rosterId || null,
+              monsterKey: typeof payload.monsterKey === 'string' ? payload.monsterKey : null,
               delayed: false, ready: false, legendaryMax: 0, legendaryLeft: 0,
-              legendaryResistMax: 0, legendaryResistLeft: 0, conditions: [], exhaustion: 0,
+              legendaryResistMax: 0, legendaryResistLeft: 0, legendaryReactMax: 0, legendaryReactLeft: 0, conditions: [], exhaustion: 0,
               absorb: sanitizeDefenseList(payload.absorb),
               resistances: sanitizeDefenseList(payload.resistances),
               immunities: sanitizeDefenseList(payload.immunities),
@@ -313,6 +315,48 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
             if(!c) break;
             c.legendaryResistLeft = c.legendaryResistMax || 0;
             logEvent(`🔁 ${c.name}'s legendary resistances reset`);
+            render();
+            break;
+          }
+          case 'spendLegendaryReact': {
+            const c = findCombatant(payload.id);
+            if(!c) break;
+            c.legendaryReactLeft = Math.max(0, (c.legendaryReactLeft || 0) - 1);
+            logEvent(`↩️ ${c.name} uses a legendary reaction (${c.legendaryReactLeft} left)`);
+            render();
+            break;
+          }
+          case 'resetLegendaryReact': {
+            const c = findCombatant(payload.id);
+            if(!c) break;
+            c.legendaryReactLeft = c.legendaryReactMax || 0;
+            logEvent(`↩️ ${c.name}'s legendary reactions reset`);
+            render();
+            break;
+          }
+          case 'setLegendaryReactMax': {
+            const c = findCombatant(payload.id);
+            if(!c) break;
+            const v = Math.max(0, Math.min(9, parseInt(payload.value) || 0));
+            c.legendaryReactMax = v;
+            c.legendaryReactLeft = v;
+            render();
+            break;
+          }
+          case 'setLegendaryReact': {
+            // Shows/hides the Legendary Reaction row (separate from the LA/LR toggle).
+            const c = findCombatant(payload.id);
+            if(!c) break;
+            c.legendaryReact = !!payload.value;
+            render();
+            break;
+          }
+          case 'setLegendary': {
+            // Shows/hides the Legendary Actions + Resistance rows for this creature.
+            // Values are kept when hidden, so toggling back on restores them.
+            const c = findCombatant(payload.id);
+            if(!c) break;
+            c.legendary = !!payload.value;
             render();
             break;
           }

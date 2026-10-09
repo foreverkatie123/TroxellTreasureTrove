@@ -273,6 +273,29 @@
       .monsterStatBlock .mEntry b{ color:var(--text); }
       .monsterStatBlock .btn{ margin-top:12px; }
 
+      .mAbilityRow{ display:grid; grid-template-columns:repeat(6,1fr); gap:4px; text-align:center; margin:8px 0; font-size:12px; }
+      .mAbilityRow b{ color:var(--accent-2); font-size:10px; }
+      .mAbilityRow .mMod{ color:var(--text-dim); }
+
+      /* ---- Creature pop-out window ---- */
+      #creatureDetail{ display:none; }
+      body.creatureDetailMode #creatureDetail{ display:block; }
+      #creatureDetail .cdHead h2{ margin:0 0 2px; font-family:'Cinzel',serif; color:var(--accent-bright); font-size:20px; }
+      #creatureDetail .cdLine{ font-size:13px; margin:4px 0; }
+      #creatureDetail .cdLine b{ color:var(--accent-2); }
+      #creatureDetail .cdQuick{ display:flex; gap:6px; align-items:center; margin:8px 0; }
+      #creatureDetail .cdQuick input{ width:64px; }
+      #creatureDetail .cdQuick .btn{ width:auto; padding:6px 12px; }
+      #creatureDetail .cdLegendBox{ margin:6px 0; }
+      #creatureDetail .cdToggles{ display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+      #creatureDetail .cdToggles .btn{ width:auto; padding:4px 10px; font-size:11px; }
+      #creatureDetail .cdSheet{ margin-top:12px; padding-top:10px; border-top:1px solid var(--border); font-size:13px; line-height:1.45; }
+      #creatureDetail .cdSheet .mSection{ margin-top:10px; padding-top:8px; border-top:1px solid var(--border); }
+      #creatureDetail .cdSheet .mSection > b{ display:block; color:var(--accent-2); text-transform:uppercase; letter-spacing:.05em; font-size:11px; margin-bottom:4px; }
+      #creatureDetail .cdSheet .mEntry{ margin-bottom:6px; }
+      #creatureDetail .cdSheet .mEntry b{ color:var(--text); }
+      #creatureDetail .cdEmpty{ color:var(--text-dim); font-style:italic; }
+
       /* ---------- Encounter Builder ---------- */
       #encounterTemplateList{ display:flex; flex-direction:column; gap:6px; margin-bottom:4px; }
       .encTemplateBtn{
@@ -470,7 +493,11 @@
       /* ---- Legendary actions (per-combatant) ---- */
       .laRow{ display:flex; align-items:center; gap:6px; margin-top:7px; max-width:100%; box-sizing:border-box; }
       .laRow label{ font-size:10px; text-transform:uppercase; color:var(--text-dim); flex-shrink:0; }
-      .card .laMaxInput, .card .lrMaxInput{ width:40px; padding:4px; font-size:12px; text-align:center; flex-shrink:0; flex-grow:0; }
+      .card .laMaxInput, .card .lrMaxInput, .card .lreMaxInput,
+      #creatureDetail .laMaxInput, #creatureDetail .lrMaxInput, #creatureDetail .lreMaxInput{ width:40px; padding:4px; font-size:12px; text-align:center; flex-shrink:0; flex-grow:0; }
+      #creatureDetail .laRow{ gap:10px; }
+      #creatureDetail .laRow label{ width:78px; }
+      #creatureDetail .laPips{ gap:3px; padding-left:2px; }
       .laPips{ display:flex; gap:2px; flex-wrap:wrap; flex:1 1 auto; min-width:0; }
       .laPip{ width:8px; height:8px; border-radius:50%; background:#202a32; border:1px solid var(--border); flex-shrink:0; }
       .laPip.filled{ background:#e0b64a; border-color:#e0b64a; }
@@ -480,6 +507,7 @@
       }
       .laMiniBtn:hover{ border-color:var(--accent); }
       .lrPips .laPip.filled{ background:#9d7ce0; border-color:#9d7ce0; }
+      .lrePips .laPip.filled{ background:#5ec2a8; border-color:#5ec2a8; }
 
       /* ---- Damage absorb / resistances / immunities / vulnerabilities ---- */
       .ddChips{ display:flex; flex-wrap:wrap; gap:4px; margin-top:7px; }
@@ -660,7 +688,7 @@
         <h3>Initiative &amp; Combat</h3>
 
         <div class="toggle">
-          <label style="margin:0;font-size:13px;">🏛 Lair Actions</label>
+          <label style="margin:0;font-size:13px;">Lair Actions</label>
           <div class="switch" id="lairToggle"></div>
         </div>
         <div class="field" id="lairConfigRow" style="display:none;">
@@ -1278,6 +1306,8 @@
         }
 
         let lastSnapshot = null;
+        let soloCombatantId = null; // set when this window is a creature detail pop-out
+        let cdBuiltFor = null, cdSheetKey = null; // creature pop-out render state
         let liveTimer = null;
 
         // ---- Panel minimize: collapse panels you don't use down to just their
@@ -1369,6 +1399,15 @@
             backBar.innerHTML = '<button class="btn" id="soloBackBtn">↩ Back to main window</button>';
             document.body.insertBefore(backBar, document.getElementById('appBody'));
             document.getElementById('soloBackBtn').addEventListener('click', () => window.close());
+            if(soloPanelId.startsWith('combatant-')){
+              // Creature detail pop-out: everything else is already hidden above.
+              soloCombatantId = parseInt(soloPanelId.slice('combatant-'.length), 10);
+              const detail = document.createElement('div');
+              detail.id = 'creatureDetail';
+              document.body.insertBefore(detail, document.getElementById('appBody'));
+              document.body.classList.add('creatureDetailMode');
+              backBar.querySelector('button').textContent = '✕ Close';
+            }
             return;
           }
 
@@ -1641,6 +1680,7 @@
             markLive();
             lastSnapshot = d.payload;
             renderSnapshot(lastSnapshot);
+            if(soloCombatantId !== null) renderCombatantDetail(lastSnapshot);
           }
         });
 
@@ -1648,7 +1688,8 @@
           window.blackstoneDesktop.onState(payload => {
             markLive();
             lastSnapshot = payload;
-            renderSnapshot(lastSnapshot);
+            try{ renderSnapshot(lastSnapshot); }catch(err){ console.error(err); }
+            if(soloCombatantId !== null) renderCombatantDetail(lastSnapshot);
           });
         }
 
@@ -1857,19 +1898,26 @@
                   <button class="btn miniBtn dmgBtn">−HP</button>
                   <button class="btn miniBtn healBtn">+HP</button>
                 </div>
-                <div class="laRow">
+                <div class="laRow laActionsRow">
                   <label>Legendary</label>
-                  <input type="number" class="laMaxInput" min="0" max="9" value="0" title="Legendary actions per round (0 = none)">
+                  <input type="number" class="laMaxInput" min="0" max="9" value="0" title="Legendary actions (0 = none) — refill at the start of this creature's turn">
                   <div class="laPips"></div>
                   <button class="laMiniBtn laSpendBtn" title="Spend a legendary action">−</button>
                   <button class="laMiniBtn laResetBtn" title="Reset to full">↺</button>
                 </div>
-                <div class="laRow">
+                <div class="laRow laResistRow">
                   <label>Leg. Resist</label>
                   <input type="number" class="lrMaxInput" min="0" max="9" value="0" title="Legendary resistances per day (0 = none) — doesn't reset each round, only when you reset it">
                   <div class="laPips lrPips"></div>
                   <button class="laMiniBtn lrSpendBtn" title="Use a legendary resistance">−</button>
                   <button class="laMiniBtn lrResetBtn" title="Reset to full (new day/rest)">↺</button>
+                </div>
+                <div class="laRow laReactRow">
+                  <label>Leg. React</label>
+                  <input type="number" class="lreMaxInput" min="0" max="9" value="0" title="Legendary reactions (0 = none) — refill at the start of this creature's turn">
+                  <div class="laPips lrePips"></div>
+                  <button class="laMiniBtn lreSpendBtn" title="Use a legendary reaction">−</button>
+                  <button class="laMiniBtn lreResetBtn" title="Reset to full">↺</button>
                 </div>
                 <div class="condChips"></div>
                 <div class="condPickerWrap"></div>
@@ -1895,7 +1943,6 @@
                 if(amt > 0){
                   send('applyDamage', { id: c.id, amount: amt, dtype });
                   queueConcentrationPrompt(c.id, amt);
-                  
                 }
               });
               el.querySelector('.healBtn').addEventListener('click', () => {
@@ -1912,6 +1959,11 @@
               });
               el.querySelector('.lrSpendBtn').addEventListener('click', () => send('spendLegendaryResist', { id: c.id }));
               el.querySelector('.lrResetBtn').addEventListener('click', () => send('resetLegendaryResist', { id: c.id }));
+              el.querySelector('.lreMaxInput').addEventListener('change', function(){
+                send('setLegendaryReactMax', { id: c.id, value: parseInt(this.value) });
+              });
+              el.querySelector('.lreSpendBtn').addEventListener('click', () => send('spendLegendaryReact', { id: c.id }));
+              el.querySelector('.lreResetBtn').addEventListener('click', () => send('resetLegendaryReact', { id: c.id }));
               list.appendChild(el);
             }
 
@@ -1928,6 +1980,10 @@
             const tokenBtn = el.querySelector('.tokenBtn');
             tokenBtn.classList.toggle('on', !!c.hasToken);
             tokenBtn.title = c.hasToken ? 'On map — tap to remove' : 'Place on map';
+            const isLeg = typeof c.legendary === 'boolean'
+              ? c.legendary
+              : ((c.legendaryMax || 0) > 0 || (c.legendaryResistMax || 0) > 0);
+            const isLegReact = typeof c.legendaryReact === 'boolean' ? c.legendaryReact : ((c.legendaryReactMax || 0) > 0);
             const moreMenuWrap = el.querySelector('.moreMenuWrap');
             el.querySelector('.moreBtn').classList.toggle('on', moreMenuOpenId === c.id);
             const activeInMenu = document.activeElement && moreMenuWrap.contains(document.activeElement);
@@ -1944,6 +2000,9 @@
                     <button class="moreMenuItem" data-action="dd"><span class="icon">🛡️</span>Absorb / Resistances / Immunities / Vulnerabilities</button>
                     <button class="moreMenuItem" data-action="spell"><span class="icon">🔮</span>Spellcasting</button>
                     <button class="moreMenuItem" data-action="stats"><span class="icon">⚙</span>Edit Name / Init / HP / AC</button>
+                    ${window.blackstoneDesktop && window.blackstoneDesktop.openPanelWindow ? '<button class="moreMenuItem" data-action="popout"><span class="icon">🗔</span>Pop out details (stat block, actions, spells)</button>' : ''}
+                    <button class="moreMenuItem" data-action="legendary"><span class="icon">👑</span>Legendary action / resist: ${isLeg ? 'ON' : 'OFF'}</button>
+                    <button class="moreMenuItem" data-action="legendaryReact"><span class="icon">↩️</span>Legendary reaction: ${isLegReact ? 'ON' : 'OFF'}</button>
                     <div class="moreMenuDivider"></div>
                     <div class="moreMenuRow">
                       <span>Token color</span>
@@ -1972,6 +2031,9 @@
                     else if(action === 'dd') ddPickerOpenId = c.id;
                     else if(action === 'spell') openSpellModal(c.id);
                     else if(action === 'stats') openStatsModal(c.id);
+                    else if(action === 'popout') window.blackstoneDesktop.openPanelWindow('combatant-' + c.id);
+                    else if(action === 'legendary') send('setLegendary', { id: c.id, value: !isLeg });
+                    else if(action === 'legendaryReact') send('setLegendaryReact', { id: c.id, value: !isLegReact });
                     if(lastSnapshot) renderCombatantList(lastSnapshot);
                   });
                 });
@@ -2047,6 +2109,11 @@
               pickerWrap.innerHTML = '';
             }
 
+            // Legendary rows only show for creatures flagged legendary (toggle in the ⋯ menu)
+            el.querySelector('.laActionsRow').style.display = isLeg ? '' : 'none';
+            el.querySelector('.laResistRow').style.display = isLeg ? '' : 'none';
+            el.querySelector('.laReactRow').style.display = isLegReact ? '' : 'none';
+
             // Legendary actions
             const legendaryMax = c.legendaryMax || 0;
             const legendaryLeft = c.legendaryLeft || 0;
@@ -2066,6 +2133,16 @@
               ? Array.from({length: legendaryResistMax}, (_, i) => `<span class="laPip${i < legendaryResistLeft ? ' filled' : ''}"></span>`).join('')
               : '';
             el.querySelector('.lrPips').title = legendaryResistMax > 0 ? `${legendaryResistLeft} of ${legendaryResistMax} legendary resistances left` : '';
+
+            // Legendary reactions (refill at the start of the creature's own turn)
+            const legendaryReactMax = c.legendaryReactMax || 0;
+            const legendaryReactLeft = c.legendaryReactLeft || 0;
+            const lreMaxInput = el.querySelector('.lreMaxInput');
+            if(document.activeElement !== lreMaxInput) lreMaxInput.value = legendaryReactMax;
+            el.querySelector('.lrePips').innerHTML = legendaryReactMax > 0
+              ? Array.from({length: legendaryReactMax}, (_, i) => `<span class="laPip${i < legendaryReactLeft ? ' filled' : ''}"></span>`).join('')
+              : '';
+            el.querySelector('.lrePips').title = legendaryReactMax > 0 ? `${legendaryReactLeft} of ${legendaryReactMax} legendary reactions left` : '';
 
             // Absorb / resistances / immunities / vulnerabilities
             const absorb = c.absorb || [];
@@ -2157,7 +2234,7 @@
         function renderSnapshot(s){
           document.getElementById('roundNum').textContent = s.round;
           const active = s.combatants.find(c => c.id === s.activeId);
-          document.getElementById('activeName').textContent = s.activeId === 'LAIR' ? '🏛 Lair Action' : (active ? active.name : '—');
+          document.getElementById('activeName').textContent = s.activeId === 'LAIR' ? 'Lair Action' : (active ? active.name : '—');
           const onDeck = s.combatants.find(c => c.id === s.onDeckId);
           document.getElementById('onDeckNameInner').textContent = onDeck ? onDeck.name : '—';
 
@@ -2697,6 +2774,7 @@
           rosterUnsub = rosterRef().onSnapshot(snap => {
             roster = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
             renderRosterList();
+            if(soloCombatantId !== null && lastSnapshot) renderCombatantDetail(lastSnapshot);
           }, err => {
             document.getElementById('rosterList').innerHTML =
               '<div class="rcEmpty">Could not load roster: ' + escapeHtml(err.message) + '</div>';
@@ -3464,7 +3542,11 @@
           renderMonsterResults(this.value);
         });
 
-        function renderMonsterStatBlockHtml(m){
+        function renderMonsterStatBlockHtml(m, withAddBtn){
+          if(withAddBtn === undefined) withAddBtn = true;
+          const AB = m.ability_scores || {};
+          const abMod = v => (typeof v === 'number' ? (Math.floor((v - 10) / 2) >= 0 ? '+' : '') + Math.floor((v - 10) / 2) : '');
+          const abilityRow = m.ability_scores ? `<div class="mAbilityRow">${[['STR','strength'],['DEX','dexterity'],['CON','constitution'],['INT','intelligence'],['WIS','wisdom'],['CHA','charisma']].map(([l,k]) => `<div><b>${l}</b><br>${AB[k] !== undefined ? AB[k] : '—'} <span class="mMod">(${abMod(AB[k])})</span></div>`).join('')}</div>` : '';
           const ac = extractAC(m);
           const hp = typeof m.hit_points === 'number' ? m.hit_points : '—';
           const hitDice = m.hit_dice || '';
@@ -3489,12 +3571,13 @@
               <div class="mMeta">${escapeHtml(sizeName)} ${escapeHtml(typeName)}, ${escapeHtml(m.alignment || '')}</div>
               <div class="mStatsRow"><b>AC</b> ${ac !== null ? ac : '—'} &nbsp;&nbsp; <b>HP</b> ${hp}${hitDice ? ' (' + escapeHtml(hitDice) + ')' : ''} &nbsp;&nbsp; <b>Speed</b> ${escapeHtml(speed)}</div>
               <div class="mStatsRow"><b>CR</b> ${cr} &nbsp;&nbsp; <b>XP</b> ${xp}</div>
+              ${abilityRow}
               ${section('Traits', traits)}
               ${section('Actions', actions)}
               ${section('Bonus Actions', bonusActions)}
               ${section('Reactions', reactions)}
               ${section('Legendary Actions', legendary)}
-              <button class="btn primary" id="monsterAddBtn">+ Add to Initiative (roll init)</button>
+              ${withAddBtn ? '<button class="btn primary" id="monsterAddBtn">+ Add to Initiative (roll init)</button>' : ''}
             </div>
           `;
         }
@@ -3509,6 +3592,162 @@
           }).catch(() => {
             detailEl.innerHTML = '<div id="monsterSearchEmpty">Could not load that monster — check your connection and try again.</div>';
           });
+        }
+
+        // ---- Creature detail pop-out (opened from a card's ⋯ menu → "Pop out details") ----
+        // This window is a normal controller.html instance (see panel pop-out code above)
+        // that shows ONE combatant: live HP/AC/conditions/legendary counters, quick
+        // damage/heal, and the full stat block (actions, spells, traits…). The creature
+        // itself stays in the initiative tracker; this is just a bigger reading view.
+        function renderRosterSheetHtml(r){
+          const A = r.abilities || {};
+          const mod = v => { const m = Math.floor(((parseInt(v,10) || 10) - 10) / 2); return (m >= 0 ? '+' : '') + m; };
+          const section = (title, items, withLevel) => (items && items.length) ? `
+            <div class="mSection"><b>${title}</b>${items.filter(i => i && (i.name || i.desc)).map(i => `<div class="mEntry"><b>${escapeHtml(i.name || '')}${withLevel && i.level !== undefined && i.level !== '' ? ' (' + escapeHtml(String(i.level)) + ')' : ''}${i.qty ? ' ×' + escapeHtml(String(i.qty)) : ''}.</b> ${escapeHtml(i.desc || '')}</div>`).join('')}</div>` : '';
+          return `
+            <div class="monsterStatBlock">
+              <div class="mMeta">${escapeHtml([r.classRace, r.type, r.alignment].filter(Boolean).join(' · '))}</div>
+              <div class="mStatsRow"><b>AC</b> ${r.ac ?? '—'} &nbsp;&nbsp; <b>HP</b> ${r.hpMax ?? '—'} &nbsp;&nbsp; <b>Speed</b> ${escapeHtml(r.speed || '—')}</div>
+              <div class="mAbilityRow">${['str','dex','con','int','wis','cha'].map(k => `<div><b>${k.toUpperCase()}</b><br>${A[k] ?? 10} <span class="mMod">(${mod(A[k])})</span></div>`).join('')}</div>
+              ${r.senses ? `<div class="mStatsRow"><b>Senses</b> ${escapeHtml(r.senses)}</div>` : ''}
+              ${r.languages ? `<div class="mStatsRow"><b>Languages</b> ${escapeHtml(r.languages)}</div>` : ''}
+              ${section('Actions', r.actions)}
+              ${r.spellNote ? `<div class="mSection"><b>Spellcasting</b><div class="mEntry">${escapeHtml(r.spellNote)}</div></div>` : ''}
+              ${section('Spells', r.spells, true)}
+              ${section('Features / Traits', r.features)}
+              ${section('Inventory', r.inventory)}
+              ${r.notes ? `<div class="mSection"><b>Notes</b><div class="mEntry">${escapeHtml(r.notes)}</div></div>` : ''}
+            </div>`;
+        }
+
+        function renderCombatantDetail(s){
+          const host = document.getElementById('creatureDetail');
+          if(!host || soloCombatantId === null) return;
+          const c = s && Array.isArray(s.combatants) ? s.combatants.find(x => x.id === soloCombatantId) : null;
+          if(!c){
+            host.innerHTML = '<div class="cdEmpty">This creature is no longer in the initiative.</div>';
+            cdBuiltFor = null; cdSheetKey = null;
+            return;
+          }
+          document.title = c.name;
+          if(cdBuiltFor !== c.id){
+            host.innerHTML = `
+              <div class="cdHead"><h2 class="cdName"></h2></div>
+              <div class="cdLine cdStats"></div>
+              <div class="cdLine cdConds"></div>
+              <div class="cdLegendBox">
+                <div class="laRow cdLaRow"><label>Legendary</label>
+                  <input type="number" class="laMaxInput cdLaMax" min="0" max="9" value="0" title="Legendary actions (0 = none) — refill at the start of this creature's turn">
+                  <div class="laPips cdLaPips"></div>
+                  <button class="laMiniBtn cdLaSpend" title="Spend a legendary action">−</button>
+                  <button class="laMiniBtn cdLaReset" title="Reset to full">↺</button></div>
+                <div class="laRow cdLrRow"><label>Leg. Resist</label>
+                  <input type="number" class="lrMaxInput cdLrMax" min="0" max="9" value="0" title="Legendary resistances per day (0 = none)">
+                  <div class="laPips lrPips cdLrPips"></div>
+                  <button class="laMiniBtn cdLrSpend" title="Use a legendary resistance">−</button>
+                  <button class="laMiniBtn cdLrReset" title="Reset to full (new day/rest)">↺</button></div>
+                <div class="laRow cdLrxRow"><label>Leg. React</label>
+                  <input type="number" class="lreMaxInput cdLrxMax" min="0" max="9" value="0" title="Legendary reactions (0 = none) — refill at the start of this creature's turn">
+                  <div class="laPips lrePips cdLrxPips"></div>
+                  <button class="laMiniBtn cdLrxSpend" title="Use a legendary reaction">−</button>
+                  <button class="laMiniBtn cdLrxReset" title="Reset to full">↺</button></div>
+                <div class="cdToggles">
+                  <button class="btn miniBtn cdLegToggle"></button>
+                  <button class="btn miniBtn cdReactToggle"></button>
+                </div>
+              </div>
+              <div class="cdQuick">
+                <input type="number" class="cdAmt" min="0" value="1" placeholder="amt">
+                <button class="btn miniBtn cdDmg">−HP</button>
+                <button class="btn miniBtn cdHeal">+HP</button>
+              </div>
+              <div class="cdSheet"></div>`;
+            host.querySelector('.cdDmg').addEventListener('click', () => {
+              const amt = parseFloat(host.querySelector('.cdAmt').value);
+              if(amt > 0) send('applyDamage', { id: soloCombatantId, amount: amt });
+            });
+            host.querySelector('.cdHeal').addEventListener('click', () => {
+              const amt = parseFloat(host.querySelector('.cdAmt').value);
+              if(amt > 0) send('applyHeal', { id: soloCombatantId, amount: amt });
+            });
+            const idNow = () => soloCombatantId;
+            host.querySelector('.cdLaMax').addEventListener('change', function(){ send('setLegendaryMax', { id: idNow(), value: parseInt(this.value) }); });
+            host.querySelector('.cdLaSpend').addEventListener('click', () => send('spendLegendary', { id: idNow() }));
+            host.querySelector('.cdLaReset').addEventListener('click', () => send('resetLegendary', { id: idNow() }));
+            host.querySelector('.cdLrMax').addEventListener('change', function(){ send('setLegendaryResistMax', { id: idNow(), value: parseInt(this.value) }); });
+            host.querySelector('.cdLrSpend').addEventListener('click', () => send('spendLegendaryResist', { id: idNow() }));
+            host.querySelector('.cdLrReset').addEventListener('click', () => send('resetLegendaryResist', { id: idNow() }));
+            host.querySelector('.cdLrxMax').addEventListener('change', function(){ send('setLegendaryReactMax', { id: idNow(), value: parseInt(this.value) }); });
+            host.querySelector('.cdLrxSpend').addEventListener('click', () => send('spendLegendaryReact', { id: idNow() }));
+            host.querySelector('.cdLrxReset').addEventListener('click', () => send('resetLegendaryReact', { id: idNow() }));
+            host.querySelector('.cdLegToggle').addEventListener('click', function(){ send('setLegendary', { id: idNow(), value: this.dataset.next === '1' }); });
+            host.querySelector('.cdReactToggle').addEventListener('click', function(){ send('setLegendaryReact', { id: idNow(), value: this.dataset.next === '1' }); });
+            cdBuiltFor = c.id;
+            cdSheetKey = null;
+          }
+          // live bits — updated in place so the amount box and scroll position survive
+          host.querySelector('.cdName').textContent = c.name;
+          const hpTxt = (c.hp !== null && c.hp !== undefined) ? `${c.hp}${c.maxHp !== null && c.maxHp !== undefined ? ' / ' + c.maxHp : ''}` : '—';
+          host.querySelector('.cdStats').innerHTML =
+            `<b>Init</b> ${escapeHtml(String(c.init))} &nbsp; <b>AC</b> ${c.ac ?? '—'} &nbsp; <b>HP</b> ${hpTxt}${c.tempHp ? ` (+${c.tempHp} temp)` : ''}` +
+            (s.activeId === c.id ? ' &nbsp; <b style="color:var(--accent-bright)">▶ Active turn</b>' : '');
+          const conds = (c.conditions || []).map(id => { const i = controllerConditionInfo(id); return i ? `${i.icon || ''} ${i.label}` : id; });
+          if(c.exhaustion) conds.push('Exhaustion ' + c.exhaustion);
+          host.querySelector('.cdConds').innerHTML = conds.length ? `<b>Conditions</b> ${escapeHtml(conds.join(', '))}` : '';
+          const showLeg = typeof c.legendary === 'boolean' ? c.legendary : ((c.legendaryMax || 0) > 0 || (c.legendaryResistMax || 0) > 0);          
+          const showReact = typeof c.legendaryReact === 'boolean' ? c.legendaryReact : ((c.legendaryReactMax || 0) > 0);          
+          const pipRow = (rowCls, show, max, left, inputCls, pipsCls, what) => {            
+            host.querySelector(rowCls).style.display = show ? '' : 'none';            
+            const inp = host.querySelector(inputCls);            
+            if(document.activeElement !== inp) inp.value = max;            
+            const pips = host.querySelector(pipsCls);            
+            pips.innerHTML = max > 0 ? Array.from({length: max}, (_, i) => `<span class="laPip${i < left ? ' filled' : ''}"></span>`).join('') : '';            
+            pips.title = max > 0 ? `${left} of ${max} ${what} left` : '';          
+          };          
+          pipRow('.cdLaRow', showLeg, c.legendaryMax || 0, c.legendaryLeft || 0, '.cdLaMax', '.cdLaPips', 'legendary actions');          
+          pipRow('.cdLrRow', showLeg, c.legendaryResistMax || 0, c.legendaryResistLeft || 0, '.cdLrMax', '.cdLrPips', 'legendary resistances');          
+          pipRow('.cdLrxRow', showReact, c.legendaryReactMax || 0, c.legendaryReactLeft || 0, '.cdLrxMax', '.cdLrxPips', 'legendary reactions');          
+          const legT = host.querySelector('.cdLegToggle'), reT = host.querySelector('.cdReactToggle');          
+          legT.textContent = 'Legendary actions & resistance: ' + (showLeg ? 'ON' : 'OFF');          
+          legT.dataset.next = showLeg ? '0' : '1';          
+          reT.textContent = 'Legendary reaction: ' + (showReact ? 'ON' : 'OFF');          
+          reT.dataset.next = showReact ? '0' : '1';
+          // sheet — only rebuilt when its source changes (not every 1s tick)
+          const sheetEl = host.querySelector('.cdSheet');
+          let monsterKey = c.monsterKey || null;
+          // (try/catch: these live further down the script and may not exist yet / at all,
+          // e.g. if Firebase failed to load — fall back to the notes view instead of crashing)
+          if(!monsterKey && !c.rosterId){
+            try{
+              if(monsterIndexLoaded){
+                const base = c.name.replace(/\s+\d+$/, '').toLowerCase();
+                const hit = monsterIndex.find(m => m.name.toLowerCase() === base);
+                if(hit) monsterKey = hit.index;
+              }
+            }catch(err){}
+          }
+          let rosterEntry = null;
+          try{ rosterEntry = c.rosterId ? roster.find(r => r.id === c.rosterId) : null; }catch(err){}
+          const key = monsterKey ? 'm:' + monsterKey : (rosterEntry ? 'r:' + c.rosterId + ':' + JSON.stringify(rosterEntry).length : 'n:' + (c.notes || ''));
+          if(key === cdSheetKey) return;
+          cdSheetKey = key;
+          if(monsterKey){
+            sheetEl.innerHTML = '<div class="cdEmpty">Loading stat block…</div>';
+            fetchMonsterDetail(monsterKey).then(m => {
+              if(cdSheetKey !== key) return;
+              sheetEl.innerHTML = renderMonsterStatBlockHtml(m, false);
+            }).catch(() => {
+              if(cdSheetKey !== key) return;
+              cdSheetKey = null; // retry on a later tick
+              sheetEl.innerHTML = '<div class="cdEmpty">Could not load the stat block — check your connection.</div>';
+            });
+          } else if(rosterEntry){
+            sheetEl.innerHTML = renderRosterSheetHtml(rosterEntry);
+          } else {
+            sheetEl.innerHTML = c.notes
+              ? `<div class="mSection" style="border-top:none"><b>Notes</b><div class="mEntry">${escapeHtml(c.notes)}</div></div>`
+              : '<div class="cdEmpty">No stat block is linked to this creature (it was added by hand, or isn\'t in the roster).</div>';
+          }
         }
 
         function rollMonsterInit(dex){
@@ -3527,6 +3766,7 @@
             hp: typeof monster.hit_points === 'number' ? monster.hit_points : null,
             maxHp: typeof monster.hit_points === 'number' ? monster.hit_points : null,
             ac: extractAC(monster),
+            monsterKey: monster.key || null,
             notes: notesParts.join(' | ').slice(0, 600)
           };
         }

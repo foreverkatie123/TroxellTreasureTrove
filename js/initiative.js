@@ -33,8 +33,20 @@
         { id:'psychic', label:'Psychic', icon:'🧠' },
         { id:'radiant', label:'Radiant', icon:'✨' },
         { id:'slashing', label:'Slashing', icon:'🗡️' },
-        { id:'thunder', label:'Thunder', icon:'🌩️' }
+        { id:'thunder', label:'Thunder', icon:'🌩️' },
+        { id:'one', label:'+1 Weapon', icon:'1️⃣' },
+        { id:'two', label:'+2 Weapon', icon:'2️⃣' }
       ];
+      // A creature shows Legendary Actions / Resistance rows only if flagged legendary.
+      // Creatures with no explicit flag (older sessions) fall back to "has any max set".
+      function isLegendary(c){
+        if(typeof c.legendary === 'boolean') return c.legendary;
+        return (c.legendaryMax || 0) > 0 || (c.legendaryResistMax || 0) > 0;
+      }
+      function isLegendaryReact(c){
+        if(typeof c.legendaryReact === 'boolean') return c.legendaryReact;
+        return (c.legendaryReactMax || 0) > 0;
+      }
       function damageTypeInfo(id){ return DAMAGE_TYPES.find(d => d.id === id); }
       // Applies a combatant's resistances/immunities/vulnerabilities to a raw damage
       // amount of a given type. Untyped damage (no dtype) is never modified.
@@ -113,7 +125,7 @@
       }
 
       function onRoundStart(){
-        combatants.forEach(c => { if(c.legendaryMax > 0) c.legendaryLeft = c.legendaryMax; });
+        // Legendary actions refill at the start of the creature's own turn (see nextTurn), not here.
         lairAction.triggered = false;
       }
 
@@ -174,6 +186,16 @@
              <button class="laMiniBtn" data-action="resetResist" data-id="${c.id}" title="Reset to full (new day/rest)">↺</button>`
           : '';
 
+        const legendaryReactMax = c.legendaryReactMax || 0;
+        const legendaryReactLeft = c.legendaryReactLeft || 0;
+        const reactPips = legendaryReactMax > 0
+          ? `<div class="laPips lrePips" title="${legendaryReactLeft} of ${legendaryReactMax} legendary reactions left">${
+              Array.from({length: legendaryReactMax}, (_, i) => `<span class="laPip${i < legendaryReactLeft ? ' filled' : ''}"></span>`).join('')
+            }</div>
+             <button class="laMiniBtn" data-action="spendReact" data-id="${c.id}" title="Use a legendary reaction">−</button>
+             <button class="laMiniBtn" data-action="resetReact" data-id="${c.id}" title="Reset to full">↺</button>`
+          : '';
+
         const conditions = c.conditions || [];
         const exhaustion = c.exhaustion || 0;
         const chips = [
@@ -222,9 +244,10 @@
             <button class="toolBtn delayBtn${c.delayed ? ' active' : ''}" data-action="delay" data-id="${c.id}">⏸ Delay</button>
             <button class="toolBtn readyBtn${c.ready ? ' active' : ''}" data-action="ready" data-id="${c.id}">⚡ Ready</button>
             <button class="toolBtn${pickerOpen ? ' active' : ''}" data-action="toggleCondPicker" data-id="${c.id}">🩹 Condition</button>
+            ${isLegendary(c) ? `
             <div class="laBox">
               <label>LA</label>
-              <input type="number" class="laMaxInput" min="0" max="9" value="${legendaryMax}" data-id="${c.id}" title="Legendary actions per round (0 = none)">
+              <input type="number" class="laMaxInput" min="0" max="9" value="${legendaryMax}" data-id="${c.id}" title="Legendary actions (0 = none) — refill at the start of this creature's turn">
               ${pips}
             </div>
             <div class="laBox lrBox">
@@ -232,6 +255,14 @@
               <input type="number" class="lrMaxInput" min="0" max="9" value="${legendaryResistMax}" data-id="${c.id}" title="Legendary resistances per day (0 = none) — doesn't reset each round, only when you reset it">
               ${resistPips}
             </div>
+            ` : ''}
+            ${isLegendaryReact(c) ? `
+            <div class="laBox lrBox">
+              <label>LRx</label>
+              <input type="number" class="lreMaxInput" min="0" max="9" value="${legendaryReactMax}" data-id="${c.id}" title="Legendary reactions (0 = none) — refill at the start of this creature's turn">
+              ${reactPips}
+            </div>
+            ` : ''}
           </div>
           ${pickerHtml}
         `;
@@ -353,6 +384,34 @@
             const v = Math.max(0, Math.min(9, parseInt(input.value) || 0));
             c.legendaryResistMax = v;
             c.legendaryResistLeft = v;
+            render();
+          });
+        });
+        listEl.querySelectorAll('[data-action="spendReact"]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const c = combatants.find(x => x.id === parseInt(btn.dataset.id));
+            if(!c) return;
+            c.legendaryReactLeft = Math.max(0, (c.legendaryReactLeft || 0) - 1);
+            logEvent(`↩️ ${c.name} uses a legendary reaction (${c.legendaryReactLeft} left)`);
+            render();
+          });
+        });
+        listEl.querySelectorAll('[data-action="resetReact"]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const c = combatants.find(x => x.id === parseInt(btn.dataset.id));
+            if(!c) return;
+            c.legendaryReactLeft = c.legendaryReactMax || 0;
+            logEvent(`↩️ ${c.name}'s legendary reactions reset`);
+            render();
+          });
+        });
+        listEl.querySelectorAll('.lreMaxInput').forEach(input => {
+          input.addEventListener('change', () => {
+            const c = combatants.find(x => x.id === parseInt(input.dataset.id));
+            if(!c) return;
+            const v = Math.max(0, Math.min(9, parseInt(input.value) || 0));
+            c.legendaryReactMax = v;
+            c.legendaryReactLeft = v;
             render();
           });
         });
@@ -520,7 +579,7 @@
         const c = {
           id: nextId++, name, init, notes:'', hp:null, maxHp:null, tempHp:0, ac:null, rosterId:null,
           delayed:false, ready:false, legendaryMax:0, legendaryLeft:0,
-          legendaryResistMax:0, legendaryResistLeft:0, conditions:[], exhaustion:0,
+          legendaryResistMax:0, legendaryResistLeft:0, legendaryReactMax:0, legendaryReactLeft:0, conditions:[], exhaustion:0,
           absorb:[], resistances:[], immunities:[], vulnerabilities:[],
           tokenColor: null, // null = auto-assigned color; DM can override from the Remote
           tokenSize: 1 // 1=Small/Medium, 2=Large, 3=Huge, 4=Gargantuan (squares across)
@@ -556,6 +615,9 @@
         const nextIdx = (idx + 1) % ids.length;
         if(nextIdx === 0 && idx !== -1){ round++; onRoundStart(); logEvent(`— Round ${round} —`); }
         activeId = ids[nextIdx];
+        const turnC = combatants.find(x => x.id === activeId);
+        if(turnC && turnC.legendaryMax > 0) turnC.legendaryLeft = turnC.legendaryMax; // refresh at start of own turn
+        if(turnC && turnC.legendaryReactMax > 0) turnC.legendaryReactLeft = turnC.legendaryReactMax;
         const nm = nameForId(activeId);
         if(nm) logEvent(`▶ ${nm}'s turn`);
         render();
