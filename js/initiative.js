@@ -43,6 +43,41 @@
         if(typeof c.legendary === 'boolean') return c.legendary;
         return (c.legendaryMax || 0) > 0 || (c.legendaryResistMax || 0) > 0;
       }
+      // ---- Swarm groups ----
+      // A group is ONE combatant (one initiative slot) holding several members, each with
+      // its own HP / temp HP / conditions / exhaustion. The combatant's own hp, maxHp,
+      // tempHp, conditions and exhaustion always mirror the SELECTED member, so every
+      // existing command (damage, heal, conditions, edit…) just works on whichever member
+      // is selected. syncGroupActive() writes those live fields back into the member record
+      // before anything reads the full member list or switches members.
+      function makeGroup(baseName, count, hp){
+        const n = Math.max(2, Math.min(30, parseInt(count) || 2));
+        const members = [];
+        for(let i = 0; i < n; i++){
+          members.push({ name: `${baseName} ${i + 1}`, hp: hp ?? null, maxHp: hp ?? null, tempHp: 0, conditions: [], exhaustion: 0 });
+        }
+        return { sel: 0, members };
+      }
+      function syncGroupActive(c){
+        if(!c || !c.group) return;
+        const m = c.group.members[c.group.sel];
+        if(!m) return;
+        m.hp = c.hp; m.maxHp = c.maxHp; m.tempHp = c.tempHp || 0;
+        m.conditions = (c.conditions || []).slice();
+        m.exhaustion = c.exhaustion || 0;
+      }
+      function syncAllGroups(){ combatants.forEach(syncGroupActive); }
+      function selectGroupMember(c, idx){
+        if(!c || !c.group) return;
+        syncGroupActive(c);
+        const n = c.group.members.length;
+        const i = ((parseInt(idx) || 0) % n + n) % n; // wraps, so ◀ on #1 goes to the last
+        c.group.sel = i;
+        const m = c.group.members[i];
+        c.hp = m.hp; c.maxHp = m.maxHp; c.tempHp = m.tempHp || 0;
+        c.conditions = (m.conditions || []).slice();
+        c.exhaustion = m.exhaustion || 0;
+      }
       function isLegendaryReact(c){
         if(typeof c.legendaryReact === 'boolean') return c.legendaryReact;
         return (c.legendaryReactMax || 0) > 0;
@@ -234,7 +269,7 @@
             <span class="cardDrag" title="Drag to reorder">⠿</span>
             <div class="initNum">${c.init}</div>
             <div style="flex:1;min-width:0;">
-              <div class="name">${escapeHtml(c.name)}${statusHtml}${delayedBadge}${readyBadge}</div>
+              <div class="name">${escapeHtml(c.group ? `${c.group.members[c.group.sel].name} (${c.group.members.filter(m => !(typeof m.hp === 'number' && m.hp <= 0)).length}/${c.group.members.length} up)` : c.name)}${statusHtml}${delayedBadge}${readyBadge}</div>
             </div>
             <button class="removeBtn" data-id="${c.id}">✕</button>
           </div>

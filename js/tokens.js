@@ -32,27 +32,47 @@
         return name.trim().slice(0, 2).toUpperCase();
       }
 
-      function findTokenForCombatant(id){ return tokens.find(t => t.combatantId === id); }
+      // memberIdx is only used for swarm groups (one token per member); for ordinary
+      // combatants it's undefined, and "any token of this combatant" is what callers want.
+      function findTokenForCombatant(id, memberIdx){
+        return tokens.find(t => t.combatantId === id && (memberIdx === undefined || t.memberIdx === memberIdx));
+      }
 
       function viewCenterImagePoint(){
         const rect = stage.getBoundingClientRect();
         return screenToImage(rect.left + stage.clientWidth / 2, rect.top + stage.clientHeight / 2);
       }
 
-      function placeToken(combatantId){
+      function placeToken(combatantId, memberIdx, skipRefresh){
         if(!imgW) return; // no map loaded - nowhere to put it
-        if(findTokenForCombatant(combatantId)) return; // already on the map
+        if(findTokenForCombatant(combatantId, memberIdx)) return; // already on the map
         const center = viewCenterImagePoint();
         // small random jitter so placing several tokens in a row doesn't stack
         // them exactly on top of each other, which would make them hard to grab
         const jitter = () => (Math.random() - 0.5) * gridSize * 0.6;
-        tokens.push({ id: tokenNextId++, combatantId, x: center.x + jitter(), y: center.y + jitter() });
+        const tok = { id: tokenNextId++, combatantId, x: center.x + jitter(), y: center.y + jitter() };
+        if(typeof memberIdx === 'number') tok.memberIdx = memberIdx;
+        tokens.push(tok);
+        if(skipRefresh) return;
         renderTokens();
         afterStateChange();
       }
-      function removeToken(combatantId){
+      // Swarm: drop one token per member that's still standing (and not already placed)
+      function placeGroupTokens(combatantId){
+        const c = combatants.find(x => x.id === combatantId);
+        if(!c || !c.group) return;
+        syncAllGroups();
+        c.group.members.forEach((m, i) => {
+          if(typeof m.hp === 'number' && m.hp <= 0) return;
+          placeToken(combatantId, i, true);
+        });
+        renderTokens();
+        afterStateChange();
+      }
+      // With memberIdx: remove just that member's token. Without: all of the combatant's tokens.
+      function removeToken(combatantId, memberIdx){
         const before = tokens.length;
-        tokens = tokens.filter(t => t.combatantId !== combatantId);
+        tokens = tokens.filter(t => !(t.combatantId === combatantId && (typeof memberIdx !== 'number' || t.memberIdx === memberIdx)));
         if(tokens.length !== before){ renderTokens(); afterStateChange(); }
       }
       function clearAllTokens(){
@@ -148,16 +168,20 @@
             layer.appendChild(g);
           }
           const c = (typeof combatants !== 'undefined') ? combatants.find(x => x.id === token.combatantId) : null;
+          if(c && c.group && typeof syncAllGroups === 'function') syncAllGroups();
+          // Swarm member token: show that member's own name / HP rather than the group's selected one
+          const mem = (c && c.group && typeof token.memberIdx === 'number') ? c.group.members[token.memberIdx] : null;
           const base = g.querySelector('.tokenBase');
           const ring = g.querySelector('.tokenRing');
           const label = g.querySelector('.tokenLabel');
           base.setAttribute('fill', (c && c.tokenColor) || tokenColorFor(token.combatantId));
-          label.textContent = tokenLabelFor(c ? c.name : '?');
+          label.textContent = tokenLabelFor(mem ? mem.name : (c ? c.name : '?'));
           g.tokenSizeMultiplier = (c && c.tokenSize) || 1;
 
           const isActive = c && typeof activeId !== 'undefined' && activeId === c.id;
-          const isDown = c && c.hp !== null && c.hp !== undefined && c.hp <= 0;
-          const isBloodied = c && !isDown && c.hp !== null && c.hp !== undefined && c.maxHp && c.hp <= c.maxHp / 2;
+          const hpSrc = mem || c;
+          const isDown = hpSrc && hpSrc.hp !== null && hpSrc.hp !== undefined && hpSrc.hp <= 0;
+          const isBloodied = hpSrc && !isDown && hpSrc.hp !== null && hpSrc.hp !== undefined && hpSrc.maxHp && hpSrc.hp <= hpSrc.maxHp / 2;
           ring.setAttribute('stroke', isActive ? '#7ad4e0' : isBloodied ? '#d1605a' : 'rgba(0,0,0,0.35)');
           g.classList.toggle('downed', !!isDown);
 
