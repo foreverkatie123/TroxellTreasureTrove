@@ -480,6 +480,7 @@
       }
       .laMiniBtn:hover{ border-color:var(--accent); }
       .lrPips .laPip.filled{ background:#9d7ce0; border-color:#9d7ce0; }
+      .lrePips .laPip.filled{ background:#5ec2a8; border-color:#5ec2a8; }
 
       /* ---- Damage absorb / resistances / immunities / vulnerabilities ---- */
       .ddChips{ display:flex; flex-wrap:wrap; gap:4px; margin-top:7px; }
@@ -1859,7 +1860,7 @@
                 </div>
                 <div class="laRow laActionsRow">
                   <label>Legendary</label>
-                  <input type="number" class="laMaxInput" min="0" max="9" value="0" title="Legendary actions per round (0 = none)">
+                  <input type="number" class="laMaxInput" min="0" max="9" value="0" title="Legendary actions (0 = none) — refill at the start of this creature's turn">
                   <div class="laPips"></div>
                   <button class="laMiniBtn laSpendBtn" title="Spend a legendary action">−</button>
                   <button class="laMiniBtn laResetBtn" title="Reset to full">↺</button>
@@ -1870,6 +1871,13 @@
                   <div class="laPips lrPips"></div>
                   <button class="laMiniBtn lrSpendBtn" title="Use a legendary resistance">−</button>
                   <button class="laMiniBtn lrResetBtn" title="Reset to full (new day/rest)">↺</button>
+                </div>
+                <div class="laRow laReactRow">
+                  <label>Leg. React</label>
+                  <input type="number" class="lreMaxInput" min="0" max="9" value="0" title="Legendary reactions (0 = none) — refill at the start of this creature's turn">
+                  <div class="laPips lrePips"></div>
+                  <button class="laMiniBtn lreSpendBtn" title="Use a legendary reaction">−</button>
+                  <button class="laMiniBtn lreResetBtn" title="Reset to full">↺</button>
                 </div>
                 <div class="condChips"></div>
                 <div class="condPickerWrap"></div>
@@ -1912,6 +1920,11 @@
               });
               el.querySelector('.lrSpendBtn').addEventListener('click', () => send('spendLegendaryResist', { id: c.id }));
               el.querySelector('.lrResetBtn').addEventListener('click', () => send('resetLegendaryResist', { id: c.id }));
+              el.querySelector('.lreMaxInput').addEventListener('change', function(){
+                send('setLegendaryReactMax', { id: c.id, value: parseInt(this.value) });
+              });
+              el.querySelector('.lreSpendBtn').addEventListener('click', () => send('spendLegendaryReact', { id: c.id }));
+              el.querySelector('.lreResetBtn').addEventListener('click', () => send('resetLegendaryReact', { id: c.id }));
               list.appendChild(el);
             }
 
@@ -1931,6 +1944,7 @@
             const isLeg = typeof c.legendary === 'boolean'
               ? c.legendary
               : ((c.legendaryMax || 0) > 0 || (c.legendaryResistMax || 0) > 0);
+            const isLegReact = typeof c.legendaryReact === 'boolean' ? c.legendaryReact : ((c.legendaryReactMax || 0) > 0);
             const moreMenuWrap = el.querySelector('.moreMenuWrap');
             el.querySelector('.moreBtn').classList.toggle('on', moreMenuOpenId === c.id);
             const activeInMenu = document.activeElement && moreMenuWrap.contains(document.activeElement);
@@ -1947,7 +1961,8 @@
                     <button class="moreMenuItem" data-action="dd"><span class="icon">🛡️</span>Absorb / Resistances / Immunities / Vulnerabilities</button>
                     <button class="moreMenuItem" data-action="spell"><span class="icon">🔮</span>Spellcasting</button>
                     <button class="moreMenuItem" data-action="stats"><span class="icon">⚙</span>Edit Name / Init / HP / AC</button>
-                    <button class="moreMenuItem" data-action="legendary"><span class="icon">👑</span>Legendary items: ${isLeg ? 'ON' : 'OFF'}</button>
+                    <button class="moreMenuItem" data-action="legendary"><span class="icon">👑</span>Legendary action / resist: ${isLeg ? 'ON' : 'OFF'}</button>
+                    <button class="moreMenuItem" data-action="legendaryReact"><span class="icon">↩️</span>Legendary reaction: ${isLegReact ? 'ON' : 'OFF'}</button>
                     <div class="moreMenuDivider"></div>
                     <div class="moreMenuRow">
                       <span>Token color</span>
@@ -1977,6 +1992,7 @@
                     else if(action === 'spell') openSpellModal(c.id);
                     else if(action === 'stats') openStatsModal(c.id);
                     else if(action === 'legendary') send('setLegendary', { id: c.id, value: !isLeg });
+                    else if(action === 'legendaryReact') send('setLegendaryReact', { id: c.id, value: !isLegReact });
                     if(lastSnapshot) renderCombatantList(lastSnapshot);
                   });
                 });
@@ -2055,6 +2071,7 @@
             // Legendary rows only show for creatures flagged legendary (toggle in the ⋯ menu)
             el.querySelector('.laActionsRow').style.display = isLeg ? '' : 'none';
             el.querySelector('.laResistRow').style.display = isLeg ? '' : 'none';
+            el.querySelector('.laReactRow').style.display = isLegReact ? '' : 'none';
 
             // Legendary actions
             const legendaryMax = c.legendaryMax || 0;
@@ -2075,6 +2092,16 @@
               ? Array.from({length: legendaryResistMax}, (_, i) => `<span class="laPip${i < legendaryResistLeft ? ' filled' : ''}"></span>`).join('')
               : '';
             el.querySelector('.lrPips').title = legendaryResistMax > 0 ? `${legendaryResistLeft} of ${legendaryResistMax} legendary resistances left` : '';
+            
+            // Legendary reactions (refill at the start of the creature's own turn)
+            const legendaryReactMax = c.legendaryReactMax || 0;
+            const legendaryReactLeft = c.legendaryReactLeft || 0;
+            const lreMaxInput = el.querySelector('.lreMaxInput');
+            if(document.activeElement !== lreMaxInput) lreMaxInput.value = legendaryReactMax;
+            el.querySelector('.lrePips').innerHTML = legendaryReactMax > 0
+              ? Array.from({length: legendaryReactMax}, (_, i) => `<span class="laPip${i < legendaryReactLeft ? ' filled' : ''}"></span>`).join('')
+              : '';
+            el.querySelector('.lrePips').title = legendaryReactMax > 0 ? `${legendaryReactLeft} of ${legendaryReactMax} legendary reactions left` : '';
 
             // Absorb / resistances / immunities / vulnerabilities
             const absorb = c.absorb || [];

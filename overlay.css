@@ -494,6 +494,7 @@
       .laMiniBtn:hover{ border-color:var(--accent); color:var(--text); }
       .laBox.lrBox{ margin-left:0; }
       .lrPips .laPip.filled{ background:#9d7ce0; border-color:#9d7ce0; }
+      .lrePips .laPip.filled{ background:#5ec2a8; border-color:#5ec2a8; }
 
       .card.lairCard{ border-color:#5f4a99; background:#151027; }
       .card.lairCard.active{
