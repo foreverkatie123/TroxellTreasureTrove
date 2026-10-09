@@ -296,6 +296,21 @@
       #creatureDetail .cdSheet .mEntry b{ color:var(--text); }
       #creatureDetail .cdEmpty{ color:var(--text-dim); font-style:italic; }
 
+      /* ---- Swarm group bar (member arrows + HP chips) ---- */
+      .groupBar{ margin-top:8px; padding:7px 8px; border:1px solid var(--border); border-radius:8px; background:#0d1318; }
+      .gbNav{ display:flex; align-items:center; gap:8px; }
+      .gbNav .gbLabel{ flex:1; text-align:center; font-size:12px; color:var(--text); }
+      .gbNav button{ background:#0d1318; border:1px solid var(--border); color:var(--text); border-radius:6px; padding:3px 9px; cursor:pointer; font-size:12px; }
+      .gbNav button:hover{ border-color:var(--accent); }
+      .gbNav .gbPin.on{ border-color:var(--accent-2); color:var(--accent-2); background:rgba(90,200,192,0.1); }
+      .gbChips{ display:flex; flex-wrap:wrap; gap:4px; margin-top:7px; }
+      .gbChip{ display:flex; flex-direction:column; align-items:center; min-width:34px; padding:3px 5px; border-radius:6px; border:1px solid var(--border); background:#0d1318; color:var(--text); cursor:pointer; font-size:11px; line-height:1.15; }
+      .gbChip span{ font-size:10px; color:var(--text-dim); }
+      .gbChip.sel{ border-color:var(--accent-2); box-shadow:0 0 0 1px var(--accent-2) inset; }
+      .gbChip.hurt span{ color:#e0a458; }
+      .gbChip.down{ opacity:.45; text-decoration:line-through; }
+      .gbChip.onMap::after{ content:'📍'; font-size:8px; }
+
       /* ---------- Encounter Builder ---------- */
       #encounterTemplateList{ display:flex; flex-direction:column; gap:6px; margin-bottom:4px; }
       .encTemplateBtn{
@@ -589,6 +604,10 @@
       .rcActions{ display:flex; gap:6px; align-items:center; margin-top:8px; }
       .rcActions input{ width:64px; padding:7px; font-size:12px; text-align:center; flex-shrink:0; }
       .rcActions .btn{ padding:8px 10px; font-size:12px; }
+      .rcMulti{ margin-top:6px; font-size:11px; color:var(--text-dim); }
+      .rcMulti .rcQty{ width:52px; }
+      .rcMultiLbl{ display:flex; align-items:center; gap:5px; cursor:pointer; text-transform:none; letter-spacing:0; font-size:11px; }
+      .rcMulti input[type=checkbox]{ width:auto; padding:0; }
       .rcEmpty{ font-size:12px; color:var(--text-dim); text-align:center; padding:16px 0; }
 
       /* ---------- Modal overlay (sheet editor / quick stats) ---------- */
@@ -817,6 +836,7 @@
           <div class="field" style="flex:2;"><label>Monster (search above first)</label><input type="text" id="encPickedName" readonly placeholder="Tap a search result above…"></div>
           <div class="field"><label>Qty</label><input type="number" id="encPickedQty" min="1" value="1"></div>
         </div>
+        <label class="sub" style="display:flex;align-items:center;gap:6px;margin:6px 0;cursor:pointer;"><input type="checkbox" id="encPickedGroup"> Swarm: keep as ONE initiative slot, flip between members (each has its own HP)</label>
         <button class="btn" id="encAddToPendingBtn">+ Add to pending encounter</button>
         <div id="encPendingList"></div>
         <div class="row2">
@@ -1898,6 +1918,7 @@
                   <button class="btn miniBtn dmgBtn">−HP</button>
                   <button class="btn miniBtn healBtn">+HP</button>
                 </div>
+                <div class="groupBar" style="display:none;"></div>
                 <div class="laRow laActionsRow">
                   <label>Legendary</label>
                   <input type="number" class="laMaxInput" min="0" max="9" value="0" title="Legendary actions (0 = none) — refill at the start of this creature's turn">
@@ -1934,7 +1955,9 @@
               });
               el.querySelector('.tokenBtn').addEventListener('click', () => {
                 const btn = el.querySelector('.tokenBtn');
+                const cur = lastSnapshot && lastSnapshot.combatants.find(x => x.id === c.id);
                 if(btn.classList.contains('on')) send('removeToken', { id: c.id });
+                else if(cur && cur.group) send('placeGroupTokens', { id: c.id });
                 else send('placeToken', { id: c.id });
               });
               el.querySelector('.dmgBtn').addEventListener('click', () => {
@@ -1973,7 +1996,8 @@
             // update only the mutable display bits — amtInput is never touched here
             el.classList.toggle('active', c.id === s.activeId);
             el.querySelector('.initNum').textContent = c.init;
-            el.querySelector('.name').textContent = c.name;
+            el.querySelector('.name').textContent = c.group ? `${c.name} ×${c.group.members.length}` : c.name;
+            renderGroupBar(c, el.querySelector('.groupBar'));
             const statSpan = el.querySelector('.statText');
             statSpan.textContent = st.text;
             statSpan.classList.toggle('bloodied', st.bloodied);
@@ -2872,6 +2896,11 @@
               </div>
               <div class="rcMeta">${escapeHtml(rosterCardMeta(c))}</div>
               ${c.isPlayer ? `<div class="rcOwner">Owned by ${escapeHtml(c.ownerName || 'a player')} — edited from their character page</div>` : ''}
+              ${c.isPlayer ? '' : `<div class="rcActions rcMulti">
+                <label class="rcMultiLbl">How many</label>
+                <input type="number" class="rcQty" min="1" max="30" value="1" data-id="${c.id}" title="How many copies to add">
+                <label class="rcMultiLbl rcSwarmLbl" title="Keep them as ONE initiative slot and flip between members (each has its own HP)"><input type="checkbox" class="rcSwarmChk" data-id="${c.id}"> Swarm (one init slot)</label>
+              </div>`}
               <div class="rcActions">
                 <input type="number" class="rcInit" placeholder="Init" data-id="${c.id}">
                 <button class="btn primary rcAddBtn" data-id="${c.id}">Add to Fight</button>
@@ -2895,12 +2924,28 @@
                 return;
               }
               const hp = creature.isPlayer ? creature.hpCurrent : creature.hpMax;
-              send('addCombatantFromRoster', {
-                name: creature.name || 'Unnamed', init,
+              const qtyEl = listEl.querySelector('.rcQty[data-id="' + id + '"]');
+              const swarmEl = listEl.querySelector('.rcSwarmChk[data-id="' + id + '"]');
+              const qty = creature.isPlayer || !qtyEl ? 1 : Math.max(1, Math.min(30, parseInt(qtyEl.value, 10) || 1));
+              const asSwarm = !!(swarmEl && swarmEl.checked) && qty > 1;
+              const baseName = creature.name || 'Unnamed';
+              const payloadFor = (name, extra) => Object.assign({
+                name, init,
                 hp, maxHp: creature.hpMax, tempHp: 0,
                 ac: creature.ac, notes: creature.classRace || '', rosterId: creature.isPlayer ? null : creature.id,
                 absorb: creature.absorb || [], resistances: creature.resistances || [], immunities: creature.immunities || [], vulnerabilities: creature.vulnerabilities || []
-              });
+              }, extra || {});
+              if(asSwarm){
+                // one combatant, one initiative slot, `qty` members each with their own HP
+                send('addCombatantFromRoster', payloadFor(baseName, { groupSize: qty }));
+              } else if(qty > 1){
+                // separate combatants, all at the same initiative: "Name 1", "Name 2", …
+                for(let i = 1; i <= qty; i++) send('addCombatantFromRoster', payloadFor(baseName + ' ' + i));
+              } else {
+                send('addCombatantFromRoster', payloadFor(baseName));
+              }
+              if(qtyEl) qtyEl.value = 1;
+              if(swarmEl) swarmEl.checked = false;
               initInput.value = '';
               initInput.style.borderColor = '';
             });
@@ -3594,6 +3639,37 @@
           });
         }
 
+        // ---- Swarm group bar: ◀ n/N ▶ + a chip per member (shared by the card and the pop-out) ----
+        function renderGroupBar(c, host){
+          if(!host) return;
+          if(!c.group){ host.style.display = 'none'; host.innerHTML = ''; host.dataset.sig = ''; return; }
+          const g = c.group, n = g.members.length, sel = g.sel;
+          const onMap = new Set(c.memberTokens || []);
+          const sig = JSON.stringify([c.id, sel, onMap.size ? [...onMap] : 0, g.members.map(m => [m.name, m.hp, m.maxHp, m.tempHp])]);
+          host.style.display = '';
+          if(host.dataset.sig === sig) return; // nothing changed — leave the buttons alone
+          host.dataset.sig = sig;
+          const isDown = m => typeof m.hp === 'number' && m.hp <= 0;
+          const up = g.members.filter(m => !isDown(m)).length;
+          host.innerHTML = `
+            <div class="gbNav">
+              <button class="gbPrev" title="Previous member">◀</button>
+              <span class="gbLabel"><b>${escapeHtml(g.members[sel].name)}</b> · ${sel + 1}/${n} · ${up} up</span>
+              <button class="gbNext" title="Next member">▶</button>
+              <button class="gbPin${onMap.has(sel) ? ' on' : ''}" title="${onMap.has(sel) ? 'This member is on the map — tap to remove' : 'Place this member on the map'}">📍</button>
+            </div>
+            <div class="gbChips">${g.members.map((m, i) => `
+              <button class="gbChip${i === sel ? ' sel' : ''}${isDown(m) ? ' down' : ''}${!isDown(m) && m.maxHp && m.hp <= m.maxHp / 2 ? ' hurt' : ''}${onMap.has(i) ? ' onMap' : ''}" data-i="${i}" title="${escapeHtml(m.name)}">${i + 1}<span>${typeof m.hp === 'number' ? m.hp : '–'}</span></button>`).join('')}
+            </div>`;
+          const pick = i => send('selectGroupMember', { id: c.id, idx: i });
+          host.querySelector('.gbPrev').addEventListener('click', () => pick(sel - 1));
+          host.querySelector('.gbNext').addEventListener('click', () => pick(sel + 1));
+          host.querySelector('.gbPin').addEventListener('click', () => {
+            send(onMap.has(sel) ? 'removeToken' : 'placeToken', { id: c.id, memberIdx: sel });
+          });
+          host.querySelectorAll('.gbChip').forEach(b => b.addEventListener('click', () => pick(parseInt(b.dataset.i))));
+        }
+
         // ---- Creature detail pop-out (opened from a card's ⋯ menu → "Pop out details") ----
         // This window is a normal controller.html instance (see panel pop-out code above)
         // that shows ONE combatant: live HP/AC/conditions/legendary counters, quick
@@ -3633,6 +3709,7 @@
           if(cdBuiltFor !== c.id){
             host.innerHTML = `
               <div class="cdHead"><h2 class="cdName"></h2></div>
+              <div class="groupBar cdGroup" style="display:none;"></div>
               <div class="cdLine cdStats"></div>
               <div class="cdLine cdConds"></div>
               <div class="cdLegendBox">
@@ -3686,7 +3763,8 @@
             cdSheetKey = null;
           }
           // live bits — updated in place so the amount box and scroll position survive
-          host.querySelector('.cdName').textContent = c.name;
+          host.querySelector('.cdName').textContent = c.group ? c.group.members[c.group.sel].name : c.name;
+          renderGroupBar(c, host.querySelector('.cdGroup'));
           const hpTxt = (c.hp !== null && c.hp !== undefined) ? `${c.hp}${c.maxHp !== null && c.maxHp !== undefined ? ' / ' + c.maxHp : ''}` : '—';
           host.querySelector('.cdStats').innerHTML =
             `<b>Init</b> ${escapeHtml(String(c.init))} &nbsp; <b>AC</b> ${c.ac ?? '—'} &nbsp; <b>HP</b> ${hpTxt}${c.tempHp ? ` (+${c.tempHp} temp)` : ''}` +
@@ -3771,9 +3849,22 @@
           };
         }
         function addMonstersBatch(entries){
+          const uniqueName = (base, usedNames) => {
+            let name = base;
+            if(usedNames.has(name)){ let n = 2; while(usedNames.has(`${base} ${n}`)) n++; name = `${base} ${n}`; }
+            usedNames.add(name);
+            return name;
+          };
           const usedNames = new Set((lastSnapshot ? lastSnapshot.combatants : []).map(c => c.name));
           const added = [];
-          entries.forEach(({ monster, qty }) => {
+          entries.forEach(({ monster, qty, group }) => {
+            if(group && qty > 1){
+              // Swarm: ONE combatant (one init roll, one slot) holding `qty` members
+              const name = uniqueName(monster.name, usedNames);
+              send('addCombatant', Object.assign(buildMonsterCombatantPayload(monster, name), { groupSize: qty }));
+              added.push(`${name} ×${qty}`);
+              return;
+            }
             for(let i = 0; i < qty; i++){
               let name = monster.name;
               if(usedNames.has(name)){
@@ -3833,13 +3924,13 @@
         function resolveTemplateEntry(entry){
           if(entry.index){
             return fetchMonsterDetail(entry.index)
-              .then(m => ({ monster: Object.assign({}, m, { name: entry.name || m.name }), qty: entry.qty }))
+              .then(m => ({ monster: Object.assign({}, m, { name: entry.name || m.name }), qty: entry.qty, group: !!entry.group }))
               .catch(() => null);
           }
           const match = monsterIndex.find(m => m.name.toLowerCase() === (entry.name || '').toLowerCase());
           if(!match) return Promise.resolve(null);
           return fetchMonsterDetail(match.index)
-            .then(m => ({ monster: Object.assign({}, m, { name: entry.name }), qty: entry.qty }))
+            .then(m => ({ monster: Object.assign({}, m, { name: entry.name }), qty: entry.qty, group: !!entry.group }))
             .catch(() => null);
         }
         function deployEncounterTemplate(template){
@@ -3869,7 +3960,7 @@
           el.innerHTML = pendingEncounter.map((e, i) => `
             <div class="encPendingRow" data-idx="${i}">
               <span class="epName">${escapeHtml(e.name)}</span>
-              <span class="epQty">×${e.qty}</span>
+              <span class="epQty">×${e.qty}${e.group ? ' swarm' : ''}</span>
               <button class="repRemove">✕</button>
             </div>
           `).join('');
@@ -3883,15 +3974,16 @@
         document.getElementById('encAddToPendingBtn').addEventListener('click', () => {
           if(!encPickedMonster) return;
           const qty = Math.max(1, parseInt(document.getElementById('encPickedQty').value, 10) || 1);
-          const existing = pendingEncounter.find(e => e.index === encPickedMonster.index);
+          const asGroup = document.getElementById('encPickedGroup').checked && qty > 1;
+          const existing = pendingEncounter.find(e => e.index === encPickedMonster.index && !!e.group === asGroup);
           if(existing) existing.qty += qty;
-          else pendingEncounter.push({ index: encPickedMonster.index, name: encPickedMonster.name, qty, monster: encPickedMonster });
+          else pendingEncounter.push({ index: encPickedMonster.index, name: encPickedMonster.name, qty, monster: encPickedMonster, group: asGroup });
           renderPendingEncounter();
           document.getElementById('encPickedQty').value = 1;
         });
         document.getElementById('encDeployPendingBtn').addEventListener('click', () => {
           if(!pendingEncounter.length) return;
-          addMonstersBatch(pendingEncounter.map(e => ({ monster: e.monster, qty: e.qty })));
+          addMonstersBatch(pendingEncounter.map(e => ({ monster: e.monster, qty: e.qty, group: e.group })));
           pendingEncounter = [];
           renderPendingEncounter();
         });
@@ -3900,7 +3992,7 @@
           const nameInput = document.getElementById('encTemplateNameInput');
           const name = nameInput.value.trim();
           if(!name) return;
-          customEncounterTemplates.push({ name, entries: pendingEncounter.map(e => ({ index:e.index, name:e.name, qty:e.qty })) });
+          customEncounterTemplates.push({ name, entries: pendingEncounter.map(e => ({ index:e.index, name:e.name, qty:e.qty, group: !!e.group })) });
           saveEncounterTemplates();
           renderEncounterTemplateList();
           pendingEncounter = [];

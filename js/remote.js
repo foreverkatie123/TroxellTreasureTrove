@@ -34,9 +34,13 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
       }
 
       function buildSnapshot(){
+        if(typeof syncAllGroups === 'function') syncAllGroups(); // group members' records must be current
         const sorted = [...combatants].sort((a,b) => b.init - a.init)
           .map(c => Object.assign({}, c, {
-            hasToken: typeof findTokenForCombatant === 'function' ? !!findTokenForCombatant(c.id) : false
+            hasToken: typeof findTokenForCombatant === 'function' ? !!findTokenForCombatant(c.id) : false,
+            memberTokens: (c.group && typeof tokens !== 'undefined')
+              ? tokens.filter(t => t.combatantId === c.id && typeof t.memberIdx === 'number').map(t => t.memberIdx)
+              : []
           }));
         const idx = sorted.findIndex(c => c.id === activeId);
         return {
@@ -98,10 +102,21 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
               immunities: sanitizeDefenseList(payload.immunities),
               vulnerabilities: sanitizeDefenseList(payload.vulnerabilities)
             };
+            if(parseInt(payload.groupSize) >= 2 && typeof makeGroup === 'function'){
+              // Swarm: one initiative slot, N members each with their own HP
+              c.group = makeGroup(c.name, payload.groupSize, c.hp);
+            }
             combatants.push(c);
             if(!combatStarted) refreshPreStartActive();
             else if(activeId === null) activeId = c.id;
-            logEvent(`${c.name} joins initiative (${c.init})`);
+            logEvent(c.group ? `${c.name} ×${c.group.members.length} join initiative as a group (${c.init})` : `${c.name} joins initiative (${c.init})`);
+            render();
+            break;
+          }
+          case 'selectGroupMember': {
+            const c = findCombatant(payload.id);
+            if(!c || !c.group) break;
+            selectGroupMember(c, payload.idx);
             render();
             break;
           }
@@ -123,10 +138,13 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
               immunities: sanitizeDefenseList(payload.immunities),
               vulnerabilities: sanitizeDefenseList(payload.vulnerabilities)
             };
+            if(parseInt(payload.groupSize) >= 2 && typeof makeGroup === 'function'){
+              c.group = makeGroup(c.name, payload.groupSize, c.hp); // swarm of a roster creature
+            }
             combatants.push(c);
             if(!combatStarted) refreshPreStartActive();
             else if(activeId === null) activeId = c.id;
-            logEvent(`${c.name} joins initiative (${c.init})`);
+            logEvent(c.group ? `${c.name} ×${c.group.members.length} join initiative as a group (${c.init})` : `${c.name} joins initiative (${c.init})`);
             render();
             break;
           }
@@ -153,8 +171,9 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
             logEvent('— Combat cleared —');
             render();
             break;
-          case 'placeToken': if(typeof placeToken === 'function') placeToken(payload.id); break;
-          case 'removeToken': if(typeof removeToken === 'function') removeToken(payload.id); break;
+          case 'placeToken': if(typeof placeToken === 'function') placeToken(payload.id, payload.memberIdx); break;
+          case 'removeToken': if(typeof removeToken === 'function') removeToken(payload.id, payload.memberIdx); break;
+          case 'placeGroupTokens': if(typeof placeGroupTokens === 'function') placeGroupTokens(payload.id); break;
           case 'setTokenColor': {
             const c = combatants.find(x => x.id === payload.id);
             if(c){
