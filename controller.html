@@ -470,7 +470,7 @@
       /* ---- Legendary actions (per-combatant) ---- */
       .laRow{ display:flex; align-items:center; gap:6px; margin-top:7px; max-width:100%; box-sizing:border-box; }
       .laRow label{ font-size:10px; text-transform:uppercase; color:var(--text-dim); flex-shrink:0; }
-      .card .laMaxInput, .card .lrMaxInput{ width:40px; padding:4px; font-size:12px; text-align:center; flex-shrink:0; flex-grow:0; }
+      .card .laMaxInput, .card .lrMaxInput, .card .lreMaxInput{ width:40px; padding:4px; font-size:12px; text-align:center; flex-shrink:0; flex-grow:0; }
       .laPips{ display:flex; gap:2px; flex-wrap:wrap; flex:1 1 auto; min-width:0; }
       .laPip{ width:8px; height:8px; border-radius:50%; background:#202a32; border:1px solid var(--border); flex-shrink:0; }
       .laPip.filled{ background:#e0b64a; border-color:#e0b64a; }
@@ -2092,7 +2092,7 @@
               ? Array.from({length: legendaryResistMax}, (_, i) => `<span class="laPip${i < legendaryResistLeft ? ' filled' : ''}"></span>`).join('')
               : '';
             el.querySelector('.lrPips').title = legendaryResistMax > 0 ? `${legendaryResistLeft} of ${legendaryResistMax} legendary resistances left` : '';
-            
+
             // Legendary reactions (refill at the start of the creature's own turn)
             const legendaryReactMax = c.legendaryReactMax || 0;
             const legendaryReactLeft = c.legendaryReactLeft || 0;
