@@ -818,6 +818,11 @@
         <input type="text" id="rosterFilter" placeholder="Filter by name…">
         <div id="rosterList"></div>
         <button class="btn primary" id="newCreatureBtn">+ New Character / Monster</button>
+        <div class="row2" style="margin-top:8px;">
+          <button class="btn" id="rosterTemplateBtn" title="A spreadsheet-ready CSV with every column and two example rows">⬇ Import template (CSV)</button>
+          <button class="btn" id="rosterImportBtn" title="Add many characters / monsters at once from a filled-in template">⬆ Import from CSV</button>
+        </div>
+        <input type="file" id="rosterImportFile" accept=".csv,text/csv,text/plain" style="display:none;">
       </div>
 
       <div class="panel">
@@ -1296,7 +1301,7 @@
     <div class="modalOverlay" id="confirmModal">
       <div class="modalBox" style="max-width:360px;">
         <h2 id="confirmModalTitle">Are you sure?</h2>
-        <p id="confirmModalMessage" style="color:var(--text-dim);font-size:13px;line-height:1.5;margin:0;"></p>
+        <p id="confirmModalMessage" style="color:var(--text-dim);font-size:13px;line-height:1.5;margin:0;white-space:pre-line;max-height:50vh;overflow:auto;"></p>
         <div class="modalFooter">
           <button class="btn" id="confirmModalCancelBtn">Cancel</button>
           <button class="btn danger" id="confirmModalOkBtn">Confirm</button>
@@ -2811,6 +2816,191 @@
           return rosterRef().doc(creature.id).set(payload, { merge:true })
             .catch(err => { showAlert('Save failed: ' + err.message); throw err; });
         }
+
+        // ---- Roster bulk import (CSV) ----
+        // One row per creature. Open the template in Excel / Google Sheets, fill in rows, save as
+        // CSV, import. List-type cells (actions, spells, features, inventory) hold several entries
+        // separated by "||", each written "Name :: description" (spells "Name :: level :: description",
+        // inventory "Name :: qty :: notes"). Lines starting with # are comments and are ignored.
+        const IMPORT_HEADERS = ['name','type','class_race','ac','hp','speed','init_bonus','alignment','senses','languages','prof_bonus',
+          'str','dex','con','int','wis','cha','saves','skills','absorb','resist','immune','vulnerable',
+          'actions','spells','features','inventory','spell_note','notes'];
+        const IMPORT_ALIASES = {
+          name:'name', creature:'name', type:'type', classrace:'class_race', class:'class_race', race:'class_race', cr:'class_race', level:'class_race',
+          ac:'ac', armorclass:'ac', hp:'hp', hpmax:'hp', maxhp:'hp', hitpoints:'hp', speed:'speed',
+          initbonus:'init_bonus', initiative:'init_bonus', alignment:'alignment', senses:'senses', languages:'languages',
+          profbonus:'prof_bonus', proficiencybonus:'prof_bonus',
+          str:'str', strength:'str', dex:'dex', dexterity:'dex', con:'con', constitution:'con', int:'int', intelligence:'int',
+          wis:'wis', wisdom:'wis', cha:'cha', charisma:'cha',
+          saves:'saves', savingthrows:'saves', skills:'skills', absorb:'absorb', resist:'resist', resistances:'resist',
+          immune:'immune', immunities:'immune', vulnerable:'vulnerable', vulnerabilities:'vulnerable',
+          actions:'actions', spells:'spells', features:'features', traits:'features', inventory:'inventory', items:'inventory',
+          spellnote:'spell_note', spellcasting:'spell_note', notes:'notes'
+        };
+        // RFC-4180-ish CSV parser: quoted fields, "" escapes, newlines inside quotes, BOM, , or ; delimiter
+        function csvParse(text){
+          text = String(text || '').replace(/^﻿/, '');
+          const firstLine = text.split(/\r?\n/)[0] || '';
+          const delim = (firstLine.split(';').length > firstLine.split(',').length) ? ';' : ',';
+          const rows = []; let row = [], cur = '', inQ = false;
+          for(let i = 0; i < text.length; i++){
+            const ch = text[i];
+            if(inQ){
+              if(ch === '"'){ if(text[i + 1] === '"'){ cur += '"'; i++; } else inQ = false; }
+              else cur += ch;
+            } else if(ch === '"'){ inQ = true; }
+            else if(ch === delim){ row.push(cur); cur = ''; }
+            else if(ch === '\n' || ch === '\r'){
+              if(ch === '\r' && text[i + 1] === '\n') i++;
+              row.push(cur); cur = '';
+              rows.push(row); row = [];
+            } else cur += ch;
+          }
+          if(cur !== '' || row.length){ row.push(cur); rows.push(row); }
+          return rows.filter(r => r.some(c => String(c).trim() !== ''));
+        }
+        function csvCell(v){
+          const s = String(v ?? '');
+          return /[",;\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+        }
+        function buildImportTemplateCsv(){
+          const rows = [IMPORT_HEADERS];
+          rows.push(['# Lines starting with # are ignored. Delete these notes and the two examples, then add your own rows.']);
+          rows.push(['# type: PC, NPC or Monster.  saves: e.g. "dex, wis".  skills: e.g. "stealth, perception*" (* = expertise).']);
+          rows.push(['# absorb / resist / immune / vulnerable: damage types, e.g. "fire, cold".  Leave init_bonus blank to use the DEX modifier.']);
+          rows.push(['# actions / features: separate entries with ||  and write each as  Name :: description']);
+          rows.push(['# spells: Name :: level :: description     inventory: Name :: qty :: notes']);
+          rows.push(['Skelemummy','Monster','CR 1','13','27','30 ft','','Lawful Evil','darkvision 60 ft','understands Common','2',
+            '15','10','14','6','8','5','','','','','poison','fire',
+            'Multiattack :: Two rusted scimitar attacks. || Scimitar :: Melee Weapon Attack: +4 to hit, reach 5 ft., 1d6+2 slashing damage. || Dust Cloud (Recharge 5-6) :: Each creature within 10 ft. makes a DC 12 CON save or is blinded until the end of its next turn.',
+            '','Undead Fortitude :: If damage reduces it to 0 HP, it makes a CON save (DC 5 + damage taken) and drops to 1 HP instead on a success.','','','Created by the necromancer; shambles in packs.']);
+          rows.push(['Mira Holloway','NPC','Level 3 Rogue / Innkeeper','14','21','30 ft','','Neutral Good','','Common, Thieves\' Cant','2',
+            '9','16','12','13','14','15','dex, int','stealth*, perception, insight','','','','',
+            'Dagger :: Melee or Ranged Weapon Attack: +5 to hit, 1d4+3 piercing damage.','Charm Person :: 1 :: DC 12 WIS save or charmed for 1 hour.','Cunning Action :: Dash, Disengage or Hide as a bonus action.','Healing Potion :: 2 :: Heals 2d4+2','Knows every rumor in town.','']);
+          return rows.map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
+        }
+        function importSplitEntries(cell){
+          return String(cell || '').split(/\|\||\r?\n/).map(s => s.trim()).filter(Boolean);
+        }
+        function importParts(entry, expected){
+          // "A :: B :: C"; falls back to "Name: description" for the 2-part kinds
+          let parts = entry.split('::').map(s => s.trim());
+          if(parts.length === 1 && expected === 2){
+            const k = entry.indexOf(': ');
+            if(k > 0) parts = [entry.slice(0, k).trim(), entry.slice(k + 2).trim()];
+          }
+          return parts;
+        }
+        function importNum(v, dflt){
+          const n = parseFloat(String(v ?? '').replace(/[^\d.+-]/g, ''));
+          return isNaN(n) ? dflt : n;
+        }
+        function importDamageList(cell, label, warn){
+          const out = [];
+          String(cell || '').split(/[,;/]+/).map(s => s.trim().toLowerCase()).filter(Boolean).forEach(tok => {
+            const hit = CONTROLLER_DAMAGE_TYPES.find(d => d.id === tok || d.label.toLowerCase() === tok);
+            if(hit){ if(!out.includes(hit.id)) out.push(hit.id); }
+            else warn(`${label}: "${tok}" isn't a known damage type`);
+          });
+          return out;
+        }
+        function importRowToCreature(get, line, warnings){
+          const warn = msg => warnings.push(`Row ${line}: ${msg}`);
+          const name = (get('name') || '').trim();
+          if(!name){ warn('no name — skipped'); return null; }
+          const c = blankCreature();
+          c.name = name;
+          const t = (get('type') || '').trim().toLowerCase();
+          c.type = t === 'pc' ? 'PC' : t === 'npc' ? 'NPC' : 'Monster';
+          if(t && !['pc','npc','monster'].includes(t)) warn(`type "${get('type')}" isn't PC/NPC/Monster — using Monster`);
+          c.classRace = (get('class_race') || '').trim();
+          c.ac = importNum(get('ac'), 10);
+          c.hpMax = importNum(get('hp'), 10);
+          c.speed = (get('speed') || '').trim() || '30 ft';
+          c.alignment = (get('alignment') || '').trim();
+          c.senses = (get('senses') || '').trim();
+          c.languages = (get('languages') || '').trim();
+          c.profBonus = importNum(get('prof_bonus'), 2);
+          ABILS.forEach(a => { c.abilities[a] = importNum(get(a), 10); });
+          const ib = get('init_bonus');
+          c.initBonus = (ib === undefined || String(ib).trim() === '') ? abilityMod(c.abilities.dex) : importNum(ib, 0);
+          String(get('saves') || '').split(/[,;/\s]+/).map(s => s.trim().toLowerCase().slice(0, 3)).filter(Boolean).forEach(tok => {
+            if(ABILS.includes(tok)) c.saveProf[tok] = true; else warn(`saves: "${tok}" isn't an ability`);
+          });
+          String(get('skills') || '').split(/[,;]+/).map(s => s.trim()).filter(Boolean).forEach(tok => {
+            const expert = tok.endsWith('*');
+            const key = tok.replace(/\*$/, '').trim().toLowerCase().replace(/[^a-z]/g, '');
+            const hit = SKILLS.find(([n]) => n.toLowerCase().replace(/[^a-z]/g, '') === key);
+            if(hit) c.skillProf[hit[0]] = expert ? 2 : 1; else warn(`skills: "${tok}" isn't a known skill`);
+          });
+          c.absorb = importDamageList(get('absorb'), 'absorb', warn);
+          c.resistances = importDamageList(get('resist'), 'resist', warn);
+          c.immunities = importDamageList(get('immune'), 'immune', warn);
+          c.vulnerabilities = importDamageList(get('vulnerable'), 'vulnerable', warn);
+          c.actions = importSplitEntries(get('actions')).map(e => { const p = importParts(e, 2); return { name: p[0] || '', desc: p.slice(1).join(' :: ') }; });
+          c.features = importSplitEntries(get('features')).map(e => { const p = importParts(e, 2); return { name: p[0] || '', desc: p.slice(1).join(' :: ') }; });
+          c.spells = importSplitEntries(get('spells')).map(e => { const p = importParts(e, 3); return { name: p[0] || '', level: p.length >= 3 ? p[1] : '', desc: p.length >= 3 ? p.slice(2).join(' :: ') : (p[1] || '') }; });
+          c.inventory = importSplitEntries(get('inventory')).map(e => { const p = importParts(e, 3); return { name: p[0] || '', qty: p.length >= 3 ? p[1] : '', desc: p.length >= 3 ? p.slice(2).join(' :: ') : (p[1] || '') }; });
+          c.spellNote = (get('spell_note') || '').trim();
+          c.notes = (get('notes') || '').trim();
+          return c;
+        }
+        function importRosterCsv(text){
+          const rows = csvParse(text);
+          if(!rows.length){ showAlert('That file is empty.'); return; }
+          const headerIdx = {};
+          const unknown = [];
+          rows[0].forEach((h, i) => {
+            const key = IMPORT_ALIASES[String(h).toLowerCase().replace(/[^a-z]/g, '')];
+            if(key){ if(!(key in headerIdx)) headerIdx[key] = i; } else if(String(h).trim()) unknown.push(String(h).trim());
+          });
+          if(!('name' in headerIdx)){
+            showAlert('Couldn\'t find a "name" column in the first row. Download the template to see the expected columns.', 'Import failed');
+            return;
+          }
+          const warnings = [];
+          if(unknown.length) warnings.push('Ignored unknown columns: ' + unknown.join(', '));
+          const creatures = [];
+          rows.slice(1).forEach((r, i) => {
+            if(String(r[0] || '').trim().startsWith('#')) return; // comment row
+            const get = key => (key in headerIdx) ? (r[headerIdx[key]] === undefined ? '' : r[headerIdx[key]]) : undefined;
+            const c = importRowToCreature(get, i + 2, warnings);
+            if(c) creatures.push(c);
+          });
+          if(!creatures.length){ showAlert('No creatures found to import.' + (warnings.length ? '\n\n' + warnings.join('\n') : ''), 'Nothing to import'); return; }
+          const existing = new Set(roster.map(r => (r.name || '').trim().toLowerCase()));
+          const dupes = creatures.filter(c => existing.has(c.name.trim().toLowerCase())).map(c => c.name);
+          const lines = [`Add ${creatures.length} creature${creatures.length === 1 ? '' : 's'} to the roster?`, '', creatures.map(c => `• ${c.name} (${c.type}, AC ${c.ac}, HP ${c.hpMax})`).join('\n')];
+          if(dupes.length) lines.push('', `Already in your roster (will be added again as separate entries): ${[...new Set(dupes)].join(', ')}`);
+          if(warnings.length) lines.push('', 'Warnings:', warnings.slice(0, 12).join('\n') + (warnings.length > 12 ? `\n…and ${warnings.length - 12} more` : ''));
+          showConfirm(lines.join('\n'), () => {
+            Promise.all(creatures.map(c => saveRosterEntry(c)))
+              .then(() => showAlert(`Imported ${creatures.length} creature${creatures.length === 1 ? '' : 's'} into the roster.`, 'Import complete'))
+              .catch(() => {});
+          }, 'Import to roster');
+          confirmModalOkBtn.textContent = 'Import';
+          confirmModalOkBtn.className = 'btn primary';
+        }
+        document.getElementById('rosterTemplateBtn').addEventListener('click', () => {
+          const blob = new Blob(['﻿' + buildImportTemplateCsv()], { type: 'text/csv;charset=utf-8' });
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'roster-import-template.csv';
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+        });
+        document.getElementById('rosterImportBtn').addEventListener('click', () => document.getElementById('rosterImportFile').click());
+        document.getElementById('rosterImportFile').addEventListener('change', function(){
+          const file = this.files && this.files[0];
+          this.value = ''; // so picking the same file twice still fires
+          if(!file) return;
+          const reader = new FileReader();
+          reader.onload = () => importRosterCsv(String(reader.result || ''));
+          reader.onerror = () => showAlert('Couldn\'t read that file.');
+          reader.readAsText(file);
+        });
+
+
         function deleteRosterEntry(id){
           if(!db) return Promise.resolve();
           return rosterRef().doc(id).delete().catch(err => { showAlert('Delete failed: ' + err.message); throw err; });
@@ -3905,7 +4095,7 @@
           el.innerHTML = all.map((t, i) => `
             <button class="encTemplateBtn" data-idx="${i}">
               <span>${escapeHtml(t.name)}${t.builtin ? '' : ' <span class="etRemove" data-remove-idx="' + (i - BUILTIN_ENCOUNTER_TEMPLATES.length) + '">✕ remove</span>'}</span>
-              <span class="etComp">${t.entries.map(e => `${e.qty}x ${e.name}`).join(', ')}</span>
+              <span class="etComp">${t.entries.map(e => `${e.qty}x ${e.name}${e.group ? ' (swarm)' : ''}`).join(', ')}</span>
             </button>
           `).join('');
           el.querySelectorAll('.encTemplateBtn').forEach(btn => {
