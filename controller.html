@@ -297,6 +297,28 @@
       #creatureDetail .cdEmpty{ color:var(--text-dim); font-style:italic; }
 
       /* ---- Swarm group bar (member arrows + HP chips) ---- */
+      .aoeChk{ width:15px; height:15px; margin:0 6px 0 0; flex-shrink:0; accent-color:var(--accent-2); cursor:pointer; }
+      #aoePanelResults{ margin-top:8px; font-size:12px; }
+      #aoePanelResults .aoeRow{ display:flex; gap:8px; padding:3px 0; border-bottom:1px solid var(--border); }
+      #aoePanelResults .aoeRow .nm{ flex:1; } #aoePanelResults .ok{ color:#6ec26e; } #aoePanelResults .bad{ color:var(--danger); }
+      .aoeTable{ width:100%; border-collapse:collapse; font-size:12px; margin:8px 0; }
+      .aoeTable th{ text-align:left; color:var(--text-dim); font-weight:400; font-size:10px; text-transform:uppercase; padding:2px 4px; }
+      .aoeTable td{ padding:3px 4px; } .aoeTable input{ width:58px; padding:4px; text-align:center; font-size:12px; }
+      .usesBox{ margin-top:6px; display:flex; flex-direction:column; gap:3px; }
+      .useRow{ display:flex; align-items:center; gap:6px; font-size:11px; }
+      .useRow .uName{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text); }
+      .useRow .uTag{ color:var(--text-dim); font-size:10px; }
+      .useRow .uState{ font-size:10px; padding:1px 6px; border-radius:10px; border:1px solid var(--border); }
+      .useRow .uState.ready{ color:#6ec26e; border-color:#6ec26e; } .useRow .uState.spent{ color:var(--text-dim); }
+      .useRow .laPip.filled{ background:#e08a4f; border-color:#e08a4f; }
+      .useRow .uRm{ background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:11px; padding:0 2px; }
+      .usesAdd{ display:flex; gap:4px; align-items:center; flex-wrap:wrap; }
+      .usesAdd input[type=text]{ flex:1; min-width:90px; padding:4px 6px; font-size:11px; }
+      .usesAdd input[type=number]{ width:44px; padding:4px; font-size:11px; text-align:center; }
+      .usesAdd select{ padding:4px; font-size:11px; }
+      .usesAdd button{ padding:4px 8px; font-size:11px; }
+      .card.hiddenCard{ opacity:.62; border-style:dashed; }
+      .logEntry.dmOnly .logText::before{ content:'🕶 DM only · '; color:var(--text-dim); font-size:10px; }
       .groupBar{ margin-top:8px; padding:7px 8px; border:1px solid var(--border); border-radius:8px; background:#0d1318; }
       .gbNav{ display:flex; align-items:center; gap:8px; }
       .gbNav .gbLabel{ flex:1; text-align:center; font-size:12px; color:var(--text); }
@@ -814,6 +836,47 @@
       </div>
 
       <div class="panel">
+        <h3>Area Effect <span class="sub">Tick creatures on their cards, roll damage once, each rolls their own save</span></h3>
+        <div class="row2">
+          <div class="field" style="flex:2;"><label>Name (optional)</label><input type="text" id="aoeName" placeholder="e.g. Fireball"></div>
+          <div class="field"><label>Damage</label><input type="text" id="aoeAmount" placeholder="8d6 or 24"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>Damage type</label><select id="aoeType"><option value="">Untyped</option></select></div>
+          <div class="field"><label>Save</label>
+            <select id="aoeAbility"><option value="">No save</option><option value="str">STR</option><option value="dex" selected>DEX</option><option value="con">CON</option><option value="int">INT</option><option value="wis">WIS</option><option value="cha">CHA</option></select></div>
+          <div class="field"><label>DC</label><input type="number" id="aoeDc" min="1" value="15"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>On a success</label><select id="aoeOnSave"><option value="half">Half damage</option><option value="none">No damage</option></select></div>
+          <div class="field"><label>Rolls</label><select id="aoeAdv"><option value="normal">Normal</option><option value="adv">Advantage</option><option value="dis">Disadvantage</option></select></div>
+        </div>
+        <div class="row2">
+          <button class="btn" id="aoeSelectAllBtn">Select everyone</button>
+          <button class="btn" id="aoeClearBtn">Clear selection</button>
+        </div>
+        <button class="btn primary" id="aoeGoBtn">🌀 Roll &amp; apply to <span id="aoeCount">0</span> selected</button>
+        <div id="aoePanelResults"></div>
+      </div>
+      <div class="panel">
+        <h3>Handouts <span class="sub">Show a letter, note or map fragment on the TV</span></h3>
+        <div class="field"><label>Title</label><input type="text" id="hoTitle" maxlength="120" placeholder="e.g. A crumpled letter"></div>
+        <div class="field"><label>Text</label><textarea id="hoText" rows="4" maxlength="4000" placeholder="What the letter says…"></textarea></div>
+        <div class="row2">
+          <div class="field"><label>Image (optional)</label><input type="file" id="hoImgFile" accept="image/*"></div>
+          <div class="field"><label>Hide after</label><select id="hoSecs"><option value="0">Until I hide it</option><option value="15">15 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option></select></div>
+        </div>
+        <div id="hoPreview" style="display:none;margin:4px 0;"><img id="hoPreviewImg" style="max-width:100%;max-height:120px;border-radius:4px;"> <button class="btn miniBtn" id="hoClearImg" type="button">Remove image</button></div>
+        <div class="row2">
+          <button class="btn primary" id="hoShowBtn">📜 Show on TV</button>
+          <button class="btn" id="hoHideBtn">Hide from TV</button>
+        </div>
+        <div class="row2"><button class="btn" id="hoSaveBtn">💾 Save to library</button></div>
+        <div id="hoStatus" class="sub" style="margin:4px 0;"></div>
+        <div id="hoLibrary"></div>
+      </div>
+
+      <div class="panel">
         <h3>Roster <span class="sub">Prep your party &amp; monsters ahead of time — synced to your campaign, available on any device</span></h3>
         <input type="text" id="rosterFilter" placeholder="Filter by name…">
         <div id="rosterList"></div>
@@ -848,6 +911,7 @@
           <input type="text" id="encTemplateNameInput" placeholder="Name this encounter…">
         </div>
         <button class="btn primary" id="encSaveTemplateBtn">Save as Template</button>
+        <label class="sub" style="display:flex;align-items:center;gap:6px;margin:6px 0;cursor:pointer;"><input type="checkbox" id="encDeployHidden"> Deploy hidden (ambush) — in the tracker, off the TV until revealed</label>
         <button class="btn danger" id="encDeployPendingBtn">⚔️ Add Pending Encounter to Initiative</button>
       </div>
 
@@ -1129,6 +1193,19 @@
       </div>
     </div>
 
+    <!-- Area effect: per-target save bonus / optional manual roll -->
+    <div class="modalOverlay" id="aoeModal">
+      <div class="modalBox">
+        <h2 id="aoeModalTitle">Area effect</h2>
+        <p id="aoeModalSub" style="color:var(--text-dim);font-size:12px;margin:0 0 6px;"></p>
+        <table class="aoeTable"><thead><tr><th>Target</th><th>Save bonus</th><th title="Leave blank to roll for them">d20 (blank = roll)</th></tr></thead><tbody id="aoeModalRows"></tbody></table>
+        <div class="modalFooter">
+          <button class="btn" id="aoeModalCancel">Cancel</button>
+          <button class="btn primary" id="aoeModalGo">Roll &amp; apply</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Spellcasting modal (concentration / spell slots / prepared spells) -->
     <div class="modalOverlay" id="spellModal">
       <div class="modalBox">
@@ -1333,6 +1410,8 @@
         let lastSnapshot = null;
         let soloCombatantId = null; // set when this window is a creature detail pop-out
         let cdBuiltFor = null, cdSheetKey = null; // creature pop-out render state
+        const aoeSelected = new Set();
+        let aoeSeenSeq = null;
         let liveTimer = null;
 
         // ---- Panel minimize: collapse panels you don't use down to just their
@@ -1705,6 +1784,7 @@
             markLive();
             lastSnapshot = d.payload;
             renderSnapshot(lastSnapshot);
+            try{ handleAoeResult(lastSnapshot); }catch(err){ console.error(err); }
             if(soloCombatantId !== null) renderCombatantDetail(lastSnapshot);
           }
         });
@@ -1714,6 +1794,7 @@
             markLive();
             lastSnapshot = payload;
             try{ renderSnapshot(lastSnapshot); }catch(err){ console.error(err); }
+            try{ handleAoeResult(lastSnapshot); }catch(err){ console.error(err); }
             if(soloCombatantId !== null) renderCombatantDetail(lastSnapshot);
           });
         }
@@ -1906,6 +1987,7 @@
               el.dataset.id = c.id;
               el.innerHTML = `
                 <div class="cardTop">
+                  <input type="checkbox" class="aoeChk" title="Select for an area effect (see the Area Effect panel)">
                   <div class="initNum"></div>
                   <div class="name"></div>
                   <button class="iconBtn tokenBtn" title="Place on map">📍</button>
@@ -1938,6 +2020,7 @@
                   <button class="laMiniBtn lrSpendBtn" title="Use a legendary resistance">−</button>
                   <button class="laMiniBtn lrResetBtn" title="Reset to full (new day/rest)">↺</button>
                 </div>
+                <div class="usesBox" style="display:none;"></div>
                 <div class="laRow laReactRow">
                   <label>Leg. React</label>
                   <input type="number" class="lreMaxInput" min="0" max="9" value="0" title="Legendary reactions (0 = none) — refill at the start of this creature's turn">
@@ -1953,6 +2036,10 @@
               `;
               // wire listeners ONCE, when the card is created — never re-attached on re-render
               el.querySelector('.removeBtn').addEventListener('click', () => send('removeCombatant', { id: c.id }));
+              el.querySelector('.aoeChk').addEventListener('change', function(){
+                if(this.checked) aoeSelected.add(c.id); else aoeSelected.delete(c.id);
+                updateAoeCount();
+              });
               el.querySelector('.moreBtn').addEventListener('click', () => {
                 // condPickerOpenId = condPickerOpenId === c.id ? null : c.id;
                 moreMenuOpenId = moreMenuOpenId === c.id ? null : c.id;
@@ -2001,8 +2088,11 @@
             // update only the mutable display bits — amtInput is never touched here
             el.classList.toggle('active', c.id === s.activeId);
             el.querySelector('.initNum').textContent = c.init;
-            el.querySelector('.name').textContent = c.group ? `${c.name} ×${c.group.members.length}` : c.name;
+            el.querySelector('.name').textContent = (c.hidden ? '🕶 ' : '') + (c.group ? `${c.name} ×${c.group.members.length}` : c.name);
+            el.classList.toggle('hiddenCard', !!c.hidden);
             renderGroupBar(c, el.querySelector('.groupBar'));
+            el.querySelector('.aoeChk').checked = aoeSelected.has(c.id);
+            renderUsesBox(c, el.querySelector('.usesBox'));
             const statSpan = el.querySelector('.statText');
             statSpan.textContent = st.text;
             statSpan.classList.toggle('bloodied', st.bloodied);
@@ -2033,6 +2123,7 @@
                     <button class="moreMenuItem" data-action="legendary"><span class="icon">👑</span>Legendary action / resist: ${isLeg ? 'ON' : 'OFF'}</button>
                     <button class="moreMenuItem" data-action="legendaryReact"><span class="icon">↩️</span>Legendary reaction: ${isLegReact ? 'ON' : 'OFF'}</button>
                     <div class="moreMenuDivider"></div>
+                    <button class="moreMenuItem" data-action="hidden"><span class="icon">🕶</span>Hidden from the TV: ${c.hidden ? 'ON' : 'OFF'}</button>
                     <div class="moreMenuRow">
                       <span>Token color</span>
                       <input type="color" class="tokenColorInput" value="${c.tokenColor || defaultTokenColorFor(c.id)}">
@@ -2061,11 +2152,13 @@
                     else if(action === 'spell') openSpellModal(c.id);
                     else if(action === 'stats') openStatsModal(c.id);
                     else if(action === 'popout') window.blackstoneDesktop.openPanelWindow('combatant-' + c.id);
+                    else if(action === 'hidden') send('setHidden', { id: c.id, value: !c.hidden });
                     else if(action === 'legendary') send('setLegendary', { id: c.id, value: !isLeg });
                     else if(action === 'legendaryReact') send('setLegendaryReact', { id: c.id, value: !isLegReact });
                     if(lastSnapshot) renderCombatantList(lastSnapshot);
                   });
                 });
+                wireUsesAddForm(moreMenuWrap.querySelector('.usesAdd'), () => c.id);
                 moreMenuWrap.querySelector('.tokenColorInput').addEventListener('input', function(){
                   send('setTokenColor', { id: c.id, color: this.value });
                 });
@@ -2352,7 +2445,7 @@
             logListEl.innerHTML = '<div id="logEmpty">No log entries yet.</div>';
           } else {
             logListEl.innerHTML = log.slice().reverse().map(e => `
-              <div class="logEntry">
+              <div class="logEntry${e.dmOnly ? ' dmOnly' : ''}">
                 <span class="logTime">${e.time}</span>
                 <span class="logText">${escapeHtml(e.text)}</span>
               </div>
@@ -3090,6 +3183,7 @@
                 <label class="rcMultiLbl">How many</label>
                 <input type="number" class="rcQty" min="1" max="30" value="1" data-id="${c.id}" title="How many copies to add">
                 <label class="rcMultiLbl rcSwarmLbl" title="Keep them as ONE initiative slot and flip between members (each has its own HP)"><input type="checkbox" class="rcSwarmChk" data-id="${c.id}"> Swarm (one init slot)</label>
+                <label class="rcMultiLbl" title="Add it to the tracker but keep it off the TV until you reveal it"><input type="checkbox" class="rcHiddenChk" data-id="${c.id}"> Hidden</label>
               </div>`}
               <div class="rcActions">
                 <input type="number" class="rcInit" placeholder="Init" data-id="${c.id}">
@@ -3117,14 +3211,17 @@
               const qtyEl = listEl.querySelector('.rcQty[data-id="' + id + '"]');
               const swarmEl = listEl.querySelector('.rcSwarmChk[data-id="' + id + '"]');
               const qty = creature.isPlayer || !qtyEl ? 1 : Math.max(1, Math.min(30, parseInt(qtyEl.value, 10) || 1));
+              const hiddenEl = listEl.querySelector('.rcHiddenChk[data-id="' + id + '"]');
+              const asHidden = !!(hiddenEl && hiddenEl.checked);
               const asSwarm = !!(swarmEl && swarmEl.checked) && qty > 1;
               const baseName = creature.name || 'Unnamed';
               const payloadFor = (name, extra) => Object.assign({
                 name, init,
                 hp, maxHp: creature.hpMax, tempHp: 0,
                 ac: creature.ac, notes: creature.classRace || '', rosterId: creature.isPlayer ? null : creature.id,
-                absorb: creature.absorb || [], resistances: creature.resistances || [], immunities: creature.immunities || [], vulnerabilities: creature.vulnerabilities || []
-              }, extra || {});
+                absorb: creature.absorb || [], resistances: creature.resistances || [], immunities: creature.immunities || [], vulnerabilities: creature.vulnerabilities || [],
+                uses: parseUsesFromActions(creature.actions)
+              }, extra || {}, asHidden ? { hidden: true } : {});
               if(asSwarm){
                 // one combatant, one initiative slot, `qty` members each with their own HP
                 send('addCombatantFromRoster', payloadFor(baseName, { groupSize: qty }));
@@ -3136,6 +3233,7 @@
               }
               if(qtyEl) qtyEl.value = 1;
               if(swarmEl) swarmEl.checked = false;
+              if(hiddenEl) hiddenEl.checked = false;
               initInput.value = '';
               initInput.style.borderColor = '';
             });
@@ -3829,6 +3927,231 @@
           });
         }
 
+        // ---- Area effect (fireball etc.): tick targets, roll damage once, each rolls its own save ----
+        const AOE_FULL = { str:'strength', dex:'dexterity', con:'constitution', int:'intelligence', wis:'wisdom', cha:'charisma' };
+        document.getElementById('aoeType').innerHTML += CONTROLLER_DAMAGE_TYPES.map(d => `<option value="${d.id}">${d.icon} ${d.label}</option>`).join('');
+        function updateAoeCount(){
+          if(lastSnapshot){ const ids = new Set(lastSnapshot.combatants.map(c => c.id)); [...aoeSelected].forEach(id => { if(!ids.has(id)) aoeSelected.delete(id); }); }
+          document.getElementById('aoeCount').textContent = aoeSelected.size;
+          document.getElementById('aoeGoBtn').disabled = aoeSelected.size === 0;
+        }
+        function syncAoeChecks(){
+          if(lastSnapshot) renderCombatantList(lastSnapshot);
+          updateAoeCount();
+        }
+        // Save bonus for a combatant: roster sheet (ability mod + proficiency if proficient), else the
+        // SRD stat block (listed save, or the ability modifier). Anything unknown → +0, editable in the dialog.
+        function aoeSaveBonusFor(c, ab){
+          try{
+            const r = c.rosterId ? roster.find(x => x.id === c.rosterId) : null;
+            if(r && r.abilities){
+              return Promise.resolve(abilityMod(parseInt(r.abilities[ab], 10) || 10) + ((r.saveProf && r.saveProf[ab]) ? (parseInt(r.profBonus, 10) || 2) : 0));
+            }
+          }catch(err){}
+          let key = c.monsterKey || null;
+          try{
+            if(!key && monsterIndexLoaded){
+              const base = c.name.replace(/\s+\d+$/, '').toLowerCase();
+              const hit = monsterIndex.find(m => m.name.toLowerCase() === base);
+              if(hit) key = hit.index;
+            }
+          }catch(err){}
+          if(!key) return Promise.resolve(0);
+          return fetchMonsterDetail(key).then(m => {
+            const full = AOE_FULL[ab];
+            const st = m.saving_throws;
+            if(st && typeof st === 'object'){
+              const v = st[full] ?? st[ab] ?? st[ab.toUpperCase()];
+              const n = typeof v === 'object' && v ? parseFloat(v.bonus ?? v.value) : parseFloat(v);
+              if(!isNaN(n)) return n;
+            }
+            const score = m.ability_scores && m.ability_scores[full];
+            return typeof score === 'number' ? abilityMod(score) : 0;
+          }).catch(() => 0);
+        }
+        function openAoeModal(){
+          if(!lastSnapshot || !aoeSelected.size) return;
+          const amount = document.getElementById('aoeAmount').value.trim();
+          if(!amount){ document.getElementById('aoeAmount').focus(); return; }
+          const ab = document.getElementById('aoeAbility').value;
+          const dc = parseInt(document.getElementById('aoeDc').value, 10);
+          const base = {
+            label: document.getElementById('aoeName').value.trim(), amount,
+            dtype: document.getElementById('aoeType').value || null,
+            ability: ab || null, dc: dc || 0,
+            onSave: document.getElementById('aoeOnSave').value, adv: document.getElementById('aoeAdv').value
+          };
+          const targets = lastSnapshot.combatants.filter(c => aoeSelected.has(c.id));
+          if(!ab || !(dc > 0)){
+            // no save involved — apply straight away
+            send('areaDamage', Object.assign(base, { targets: targets.map(c => ({ id: c.id })) }));
+            aoeSelected.clear(); syncAoeChecks();
+            return;
+          }
+          document.getElementById('aoeModalTitle').textContent = base.label || 'Area effect';
+          document.getElementById('aoeModalSub').textContent =
+            `${amount}${base.dtype ? ' ' + base.dtype : ''} damage · ${ab.toUpperCase()} save DC ${dc} · ${base.onSave === 'half' ? 'half' : 'no damage'} on a success` +
+            (base.adv !== 'normal' ? ` · ${base.adv === 'adv' ? 'advantage' : 'disadvantage'}` : '');
+          const rowsEl = document.getElementById('aoeModalRows');
+          rowsEl.innerHTML = targets.map(c => `
+            <tr data-id="${c.id}"><td>${escapeHtml(c.name)}${c.group ? ` <span style="color:var(--text-dim)">(swarm ×${c.group.members.length} — each rolls)</span>` : ''}</td>
+            <td><input type="number" class="aoeBonus" value="0"></td>
+            <td><input type="number" class="aoeRoll" placeholder="auto"></td></tr>`).join('');
+          document.getElementById('aoeModal').classList.add('open');
+          targets.forEach(c => {
+            aoeSaveBonusFor(c, ab).then(b => {
+              const inp = rowsEl.querySelector(`tr[data-id="${c.id}"] .aoeBonus`);
+              if(inp && inp.dataset.touched !== '1') inp.value = b;
+            });
+          });
+          rowsEl.querySelectorAll('.aoeBonus').forEach(i => i.addEventListener('input', () => { i.dataset.touched = '1'; }));
+          document.getElementById('aoeModalGo').onclick = () => {
+            const payload = Object.assign(base, { targets: [...rowsEl.querySelectorAll('tr')].map(tr => ({
+              id: parseInt(tr.dataset.id, 10),
+              bonus: parseInt(tr.querySelector('.aoeBonus').value, 10) || 0,
+              roll: tr.querySelector('.aoeRoll').value
+            })) });
+            send('areaDamage', payload);
+            closeModal(document.getElementById('aoeModal'));
+            aoeSelected.clear(); syncAoeChecks();
+          };
+        }
+        document.getElementById('aoeGoBtn').addEventListener('click', openAoeModal);
+        document.getElementById('aoeModalCancel').addEventListener('click', () => closeModal(document.getElementById('aoeModal')));
+        document.getElementById('aoeSelectAllBtn').addEventListener('click', () => {
+          if(lastSnapshot) lastSnapshot.combatants.forEach(c => aoeSelected.add(c.id));
+          syncAoeChecks();
+        });
+        document.getElementById('aoeClearBtn').addEventListener('click', () => { aoeSelected.clear(); syncAoeChecks(); });
+        // Show the result of the latest area effect (once per roll) and queue concentration checks
+        function handleAoeResult(s){
+          if(!s || !s.aoe){ if(aoeSeenSeq === null) aoeSeenSeq = 0; return; }
+          if(aoeSeenSeq === null){ aoeSeenSeq = s.aoe.seq; return; } // result from before this window opened — don't replay
+          if(s.aoe.seq === aoeSeenSeq) return;
+          aoeSeenSeq = s.aoe.seq;
+          if(new URLSearchParams(location.search).get('panel')) return; // pop-out windows don't show/queue these
+          document.getElementById('aoePanelResults').innerHTML = s.aoe.rows.map(r => `
+            <div class="aoeRow"><span class="nm">${escapeHtml(r.name)}</span>
+              <span>${r.total === null ? 'no save' : `save ${r.total}`}</span>
+              <span class="${r.total === null ? '' : (r.success ? 'ok' : 'bad')}">${r.total === null ? '' : (r.success ? '✓' : '✗')}</span>
+              <span>${r.dealt > 0 ? '−' + r.dealt : '0'}</span></div>`).join('');
+          s.aoe.rows.forEach(r => { if(r.dealt > 0) queueConcentrationPrompt(r.id, r.dealt); });
+        }
+        updateAoeCount();
+        // ---- Handouts: library lives in this browser only (images are shrunk first) ----
+        (function(){
+          const KEY = 'blackstoneHandouts_v1';
+          let image = '';
+          const $ = id => document.getElementById(id);
+          if(!$('hoShowBtn')) return;
+          const load = () => { try{ const v = JSON.parse(localStorage.getItem(KEY) || '[]'); return Array.isArray(v) ? v : []; }catch(e){ return []; } };
+          const store = list => { try{ localStorage.setItem(KEY, JSON.stringify(list)); return true; }catch(e){ $('hoStatus').textContent = 'Could not save — browser storage is full or blocked.'; return false; } };
+          const setImage = d => { image = d || ''; $('hoPreview').style.display = image ? '' : 'none'; if(image) $('hoPreviewImg').src = image; };
+          const current = () => ({ id: 'ho' + Date.now(), title: $('hoTitle').value.trim(), text: $('hoText').value, image, seconds: parseInt($('hoSecs').value, 10) || 0 });
+          function shrink(file){
+            return new Promise(res => {
+              const r = new FileReader();
+              r.onload = () => { const im = new Image(); im.onload = () => {
+                const k = Math.min(1, 1600 / Math.max(im.width, im.height)), cv = document.createElement('canvas');
+                cv.width = Math.round(im.width * k); cv.height = Math.round(im.height * k);
+                cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+                res(cv.toDataURL('image/jpeg', 0.85)); }; im.onerror = () => res(''); im.src = r.result; };
+              r.onerror = () => res(''); r.readAsDataURL(file);
+            });
+          }
+          function renderLib(){
+            const list = load(), host = $('hoLibrary');
+            host.innerHTML = list.map((h, i) => `<div class="useRow" style="padding:4px 0;"><span class="uName">${h.image ? '🖼 ' : '📜 '}${escapeHtml(h.title || '(untitled)')}</span><button class="laMiniBtn" data-i="${i}" data-a="show" title="Show on TV">▶</button><button class="laMiniBtn" data-i="${i}" data-a="edit" title="Load into the form">✎</button><button class="uRm" data-i="${i}" data-a="del" title="Delete">🗑</button></div>`).join('');
+            host.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+              const l = load(), h = l[+b.dataset.i]; if(!h) return;
+              if(b.dataset.a === 'show') send('showHandout', Object.assign({}, h, { seconds: parseInt($('hoSecs').value, 10) || 0 }));
+              else if(b.dataset.a === 'edit'){ $('hoTitle').value = h.title || ''; $('hoText').value = h.text || ''; setImage(h.image); }
+              else { l.splice(+b.dataset.i, 1); store(l); renderLib(); }
+            }));
+          }
+          $('hoImgFile').addEventListener('change', async e => { const f = e.target.files[0]; if(f) setImage(await shrink(f)); e.target.value = ''; });
+          $('hoClearImg').addEventListener('click', () => setImage(''));
+          $('hoShowBtn').addEventListener('click', () => {
+            const h = current();
+            if(!h.title && !h.text && !h.image){ $('hoStatus').textContent = 'Add a title, text or image first.'; return; }
+            $('hoStatus').textContent = 'Showing on the TV.'; send('showHandout', h);
+          });
+          $('hoHideBtn').addEventListener('click', () => { $('hoStatus').textContent = ''; send('hideHandout', {}); });
+          $('hoSaveBtn').addEventListener('click', () => {
+            const h = current();
+            if(!h.title && !h.text && !h.image){ $('hoStatus').textContent = 'Nothing to save yet.'; return; }
+            const l = load(); l.push({ id: h.id, title: h.title, text: h.text, image: h.image });
+            if(store(l)){ $('hoStatus').textContent = 'Saved to library.'; renderLib(); }
+          });
+          renderLib();
+        })();
+        // ---- Ability trackers ("3/day", "Recharge 5–6") — shared by the card and the pop-out ----
+        // Pulls trackers out of a creature's action list by name: "Fire Breath (Recharge 5–6)", "Frost Ray (3/Day)".
+        function parseUsesFromActions(actions){
+          const out = [];
+          (Array.isArray(actions) ? actions : []).forEach(a => {
+            const name = String((a && a.name) || '');
+            let m = name.match(/\(\s*Recharge\s*(\d)\s*(?:[–—-]\s*6)?\s*\)/i);
+            if(m){ out.push({ name: name.replace(/\s*\(.*?\)\s*$/, '').trim() || name, kind: 'recharge', max: 1, rechargeMin: parseInt(m[1], 10), ready: true }); return; }
+            m = name.match(/\(\s*(\d+)\s*\/\s*Day[^)]*\)/i);
+            if(m){ out.push({ name: name.replace(/\s*\(.*?\)\s*$/, '').trim() || name, kind: 'perday', max: parseInt(m[1], 10), left: parseInt(m[1], 10) }); }
+          });
+          return out;
+        }
+        function usesAddFormHtml(){
+          return `<div class="usesAdd">
+            <input type="text" class="uaName" placeholder="Ability name" maxlength="60">
+            <select class="uaKind"><option value="perday">N / day</option><option value="recharge">Recharge N–6</option></select>
+            <input type="number" class="uaN" min="1" max="20" value="3" title="Uses per day — or, for Recharge, the lowest d6 roll that recharges it">
+            <button class="btn miniBtn uaAdd" type="button">Add</button>
+          </div>`;
+        }
+        function wireUsesAddForm(form, getId){
+          if(!form) return;
+          const kind = form.querySelector('.uaKind'), n = form.querySelector('.uaN');
+          kind.addEventListener('change', () => { n.value = kind.value === 'recharge' ? 5 : 3; n.max = kind.value === 'recharge' ? 6 : 20; n.min = kind.value === 'recharge' ? 2 : 1; });
+          form.querySelector('.uaAdd').addEventListener('click', () => {
+            const nameEl = form.querySelector('.uaName');
+            const name = nameEl.value.trim();
+            if(!name){ nameEl.focus(); return; }
+            const val = parseInt(n.value, 10) || (kind.value === 'recharge' ? 5 : 3);
+            send('addUse', kind.value === 'recharge'
+              ? { id: getId(), name, kind: 'recharge', max: 1, rechargeMin: val }
+              : { id: getId(), name, kind: 'perday', max: val });
+            nameEl.value = '';
+          });
+        }
+        function renderUsesBox(c, host){
+          if(!host) return;
+          const uses = Array.isArray(c.uses) ? c.uses : [];
+          if(!uses.length){ host.style.display = 'none'; host.innerHTML = ''; host.dataset.sig = ''; return; }
+          host.style.display = '';
+          const sig = JSON.stringify([c.id, uses]);
+          if(host.dataset.sig === sig) return;
+          host.dataset.sig = sig;
+          host.innerHTML = uses.map(u => u.kind === 'recharge' ? `
+            <div class="useRow" data-use="${escapeHtml(u.id)}">
+              <span class="uName" title="${escapeHtml(u.name)}">🔥 ${escapeHtml(u.name)} <span class="uTag">Recharge ${u.rechargeMin >= 6 ? '6' : u.rechargeMin + '–6'}</span></span>
+              <span class="uState ${u.ready ? 'ready' : 'spent'}">${u.ready ? 'ready' : 'spent'}</span>
+              ${u.ready
+                ? '<button class="laMiniBtn uSpend" title="Use it (spent until it recharges)">✕</button>'
+                : '<button class="laMiniBtn uRoll" title="Roll the recharge d6">🎲</button><button class="laMiniBtn uReset" title="Mark as ready">↺</button>'}
+              <button class="uRm" title="Remove this tracker">🗑</button>
+            </div>` : `
+            <div class="useRow" data-use="${escapeHtml(u.id)}">
+              <span class="uName" title="${escapeHtml(u.name)}">🔥 ${escapeHtml(u.name)} <span class="uTag">${u.max}/day</span></span>
+              <div class="laPips">${Array.from({ length: u.max }, (_, i) => `<span class="laPip${i < u.left ? ' filled' : ''}"></span>`).join('')}</div>
+              <button class="laMiniBtn uSpend" title="Use one">−</button>
+              <button class="laMiniBtn uReset" title="Restore all (new day / rest)">↺</button>
+              <button class="uRm" title="Remove this tracker">🗑</button>
+            </div>`).join('');
+          host.querySelectorAll('.useRow').forEach(row => {
+            const useId = row.dataset.use;
+            const wire = (sel, action) => { const b = row.querySelector(sel); if(b) b.addEventListener('click', () => send(action, { id: c.id, useId })); };
+            wire('.uSpend', 'spendUse'); wire('.uReset', 'resetUse'); wire('.uRoll', 'rollRecharge'); wire('.uRm', 'removeUse');
+          });
+        }
+
         // ---- Swarm group bar: ◀ n/N ▶ + a chip per member (shared by the card and the pop-out) ----
         function renderGroupBar(c, host){
           if(!host) return;
@@ -3921,8 +4244,11 @@
                 <div class="cdToggles">
                   <button class="btn miniBtn cdLegToggle"></button>
                   <button class="btn miniBtn cdReactToggle"></button>
+                  <button class="btn miniBtn cdHiddenToggle"></button>
                 </div>
               </div>
+              <div class="usesBox cdUses" style="display:none;"></div>
+              <div class="cdUsesAddWrap" style="margin:6px 0;"><span class="uTag" style="font-size:11px;color:var(--text-dim);">Add ability tracker</span>${usesAddFormHtml()}</div>
               <div class="cdQuick">
                 <input type="number" class="cdAmt" min="0" value="1" placeholder="amt">
                 <button class="btn miniBtn cdDmg">−HP</button>
@@ -3949,12 +4275,15 @@
             host.querySelector('.cdLrxReset').addEventListener('click', () => send('resetLegendaryReact', { id: idNow() }));
             host.querySelector('.cdLegToggle').addEventListener('click', function(){ send('setLegendary', { id: idNow(), value: this.dataset.next === '1' }); });
             host.querySelector('.cdReactToggle').addEventListener('click', function(){ send('setLegendaryReact', { id: idNow(), value: this.dataset.next === '1' }); });
+            wireUsesAddForm(host.querySelector('.usesAdd'), () => soloCombatantId);
+            host.querySelector('.cdHiddenToggle').addEventListener('click', function(){ send('setHidden', { id: idNow(), value: this.dataset.next === '1' }); });
             cdBuiltFor = c.id;
             cdSheetKey = null;
           }
           // live bits — updated in place so the amount box and scroll position survive
-          host.querySelector('.cdName').textContent = c.group ? c.group.members[c.group.sel].name : c.name;
+          host.querySelector('.cdName').textContent = (c.hidden ? '🕶 ' : '') + (c.group ? c.group.members[c.group.sel].name : c.name);
           renderGroupBar(c, host.querySelector('.cdGroup'));
+          renderUsesBox(c, host.querySelector('.cdUses'));
           const hpTxt = (c.hp !== null && c.hp !== undefined) ? `${c.hp}${c.maxHp !== null && c.maxHp !== undefined ? ' / ' + c.maxHp : ''}` : '—';
           host.querySelector('.cdStats').innerHTML =
             `<b>Init</b> ${escapeHtml(String(c.init))} &nbsp; <b>AC</b> ${c.ac ?? '—'} &nbsp; <b>HP</b> ${hpTxt}${c.tempHp ? ` (+${c.tempHp} temp)` : ''}` +
@@ -3980,6 +4309,9 @@
           legT.dataset.next = showLeg ? '0' : '1';          
           reT.textContent = 'Legendary reaction: ' + (showReact ? 'ON' : 'OFF');          
           reT.dataset.next = showReact ? '0' : '1';
+          const hT = host.querySelector('.cdHiddenToggle');
+          hT.textContent = '🕶 Hidden from TV: ' + (c.hidden ? 'ON' : 'OFF');
+          hT.dataset.next = c.hidden ? '0' : '1';
           // sheet — only rebuilt when its source changes (not every 1s tick)
           const sheetEl = host.querySelector('.cdSheet');
           let monsterKey = c.monsterKey || null;
@@ -4035,10 +4367,11 @@
             maxHp: typeof monster.hit_points === 'number' ? monster.hit_points : null,
             ac: extractAC(monster),
             monsterKey: monster.key || null,
+            uses: parseUsesFromActions(allActions),
             notes: notesParts.join(' | ').slice(0, 600)
           };
         }
-        function addMonstersBatch(entries){
+        function addMonstersBatch(entries, hidden){
           const uniqueName = (base, usedNames) => {
             let name = base;
             if(usedNames.has(name)){ let n = 2; while(usedNames.has(`${base} ${n}`)) n++; name = `${base} ${n}`; }
@@ -4051,7 +4384,7 @@
             if(group && qty > 1){
               // Swarm: ONE combatant (one init roll, one slot) holding `qty` members
               const name = uniqueName(monster.name, usedNames);
-              send('addCombatant', Object.assign(buildMonsterCombatantPayload(monster, name), { groupSize: qty }));
+              send('addCombatant', Object.assign(buildMonsterCombatantPayload(monster, name), { groupSize: qty }, hidden ? { hidden: true } : {}));
               added.push(`${name} ×${qty}`);
               return;
             }
@@ -4063,7 +4396,7 @@
                 name = `${monster.name} ${n}`;
               }
               usedNames.add(name);
-              send('addCombatant', buildMonsterCombatantPayload(monster, name));
+              send('addCombatant', Object.assign(buildMonsterCombatantPayload(monster, name), hidden ? { hidden: true } : {}));
               added.push(name);
             }
           });
@@ -4173,7 +4506,7 @@
         });
         document.getElementById('encDeployPendingBtn').addEventListener('click', () => {
           if(!pendingEncounter.length) return;
-          addMonstersBatch(pendingEncounter.map(e => ({ monster: e.monster, qty: e.qty, group: e.group })));
+          addMonstersBatch(pendingEncounter.map(e => ({ monster: e.monster, qty: e.qty, group: e.group })), document.getElementById('encDeployHidden').checked);
           pendingEncounter = [];
           renderPendingEncounter();
         });

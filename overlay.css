@@ -556,3 +556,18 @@
 
       ::-webkit-scrollbar{ width:8px; }
       ::-webkit-scrollbar-thumb{ background:var(--border); border-radius:4px; }
+
+/* ---- Handouts: a letter / map fragment shown to the table ---- */
+#handoutLayer{ position:fixed; inset:0; z-index:9000; display:none; align-items:center; justify-content:center;
+  background:rgba(0,0,0,.72); pointer-events:none; }
+#handoutLayer.show{ display:flex; animation:hoIn .35s ease-out; }
+@keyframes hoIn{ from{ opacity:0; transform:scale(.97);} to{ opacity:1; transform:none;} }
+#handoutLayer .hoCard{ max-width:78vw; max-height:88vh; display:flex; flex-direction:column; align-items:center; gap:16px;
+  padding:26px 34px; border-radius:10px; background:#efe3c4; color:#2b2113; box-shadow:0 12px 60px rgba(0,0,0,.8); overflow:hidden; }
+#handoutLayer .hoCard.noText.hasImg{ background:transparent; box-shadow:none; padding:0; }
+#handoutLayer .hoTitle{ font:700 34px/1.2 Georgia,serif; text-align:center; }
+#handoutLayer .hoTitle:empty{ display:none; }
+#handoutLayer .hoImg{ max-width:100%; max-height:68vh; object-fit:contain; border-radius:6px; display:none; }
+#handoutLayer .hoCard.hasImg .hoImg{ display:block; }
+#handoutLayer .hoText{ font:26px/1.5 Georgia,serif; white-space:pre-wrap; overflow:auto; max-height:56vh; width:100%; }
+#handoutLayer .hoText:empty{ display:none; }
