@@ -556,3 +556,23 @@
 
       ::-webkit-scrollbar{ width:8px; }
       ::-webkit-scrollbar-thumb{ background:var(--border); border-radius:4px; }
+
+/* ---- Handouts: letters / map fragments shown to the table. Each .hoCard is one copy with its own
+   position, rotation and scale (set inline by js/remote.js), so every side of the table can read one. ---- */
+#handoutLayer{ position:fixed; inset:0; z-index:9000; display:none; background:rgba(0,0,0,.6); pointer-events:none; overflow:hidden; }
+#handoutLayer.show{ display:block; animation:hoIn .35s ease-out; }
+@keyframes hoIn{ from{ opacity:0;} to{ opacity:1;} }
+#handoutLayer .hoCard{ position:absolute; max-width:78vw; max-height:88vh; display:flex; flex-direction:column; align-items:center; gap:16px;
+  padding:26px 34px; border-radius:10px; background:#efe3c4; color:#2b2113; box-shadow:0 12px 60px rgba(0,0,0,.8); overflow:hidden; transform-origin:center center; }
+#handoutLayer .hoCard.noText.hasImg{ background:transparent; box-shadow:none; padding:0; }
+#handoutLayer .hoTitle{ font:700 34px/1.2 Georgia,serif; text-align:center; }
+#handoutLayer .hoTitle:empty{ display:none; }
+#handoutLayer .hoImg{ max-width:100%; max-height:68vh; object-fit:contain; border-radius:6px; display:block; }
+#handoutLayer .hoText{ font:26px/1.5 Georgia,serif; white-space:pre-wrap; overflow:auto; max-height:56vh; width:100%; }
+#handoutLayer .hoText:empty{ display:none; }
+body.overlayInteractive #handoutLayer .hoCard{ pointer-events:auto; cursor:grab; touch-action:none; user-select:none; }
+body.overlayInteractive #handoutLayer .hoCard.dragging{ cursor:grabbing; box-shadow:0 18px 80px rgba(0,0,0,.9); }
+/* name tag per handout copy — for the DM while arranging; shown only when switched on (or while interaction is on) */
+#handoutLayer .hoTag{ display:none; position:absolute; top:6px; left:8px; z-index:2; background:#c0392b; color:#fff; font:700 15px/1 system-ui,sans-serif;
+  padding:4px 10px; border-radius:12px; white-space:nowrap; box-shadow:0 2px 6px rgba(0,0,0,.5); pointer-events:none; }
+#handoutLayer.labels .hoTag, body.overlayInteractive #handoutLayer .hoTag{ display:block; }
