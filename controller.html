@@ -302,6 +302,9 @@
       .pcChip .pcName{ font-weight:700; font-size:12px; margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:150px; }
       .pcChip .pcStats{ display:flex; gap:8px; color:var(--text-dim); white-space:nowrap; }
       .pcChip .pcStats b{ color:var(--text); }
+      .pcChip .pcAct{ display:flex; gap:4px; align-items:center; margin-top:5px; }
+      .pcChip .pcInit{ width:44px; padding:3px 4px; font-size:11px; text-align:center; }
+      .pcChip .pcAct .btn{ width:auto; flex:0 0 auto; padding:3px 8px; font-size:11px; }
       .hoMap{ position:relative; width:100%; aspect-ratio:16/9; background:#0b1117; border:1px solid var(--border); border-radius:6px; margin:4px 0 8px; overflow:hidden; touch-action:none; }
       .hoMapCard{ position:absolute; width:20%; aspect-ratio:3/2; transform-origin:center; background:#efe3c4; color:#2b2113; border-top:4px solid #c0392b; border-radius:3px;
         font-size:9px; line-height:1.15; display:flex; align-items:center; justify-content:center; text-align:center; padding:2px; overflow:hidden; cursor:grab; user-select:none; touch-action:none; box-shadow:0 2px 8px rgba(0,0,0,.6); }
@@ -3211,10 +3214,45 @@
             el.innerHTML = '<div class="sub" style="padding:4px 0;">Party cheat-sheet: nobody ticked yet — tick "Show in party sheet" on a Roster card (players and roster PCs are on by default).</div>';
             return;
           }
-          el.innerHTML = rows.map(({ c, s, tip }) => `<div class="pcChip" title="${escapeHtml(tip)}">
+          el.innerHTML = rows.map(({ id, isPlayer, c, s, tip }) => `<div class="pcChip" title="${escapeHtml(tip)}">
               <div class="pcName">${escapeHtml(c.name || 'Unnamed')}</div>
               <div class="pcStats"><span>AC <b>${s.ac}</b></span><span>PP <b>${s.pp}</b></span>${s.dc !== null ? `<span>DC <b>${s.dc}</b></span>` : ''}<span>Spd <b>${escapeHtml(String(s.speed))}</b></span></div>
+              <div class="pcAct" data-id="${escapeHtml(id)}">
+                <input type="number" class="pcInit" placeholder="Init" title="Initiative roll — Enter or ＋ adds to the fight">
+                <button class="btn primary pcAdd" title="Add to initiative">＋</button>
+                ${isPlayer ? '' : '<button class="btn pcEdit" title="Edit this sheet">✎</button>'}
+              </div>
             </div>`).join('');
+          el.querySelectorAll('.pcAct').forEach(box => {
+            const id = box.dataset.id;
+            const inp = box.querySelector('.pcInit');
+            const add = () => {
+              const init = parseFloat(inp.value);
+              if(isNaN(init)){
+                inp.style.borderColor = 'var(--danger)'; inp.focus();
+                setTimeout(() => { inp.style.borderColor = ''; }, 1500);
+                return;
+              }
+              let creature;
+              if(id.startsWith('pc:')){
+                const pc = playerChars.find(x => 'pc:' + x.id === id);
+                creature = pc ? normalizePlayerChar(pc) : null;
+              } else creature = roster.find(x => x.id === id);
+              if(!creature) return;
+              const hp = creature.isPlayer ? creature.hpCurrent : creature.hpMax;
+              send('addCombatantFromRoster', {
+                name: creature.name || 'Unnamed', init,
+                hp, maxHp: creature.hpMax, tempHp: 0,
+                ac: creature.ac, notes: creature.classRace || '', rosterId: creature.isPlayer ? null : creature.id,
+                absorb: creature.absorb || [], resistances: creature.resistances || [], immunities: creature.immunities || [], vulnerabilities: creature.vulnerabilities || []
+              });
+              inp.value = '';
+            };
+            box.querySelector('.pcAdd').addEventListener('click', add);
+            inp.addEventListener('keydown', e => { if(e.key === 'Enter') add(); });
+            const ed = box.querySelector('.pcEdit');
+            if(ed) ed.addEventListener('click', () => openSheetEditor(id));
+          });
         }
 
         function startPlayerCharsListener(){
