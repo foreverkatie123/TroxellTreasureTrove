@@ -78,6 +78,32 @@
         c.conditions = (m.conditions || []).slice();
         c.exhaustion = m.exhaustion || 0;
       }
+      // ---- Ability trackers: "3/day" uses and "Recharge 5-6" abilities ----
+      // c.uses = [{ id, name, kind:'perday'|'recharge', max, left, rechargeMin, ready }]
+      function sanitizeUses(list){
+        if(!Array.isArray(list)) return [];
+        return list.slice(0, 12).map((u, i) => {
+          const kind = u && u.kind === 'recharge' ? 'recharge' : 'perday';
+          const max = Math.max(1, Math.min(20, parseInt(u && u.max, 10) || 1));
+          return {
+            id: String((u && u.id) || ('u' + Date.now().toString(36) + i + Math.floor(Math.random() * 1000))),
+            name: String((u && u.name) || 'Ability').slice(0, 60),
+            kind, max,
+            left: kind === 'perday' ? Math.max(0, Math.min(max, u && typeof u.left === 'number' ? u.left : max)) : 0,
+            rechargeMin: Math.max(2, Math.min(6, parseInt(u && u.rechargeMin, 10) || 5)),
+            ready: kind === 'recharge' ? !(u && u.ready === false) : true
+          };
+        });
+      }
+      // Rolls the d6 for one recharge ability. Returns the log text; mutates u.ready.
+      function rollRecharge(c, u, auto){
+        const r = 1 + Math.floor(Math.random() * 6);
+        const ok = r >= u.rechargeMin;
+        if(ok) u.ready = true;
+        const need = u.rechargeMin >= 6 ? '6' : `${u.rechargeMin}–6`;
+        logEvent(`🎲 ${c.name}: ${u.name} recharge${auto ? ' (start of turn)' : ''} — rolled ${r} (needs ${need}) — ${ok ? 'recharged!' : 'still spent'}`, { dmOnly: !!c.hidden });
+        return ok;
+      }
       function isLegendaryReact(c){
         if(typeof c.legendaryReact === 'boolean') return c.legendaryReact;
         return (c.legendaryReactMax || 0) > 0;
@@ -172,14 +198,17 @@
         const active = idx >= 0 ? order[idx] : order[0];
         const onDeck = order.length > 1 ? order[(Math.max(idx, 0) + 1) % order.length] : null;
         document.getElementById('hudRoundNum').textContent = round;
-        document.getElementById('hudActive').textContent = active ? active.name : '-';
-        document.getElementById('hudOnDeckName').textContent = onDeck ? onDeck.name : '-';
+        // A hidden creature still takes its turn, but the TV shows "???" instead of its name
+        const hudName = e => e ? (e.hidden ? '???' : e.name) : '-';
+        document.getElementById('hudActive').textContent = hudName(active);
+        document.getElementById('hudOnDeckName').textContent = hudName(onDeck);
       }
 
       function render(){
         const order = turnOrder().map(resolveEntry).filter(Boolean);
         listEl.innerHTML = '';
-        order.forEach(entry => listEl.appendChild(entry.type === 'lair' ? buildLairCard(entry) : buildCombatantCard(entry)));
+        order.filter(entry => !(entry.type !== 'lair' && entry.hidden)) // hidden combatants stay out of the TV list
+          .forEach(entry => listEl.appendChild(entry.type === 'lair' ? buildLairCard(entry) : buildCombatantCard(entry)));
         wireCardEvents();
         roundNumEl.textContent = round;
         updateHud(order);
@@ -653,8 +682,10 @@
         const turnC = combatants.find(x => x.id === activeId);
         if(turnC && turnC.legendaryMax > 0) turnC.legendaryLeft = turnC.legendaryMax; // refresh at start of own turn
         if(turnC && turnC.legendaryReactMax > 0) turnC.legendaryReactLeft = turnC.legendaryReactMax;
+        // Spent recharge abilities roll automatically at the start of the creature's own turn
+        if(turnC && Array.isArray(turnC.uses)) turnC.uses.forEach(u => { if(u.kind === 'recharge' && !u.ready) rollRecharge(turnC, u, true); });
         const nm = nameForId(activeId);
-        if(nm) logEvent(`▶ ${nm}'s turn`);
+        if(nm) logEvent(`▶ ${nm}'s turn`, { dmOnly: !!(turnC && turnC.hidden) });
         render();
       }
       function prevTurn(){

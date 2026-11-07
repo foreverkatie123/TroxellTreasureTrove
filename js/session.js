@@ -49,6 +49,8 @@ const STORAGE_KEY = 'blackstoneTvSession_v2';
           tempHp: typeof c.tempHp === 'number' ? c.tempHp : 0,
           ac: typeof c.ac === 'number' ? c.ac : null,
           rosterId: c.rosterId || null,
+          hidden: !!c.hidden,
+          uses: typeof sanitizeUses === 'function' ? sanitizeUses(c.uses) : [],
           monsterKey: typeof c.monsterKey === 'string' ? c.monsterKey : null,
           group: (c.group && Array.isArray(c.group.members) && c.group.members.length) ? {
             sel: Math.min(Math.max(0, parseInt(c.group.sel) || 0), c.group.members.length - 1),
