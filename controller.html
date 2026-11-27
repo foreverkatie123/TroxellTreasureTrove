@@ -92,7 +92,7 @@
       }
       .panelCollapseBtn:hover{ color:var(--accent-2); border-color:var(--accent-2); }
       .panel.collapsed{ padding-bottom:14px; }
-      .panel.collapsed > *:not(h3){ display:none !important; }
+      .panel.collapsed > *:not(h3):not(.panelPopoutBtn):not(.panelCollapseBtn){ display:none !important; }
       .panel.collapsed h3{ margin-bottom:0; }
       .panel.collapsed h3 .sub{ display:none; }
       .panelPoppedPlaceholder{
@@ -302,6 +302,9 @@
       .pcChip .pcName{ font-weight:700; font-size:12px; margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:150px; }
       .pcChip .pcStats{ display:flex; gap:8px; color:var(--text-dim); white-space:nowrap; }
       .pcChip .pcStats b{ color:var(--text); }
+      .pcChip .pcAct{ display:flex; gap:4px; align-items:center; margin-top:5px; }
+      .pcChip .pcInit{ width:44px; padding:3px 4px; font-size:11px; text-align:center; }
+      .pcChip .pcAct .btn{ width:auto; flex:0 0 auto; padding:3px 8px; font-size:11px; }
       .hoMap{ position:relative; width:100%; aspect-ratio:16/9; background:#0b1117; border:1px solid var(--border); border-radius:6px; margin:4px 0 8px; overflow:hidden; touch-action:none; }
       .hoMapCard{ position:absolute; width:20%; aspect-ratio:3/2; transform-origin:center; background:#efe3c4; color:#2b2113; border-top:4px solid #c0392b; border-radius:3px;
         font-size:9px; line-height:1.15; display:flex; align-items:center; justify-content:center; text-align:center; padding:2px; overflow:hidden; cursor:grab; user-select:none; touch-action:none; box-shadow:0 2px 8px rgba(0,0,0,.6); }
@@ -1232,6 +1235,38 @@
       </div>
     </div>
 
+    <!-- Grant items & boons to a player's sheet -->
+    <div class="modalOverlay" id="grantModal">
+      <div class="modalBox">
+        <h2 id="grantTitle">Grant</h2>
+        <details id="dmSheetEd" style="margin:0 0 10px;border:1px solid var(--border);border-radius:8px;padding:6px 10px;">
+          <summary style="cursor:pointer;font-weight:700;font-size:13px;">✎ Edit the sheet (stats, AC, save DC, HP…)</summary>
+          <div id="dmEdFields" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:8px;font-size:11px;"></div>
+          <p style="font-size:11px;color:var(--text-dim);margin:8px 0 2px;"><b>Overrides</b> — leave blank to use the calculated value.</p>
+          <div id="dmEdOverrides" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;font-size:11px;"></div>
+          <button class="btn primary" id="dmEdSave" style="margin-top:8px;">Save changes</button>
+          <details style="margin-top:10px;"><summary style="cursor:pointer;font-size:12px;">Advanced — raw sheet data (JSON)</summary>
+            <p style="font-size:11px;color:var(--text-dim);margin:4px 0;">Every field on the sheet. Careful: invalid JSON is refused, but wrong values are saved as typed.</p>
+            <textarea id="dmEdJson" rows="10" style="width:100%;font-family:monospace;font-size:11px;"></textarea>
+            <button class="btn" id="dmEdJsonSave" style="margin-top:6px;">Save raw data</button></details>
+        </details>
+        <p style="color:var(--text-dim);font-size:12px;margin:0 0 8px;">Shows up live on the player's sheet (Inventory and Features tabs). Only you can remove these.</p>
+        <div id="grantCurrent"></div>
+        <h3 style="margin:12px 0 4px;font-size:13px;">Give an item</h3>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <input type="text" id="grantItemName" placeholder="Item (e.g. Potion of Healing)" style="flex:2 1 160px;">
+          <input type="number" id="grantItemQty" value="1" min="1" style="flex:0 0 64px;">
+        </div>
+        <input type="text" id="grantItemNote" placeholder="Note (optional — e.g. 2d4+2 HP, attuned)" style="width:100%;margin-top:6px;">
+        <button class="btn primary" id="grantItemBtn" style="margin-top:6px;">🎁 Give item</button>
+        <h3 style="margin:14px 0 4px;font-size:13px;">Grant a boon</h3>
+        <input type="text" id="grantBoonName" placeholder="Boon (e.g. Blessing of the Moon Queen)" style="width:100%;">
+        <textarea id="grantBoonDesc" rows="3" placeholder="What it does" style="width:100%;margin-top:6px;"></textarea>
+        <button class="btn primary" id="grantBoonBtn" style="margin-top:6px;">✨ Grant boon</button>
+        <div class="modalFooter"><button class="btn" id="grantClose">Done</button></div>
+      </div>
+    </div>
+
     <!-- Area effect: per-target save bonus / optional manual roll -->
     <div class="modalOverlay" id="aoeModal">
       <div class="modalBox">
@@ -1459,6 +1494,7 @@
         (function(){
           function makeCollapsible(panelEl, storageKey, defaultCollapsed){
             if(!panelEl) return;
+            if(new URLSearchParams(location.search).get('panel')) return;   // a popped-out window always shows its panel open
             const h3 = panelEl.querySelector('h3');
             if(!h3) return;
             let collapsed = !!defaultCollapsed;
@@ -1481,11 +1517,16 @@
             apply();
             h3.appendChild(btn);
           }
-          makeCollapsible(document.getElementById('dicePanel'), 'blackstonePanelCollapsed_dice');
-          makeCollapsible(document.getElementById('miniTrackerPanel'), 'blackstonePanelCollapsed_miniTracker');
-          makeCollapsible(document.getElementById('weatherPanel'), 'blackstonePanelCollapsed_weather');
-          makeCollapsible(document.getElementById('tavernPanel'), 'blackstonePanelCollapsed_tavern');
-          makeCollapsible(document.getElementById('treasurePanel'), 'blackstonePanelCollapsed_treasure');
+          // Every titled panel gets a minimize button (same set that gets the ⤢ pop-out button).
+          // The original five keep their old storage keys so saved choices carry over.
+          const LEGACY = { dicePanel:'dice', miniTrackerPanel:'miniTracker', weatherPanel:'weather', tavernPanel:'tavern', treasurePanel:'treasure' };
+          document.querySelectorAll('#appBody > .panel').forEach(panel => {
+            const h3 = panel.querySelector('h3');
+            if(!h3) return;
+            const label = Array.from(h3.childNodes).filter(n => n.nodeType === Node.TEXT_NODE).map(n => n.textContent).join('').trim() || h3.textContent.trim();
+            const slug = (LEGACY[panel.id] || label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''));
+            makeCollapsible(panel, 'blackstonePanelCollapsed_' + slug);
+          });
         })();
 
         // ---- Panel pop-out: tear any panel out into its own real window ----
@@ -1779,6 +1820,7 @@
             // code can act as DM, so we just preserve whoever created it first for that list.
             const existingOwner = doc.exists ? doc.data().ownerId : null;
             const metaUpdate = {
+              codeLower: campaignId.toLowerCase(),
               ownerId: existingOwner || fbUser.uid,
               lastConnectedAt: firebase.firestore.FieldValue.serverTimestamp(),
               lastConnectedBy: fbUser.uid
@@ -2586,9 +2628,18 @@
           showConfirm('Reset fog — re-hide all revealed regions?', () => send('resetFog'));
         });
 
+        // Ruler and spell placement need mouse input on the TV overlay, so turning either on also
+        // turns on "Enable Interaction" (the button label and state follow via onOverlayInteractive).
+        let overlayInteractiveNow = false;   // mirrors the Enable/Disable Interaction state
+        function ensureOverlayInteractive(){
+          if(window.blackstoneDesktop && window.blackstoneDesktop.setOverlayInteractive) window.blackstoneDesktop.setOverlayInteractive(true);
+        }
         document.getElementById('rulerBtn').addEventListener('click', () => {
           const nowOn = lastSnapshot && lastSnapshot.mode === 'ruler';
+          // Ruler is on but interaction switched itself off after the last drag → this click means "measure again".
+          if(nowOn && window.blackstoneDesktop && !overlayInteractiveNow){ ensureOverlayInteractive(); return; }
           send('setRulerMode', { on: !nowOn });
+          if(!nowOn) ensureOverlayInteractive();
         });
 
         document.getElementById('gridToggleBtn').addEventListener('click', () => send('toggleGrid'));
@@ -2598,6 +2649,7 @@
             send('cancelSpell');
           } else {
             send('armSpell', { shape: document.getElementById('fxShape').value, dtype: document.getElementById('fxType').value });
+            ensureOverlayInteractive();
           }
         });
         document.getElementById('fxClearAllBtn').addEventListener('click', () => {
@@ -2676,7 +2728,24 @@
             row.addEventListener('click', () => switchCampaign(row.dataset.id, campaignNames[row.dataset.id] || ''));
           });
         }
+        // Campaign codes are not case-sensitive: "Flab" and "flab" are the same campaign.
+        // Firestore document IDs ARE case-sensitive, so look the code up via a lowercase field first,
+        // then an exact-ID match (older campaigns), and only then create/use the lowercase form.
+        function resolveCampaignCode(raw){
+          const typed = (raw || '').trim() || 'default';
+          const lower = typed.toLowerCase();
+          return db.collection('campaigns').where('codeLower', '==', lower).limit(1).get()
+            .then(snap => {
+              if(!snap.empty) return snap.docs[0].id;
+              return db.collection('campaigns').doc(typed).get().then(d => d.exists ? typed : lower);
+            })
+            .catch(() => typed);
+        }
         function switchCampaign(id, name){
+          if(!db || !fbUser) return switchCampaignExact(id, name);
+          resolveCampaignCode(id).then(real => switchCampaignExact(real, name));
+        }
+        function switchCampaignExact(id, name){
           id = (id || '').trim() || 'default';
           name = (name || '').trim();
           campaignId = id;
@@ -3171,7 +3240,7 @@
         document.getElementById('undoBtn').addEventListener('click', () => send('undo', {}));
 
         // ---- Party cheat-sheet strip: AC / passive Perception / spell save DC / speed for each synced PC ----
-        // Same formulas the player sheet uses (public/index.html + js/dnd-data.js).
+        // Same formulas the player sheet uses (public/index.html + public/js/dnd-data.js).
         const CASTING_ABILITY = { Bard:'cha', Cleric:'wis', Druid:'wis', Paladin:'cha', Ranger:'wis', Sorcerer:'cha', Warlock:'cha', Wizard:'int' };
         function pcCheatStats(c){
           const stats = c.stats || {};
@@ -3181,8 +3250,8 @@
           const castAb = CASTING_ABILITY[c.class] || '';
           return {
             ac: c.ac ?? 10,
-            pp: 10 + mod('wis') + (tier >= 1 ? pb : 0),
-            dc: castAb ? 8 + pb + mod(castAb) : null,
+            pp: (c.dmOverrides && c.dmOverrides.pp !== '' && c.dmOverrides.pp != null) ? c.dmOverrides.pp : 10 + mod('wis') + (tier >= 1 ? pb : 0),
+            dc: (c.dmOverrides && c.dmOverrides.spellDc !== '' && c.dmOverrides.spellDc != null) ? c.dmOverrides.spellDc : (castAb ? 8 + pb + mod(castAb) : null),
             speed: c.speed ?? 30
           };
         }
@@ -3211,10 +3280,47 @@
             el.innerHTML = '<div class="sub" style="padding:4px 0;">Party cheat-sheet: nobody ticked yet — tick "Show in party sheet" on a Roster card (players and roster PCs are on by default).</div>';
             return;
           }
-          el.innerHTML = rows.map(({ c, s, tip }) => `<div class="pcChip" title="${escapeHtml(tip)}">
+          el.innerHTML = rows.map(({ id, isPlayer, c, s, tip }) => `<div class="pcChip" title="${escapeHtml(tip)}">
               <div class="pcName">${escapeHtml(c.name || 'Unnamed')}</div>
               <div class="pcStats"><span>AC <b>${s.ac}</b></span><span>PP <b>${s.pp}</b></span>${s.dc !== null ? `<span>DC <b>${s.dc}</b></span>` : ''}<span>Spd <b>${escapeHtml(String(s.speed))}</b></span></div>
+              <div class="pcAct" data-id="${escapeHtml(id)}">
+                <input type="number" class="pcInit" placeholder="Init" title="Initiative roll — Enter or ＋ adds to the fight">
+                <button class="btn primary pcAdd" title="Add to initiative">＋</button>
+                ${isPlayer ? '<button class="btn pcGrant" title="Edit sheet, give items / boons">✎🎁</button>' : '<button class="btn pcEdit" title="Edit this sheet">✎</button>'}
+              </div>
             </div>`).join('');
+          el.querySelectorAll('.pcAct').forEach(box => {
+            const id = box.dataset.id;
+            const inp = box.querySelector('.pcInit');
+            const add = () => {
+              const init = parseFloat(inp.value);
+              if(isNaN(init)){
+                inp.style.borderColor = 'var(--danger)'; inp.focus();
+                setTimeout(() => { inp.style.borderColor = ''; }, 1500);
+                return;
+              }
+              let creature;
+              if(id.startsWith('pc:')){
+                const pc = playerChars.find(x => 'pc:' + x.id === id);
+                creature = pc ? normalizePlayerChar(pc) : null;
+              } else creature = roster.find(x => x.id === id);
+              if(!creature) return;
+              const hp = creature.isPlayer ? creature.hpCurrent : creature.hpMax;
+              send('addCombatantFromRoster', {
+                name: creature.name || 'Unnamed', init,
+                hp, maxHp: creature.hpMax, tempHp: 0,
+                ac: creature.ac, notes: creature.classRace || '', rosterId: creature.isPlayer ? null : creature.id,
+                absorb: creature.absorb || [], resistances: creature.resistances || [], immunities: creature.immunities || [], vulnerabilities: creature.vulnerabilities || []
+              });
+              inp.value = '';
+            };
+            box.querySelector('.pcAdd').addEventListener('click', add);
+            inp.addEventListener('keydown', e => { if(e.key === 'Enter') add(); });
+            const ed = box.querySelector('.pcEdit');
+            if(ed) ed.addEventListener('click', () => openSheetEditor(id));
+            const gb = box.querySelector('.pcGrant');
+            if(gb) gb.addEventListener('click', () => openGrantModal(id));
+          });
         }
 
         function startPlayerCharsListener(){
@@ -3224,6 +3330,7 @@
             playerChars = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
             renderRosterList();
             renderPartyStrip();
+            if(grantId) renderGrantModal();
           }, () => { /* non-fatal — DM roster still works without player characters */ });
         }
 
@@ -3303,7 +3410,7 @@
               <div class="rcActions">
                 <input type="number" class="rcInit" placeholder="Init" data-id="${c.id}">
                 <button class="btn primary rcAddBtn" data-id="${c.id}">Add to Fight</button>
-                ${c.isPlayer ? '' : `<button class="btn rcEditBtn" data-id="${c.id}">Edit</button><button class="btn danger rcDelBtn" data-id="${c.id}">✕</button>`}
+                ${c.isPlayer ? `<button class="btn rcGrantBtn" data-id="${c.id}">✎ Edit / Give</button>` : `<button class="btn rcEditBtn" data-id="${c.id}">Edit</button><button class="btn danger rcDelBtn" data-id="${c.id}">✕</button>`}
               </div>
             </div>
           `).join('');
@@ -3354,6 +3461,7 @@
               initInput.style.borderColor = '';
             });
           });
+          listEl.querySelectorAll('.rcGrantBtn').forEach(btn => btn.addEventListener('click', () => openGrantModal(btn.dataset.id)));
           listEl.querySelectorAll('.rcEditBtn').forEach(btn => {
             btn.addEventListener('click', () => openSheetEditor(btn.dataset.id));
           });
@@ -3374,6 +3482,93 @@
         const sheetModal = document.getElementById('sheetModal');
         let editingCreature = null;
         let editingIsNew = true;
+
+        // ---- Give items / boons to a player's sheet (writes only the dmGrants field) ----
+        let grantId = null;   // Firestore character doc id
+        const grantModal = document.getElementById('grantModal');
+        const grantDocRef = () => campaignRef('characters').doc(grantId);
+        const newGrantId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        function openGrantModal(pcId){
+          grantId = String(pcId).replace(/^pc:/, '');
+          document.getElementById('dmSheetEd').dataset.pc = '';
+          ['grantItemName','grantItemNote','grantBoonName','grantBoonDesc'].forEach(i => { document.getElementById(i).value = ''; });
+          document.getElementById('grantItemQty').value = 1;
+          renderGrantModal();
+          grantModal.classList.add('open');
+        }
+        function renderGrantModal(){
+          const pc = playerChars.find(x => x.id === grantId);
+          if(!pc){ closeModal(grantModal); grantId = null; return; }
+          const g = pc.dmGrants || {}, items = g.items || [], boons = g.boons || [];
+          document.getElementById('grantTitle').textContent = 'Edit / Grant — ' + (pc.name || 'Unnamed');
+          fillDmEditor(pc);
+          const row = (kind, o, label, sub) => `<div class="rcEmptyRow" style="display:flex;gap:8px;align-items:center;justify-content:space-between;border:1px solid var(--border);border-radius:6px;padding:4px 8px;margin-bottom:4px;">
+              <span style="font-size:12px;"><b>${label}</b>${sub ? '<br><span style="color:var(--text-dim)">' + escapeHtml(sub) + '</span>' : ''}</span>
+              <button class="btn danger" data-rmgrant="${kind}" data-gid="${escapeHtml(o.id)}" title="Take it back">✕</button></div>`;
+          document.getElementById('grantCurrent').innerHTML = (items.length || boons.length)
+            ? items.map(o => row('items', o, (o.quantity > 1 ? o.quantity + '× ' : '') + escapeHtml(o.name || ''), o.note)).join('')
+              + boons.map(o => row('boons', o, '✨ ' + escapeHtml(o.name || ''), o.desc)).join('')
+            : '<div class="sub" style="font-size:12px;">Nothing granted yet.</div>';
+          document.querySelectorAll('#grantCurrent [data-rmgrant]').forEach(b => b.addEventListener('click', () => {
+            const kind = b.dataset.rmgrant, obj = (kind === 'items' ? items : boons).find(x => x.id === b.dataset.gid);
+            if(obj) grantDocRef().update({ ['dmGrants.' + kind]: firebase.firestore.FieldValue.arrayRemove(obj) }).catch(e => showAlert('Could not remove: ' + e.message));
+          }));
+        }
+        function addGrant(kind, obj){
+          return grantDocRef().update({ ['dmGrants.' + kind]: firebase.firestore.FieldValue.arrayUnion(Object.assign({ id: newGrantId() }, obj)) })
+            .catch(e => showAlert('Could not save — has the updated firestore.rules been deployed? (' + e.message + ')'));
+        }
+        document.getElementById('grantItemBtn').addEventListener('click', () => {
+          const name = document.getElementById('grantItemName').value.trim(); if(!name || !grantId) return;
+          addGrant('items', { name, quantity: Math.max(1, parseInt(document.getElementById('grantItemQty').value, 10) || 1), note: document.getElementById('grantItemNote').value.trim() });
+          ['grantItemName','grantItemNote'].forEach(i => { document.getElementById(i).value = ''; }); document.getElementById('grantItemQty').value = 1;
+        });
+        document.getElementById('grantBoonBtn').addEventListener('click', () => {
+          const name = document.getElementById('grantBoonName').value.trim(); if(!name || !grantId) return;
+          addGrant('boons', { name, desc: document.getElementById('grantBoonDesc').value.trim() });
+          ['grantBoonName','grantBoonDesc'].forEach(i => { document.getElementById(i).value = ''; });
+        });
+        document.getElementById('grantClose').addEventListener('click', () => { closeModal(grantModal); grantId = null; });
+
+        // ---- DM edits to a player's sheet: common fields as a form, anything else via raw JSON ----
+        const DM_FIELDS = [
+          ['name','Name','text'],['class','Class','text'],['subclass','Subclass','text'],['race','Species','text'],['background','Background','text'],
+          ['level','Level','number'],['hp_current','HP','number'],['hp_max','Max HP','number'],['ac','AC','number'],['speed','Speed','number'],['gold','Gold','number'],
+          ['stats.str','STR','number'],['stats.dex','DEX','number'],['stats.con','CON','number'],['stats.int','INT','number'],['stats.wis','WIS','number'],['stats.cha','CHA','number']
+        ];
+        const DM_OVERRIDES = [['spellDc','Spell save DC'],['spellAtk','Spell attack bonus'],['pp','Passive Perception']];
+        const getPath = (o, path) => path.split('.').reduce((a, k) => (a == null ? undefined : a[k]), o);
+        function fillDmEditor(pc){
+          if(document.getElementById('dmSheetEd').dataset.pc === pc.id) return;   // don't clobber what the DM is typing on live updates
+          document.getElementById('dmSheetEd').dataset.pc = pc.id;
+          document.getElementById('dmEdFields').innerHTML = DM_FIELDS.map(([k, l, t]) => `<label>${l}<input type="${t}" data-dmf="${k}" value="${escapeHtml(String(getPath(pc, k) ?? ''))}" style="width:100%;"></label>`).join('');
+          const ov = pc.dmOverrides || {};
+          document.getElementById('dmEdOverrides').innerHTML = DM_OVERRIDES.map(([k, l]) => `<label>${l}<input type="number" data-dmo="${k}" value="${escapeHtml(String(ov[k] ?? ''))}" style="width:100%;"></label>`).join('');
+          const raw = Object.assign({}, pc); ['id','ownerId','createdAt','updatedAt'].forEach(k => delete raw[k]);
+          document.getElementById('dmEdJson').value = JSON.stringify(raw, null, 2);
+        }
+        document.getElementById('dmEdSave').addEventListener('click', () => {
+          if(!grantId) return;
+          const upd = {};
+          document.querySelectorAll('#dmEdFields [data-dmf]').forEach(i => {
+            const v = i.type === 'number' ? (i.value === '' ? null : Number(i.value)) : i.value;
+            if(v !== null) upd[i.dataset.dmf] = v;
+          });
+          document.querySelectorAll('#dmEdOverrides [data-dmo]').forEach(i => {
+            upd['dmOverrides.' + i.dataset.dmo] = i.value === '' ? firebase.firestore.FieldValue.delete() : Number(i.value);
+          });
+          grantDocRef().update(upd).then(() => { document.getElementById('dmSheetEd').dataset.pc = ''; showAlert('Saved — the player\'s sheet updates live.'); }).catch(e => showAlert('Could not save — has the updated firestore.rules been deployed? (' + e.message + ')'));
+        });
+        document.getElementById('dmEdJsonSave').addEventListener('click', () => {
+          if(!grantId) return;
+          let obj;
+          try { obj = JSON.parse(document.getElementById('dmEdJson').value); if(!obj || typeof obj !== 'object' || Array.isArray(obj)) throw new Error('must be a JSON object'); }
+          catch(e){ showAlert('That isn\'t valid JSON: ' + e.message); return; }
+          ['id','ownerId','createdAt','updatedAt'].forEach(k => delete obj[k]);
+          showConfirm('Overwrite this sheet with the raw data you typed?', () => {
+            grantDocRef().set(obj, { merge: true }).then(() => { document.getElementById('dmSheetEd').dataset.pc = ''; showAlert('Saved.'); }).catch(e => showAlert('Could not save: ' + e.message));
+          });
+        });
 
         function openSheetEditor(id){
           if(id){
@@ -3678,7 +3873,7 @@
             window.blackstoneDesktop.moveOverlay(Number(displaySelect.value));
           });
           window.blackstoneDesktop.onOverlayInteractive(on => {
-            interactive = !!on;
+            interactive = !!on; overlayInteractiveNow = !!on;
             clickBtn.textContent = interactive ? 'Disable Interaction' : 'Enable Interaction';
             clickBtn.classList.toggle('armed', interactive);
           });
