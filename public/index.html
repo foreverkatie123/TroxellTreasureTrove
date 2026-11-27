@@ -173,6 +173,43 @@
   .addRow .addLevel{ flex:1; }
   .addRow .addQty{ width:56px; flex-shrink:0; }
   .addRow button{ flex-shrink:0; width:auto; padding:9px 12px; margin-top:0; }
+
+  /* ---- Phones & small screens ---- */
+  @media (max-width:600px){
+    body{ padding:12px 10px 48px; }
+    h1{ font-size:19px; }
+    .panel{ padding:14px; border-radius:10px; }
+    input[type=text], input[type=number], select, textarea{ font-size:16px; padding:11px 10px; } /* 16px stops iOS zooming on focus */
+    .btn{ min-height:44px; }
+    .btn.small{ min-height:38px; }
+    .row2, .row3{ flex-wrap:wrap; }
+    .row2 > div, .row3 > div{ flex:1 1 140px; min-width:0; }
+    .sheetHeader{ flex-wrap:wrap; }
+    .sheetActions{ width:100%; }
+    .sheetActions .btn{ flex:1; }
+    .tabBar{ flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; margin-left:-4px; margin-right:-4px; padding-left:4px; padding-right:4px; scrollbar-width:none; }
+    .tabBar::-webkit-scrollbar{ display:none; }
+    .tabBtn{ flex-shrink:0; padding:10px 14px; font-size:12px; }
+    .section{ padding:12px; }
+    .hpRow button{ width:44px; height:44px; }
+    .hpRow .hpNums input{ width:56px; }
+    .deathDot{ width:26px; height:26px; }
+    .profDot{ width:22px; height:22px; }
+    .saveRow, .skillRow{ padding:8px 2px; }
+    .bgGrid, .bgPersonality{ grid-template-columns:1fr; }
+    .addRow{ flex-wrap:wrap; }
+    .addRow .addName{ flex:1 1 100%; }
+    .addRow .addLevel{ flex:1 1 90px; }
+    .addRow button{ flex:1 1 auto; min-height:44px; }
+    .listRow{ padding:10px 0; }
+    .removeX{ padding:8px 10px; font-size:16px; }
+    .statBoxRow{ gap:6px; }
+    .statBox{ padding:8px 4px; }
+  }
+  @media (max-width:380px){
+    .saveGrid{ grid-template-columns:1fr; }
+    .abilityGrid{ grid-template-columns:repeat(2,1fr); }
+  }
 </style>
 </head>
 <body>
@@ -507,6 +544,9 @@
       <button class="btn danger" id="sheetDeleteBtn" style="margin-top:6px;">Delete Character</button>
     </div>
 
+    <!-- Guided character creator (js/wizard.js fills this in) -->
+    <div id="wizardScreen" class="panel hidden"></div>
+
     <div class="footNote">Signed in with Google. Your character is only visible to you and your DM.</div>
   </div>
 
@@ -517,6 +557,8 @@
   <script defer src="/__/firebase/init.js"></script>
 
   <script src="js/dnd-data.js"></script>
+  <script src="js/wizard-data.js"></script>
+  <script src="js/wizard.js"></script>
   <script defer>
     (function(){
       const CAMPAIGN_KEY = 'blackstonePlayerCampaignId_v1';
@@ -656,7 +698,7 @@
       });
 
       function show(id){
-        ['screenLoading','signInScreen','joinScreen','charListScreen','charSheetScreen'].forEach(s => {
+        ['screenLoading','signInScreen','joinScreen','charListScreen','charSheetScreen','wizardScreen'].forEach(s => {
           document.getElementById(s).classList.toggle('hidden', s !== id);
         });
       }
@@ -755,6 +797,8 @@
         });
       }
       document.getElementById('newCharBtn').addEventListener('click', () => {
+        if(window.Wizard){ window.Wizard.start(); return; }
+        // fallback if the wizard scripts failed to load: quick blank character
         const name = prompt('Character name?');
         if(!name || !name.trim()) return;
         charsRef().add(blankCharacter(name.trim()))
@@ -1455,6 +1499,23 @@
         if(!confirm('Delete this character? This cannot be undone.')) return;
         charsRef().doc(editingCharId).delete().then(() => show('charListScreen')).catch(err => alert('Delete failed: ' + err.message));
       });
+
+      // ---- Hooks for the guided creator (js/wizard.js) ----
+      window.PlayerApp = {
+        show,
+        blankCharacter,
+        openCharSheet,
+        // Always reads the 2024 SRD list, whatever ruleset the open sheet is using.
+        liveIndex(endpoint){
+          const prev = ruleset; ruleset = '2024';
+          const p = loadLiveIndex(endpoint);   // reads `ruleset` synchronously
+          ruleset = prev;
+          return p;
+        },
+        createCharacter(data){
+          return charsRef().add(data).then(doc => doc.id);
+        }
+      };
     })();
   </script>
 </body>
