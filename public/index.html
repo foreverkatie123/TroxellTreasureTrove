@@ -226,6 +226,9 @@
     .saveGrid{ grid-template-columns:1fr; }
     .abilityGrid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
   }
+      .dmGrantBox{ border:1px solid var(--accent, #c9a14a); border-radius:8px; padding:8px 10px; margin:0 0 10px; background:rgba(201,161,74,.08); }
+      .dmGrantHead{ font-weight:700; margin-bottom:4px; }
+      .dmNote{ display:block; color:var(--text-dim, #999); font-size:12px; }
 </style>
 </head>
 <body>
@@ -311,7 +314,7 @@
             <button class="chip" data-ruleset="2014">2014 Rules</button>
           </div>
           <p class="infoText" id="rulesetStatus" style="margin-top:8px;"></p>
-          <p class="infoText hidden" id="rulesetLock" style="margin-top:8px;">🔒 The rules are chosen when a character is created and can't be changed afterwards. Ask your DM if this needs to change.</p>
+          <!-- <p class="infoText hidden" id="rulesetLock" style="margin-top:8px;">🔒 The rules are chosen when a character is created and can't be changed afterwards. Ask your DM if this needs to change.</p> -->
         </div>
 
         <div class="section">
@@ -479,6 +482,8 @@
           <div id="classFeaturesLive" class="infoText hidden"></div>
         </div>
 
+        <div id="dmBoons"></div>
+
         <div id="choiceSections"></div>
 
         <div class="section">
@@ -546,6 +551,7 @@
       <div class="tabPanel" data-panel="inventory">
         <div class="section">
           <h3>Inventory</h3>
+          <div id="dmItems"></div>
           <div id="invList"></div>
           <div class="addRow">
             <input type="text" id="addInvName" class="addName" placeholder="Item name">
@@ -880,6 +886,7 @@
         charsUnsub = charsRef().where('ownerId', '==', currentUser.uid).onSnapshot(snap => {
           characters = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
           renderCharList();
+          if(editingCharId && sheet) applyRemoteChanges();
         }, err => {
           document.getElementById('charList').innerHTML =
             `<div class="emptyState">Could not load characters: ${escapeHtml(err.message)}</div>`;
@@ -1519,8 +1526,9 @@
           castSection.classList.remove('hidden');
           const mod = getMod(sheet.stats[spellAbility]);
           document.getElementById('spellAbilityVal').textContent = spellAbility.toUpperCase();
-          document.getElementById('spellDcVal').textContent = 8 + pb + mod;
-          document.getElementById('spellAtkVal').textContent = modStr(pb + mod);
+          const ov = sheet.dmOverrides || {};
+          document.getElementById('spellDcVal').textContent = ov.spellDc != null && ov.spellDc !== '' ? ov.spellDc : 8 + pb + mod;
+          document.getElementById('spellAtkVal').textContent = ov.spellAtk != null && ov.spellAtk !== '' ? modStr(parseInt(ov.spellAtk, 10) || 0) : modStr(pb + mod);
         } else castSection.classList.add('hidden');
 
         const cantripCount = sheet.spells.filter(s => s.level === 0).length;
@@ -1585,8 +1593,49 @@
         renderSpells();
       });
 
+      // The DM can edit any field on a sheet. When that happens while the sheet is open, pull their
+      // changes in (keeping whatever the player has typed but not saved yet) and tell the player.
+      let lastRemote = null, lastRemoteId = null;
+      function applyRemoteChanges(){
+        const mine = characters.find(x => x.id === editingCharId);
+        if(!mine) return;
+        const strip = o => { const c = Object.assign({}, o); delete c.updatedAt; delete c.id; return c; };
+        if(lastRemoteId !== editingCharId || !lastRemote){ lastRemoteId = editingCharId; lastRemote = JSON.parse(JSON.stringify(strip(mine))); return; }
+        const now = strip(mine), changed = [];
+        Object.keys(now).concat(Object.keys(lastRemote)).forEach(k => {
+          if(changed.includes(k)) return;
+          if(JSON.stringify(now[k]) !== JSON.stringify(lastRemote[k]) && JSON.stringify(now[k]) !== JSON.stringify(sheet[k])) changed.push(k);
+        });
+        const before = grantCount(sheet.dmGrants);
+        lastRemote = JSON.parse(JSON.stringify(now));
+        if(!changed.length) return;
+        readFormIntoSheet();   // keep unsaved typing
+        changed.forEach(k => { if(now[k] === undefined) delete sheet[k]; else sheet[k] = JSON.parse(JSON.stringify(now[k])); });
+        sheet.dmGrants = normGrants(sheet.dmGrants);
+        if(changed.includes('ruleset')) ruleset = sheet.ruleset === '2014' ? '2014' : '2024';
+        renderAll();
+        const onlyGrants = changed.every(k => k === 'dmGrants');
+        UI.toast(onlyGrants && grantCount(sheet.dmGrants) > before ? 'Your DM gave you something new — check Inventory / Features.' : 'Your DM updated your sheet.');
+      }
+
+      // ---- Items & boons granted by the DM (stored in dmGrants; only the DM Remote writes it) ----
+      function normGrants(g){
+        g = g || {};
+        return { items: Array.isArray(g.items) ? g.items.slice() : [], boons: Array.isArray(g.boons) ? g.boons.slice() : [] };
+      }
+      function grantCount(g){ g = normGrants(g); return g.items.length + g.boons.length; }
+      function renderDmGrants(){
+        const g = normGrants(sheet && sheet.dmGrants);
+        const itemsEl = document.getElementById('dmItems'), boonsEl = document.getElementById('dmBoons');
+        if(itemsEl) itemsEl.innerHTML = g.items.length ? `<div class="dmGrantBox"><div class="dmGrantHead">🎁 From your DM</div>${g.items.map(it => `
+          <div class="listRow"><span class="rowMain">${it.quantity > 1 ? it.quantity + '× ' : ''}${escapeHtml(it.name || '')}${it.note ? `<small class="dmNote">${escapeHtml(it.note)}</small>` : ''}</span></div>`).join('')}</div>` : '';
+        if(boonsEl) boonsEl.innerHTML = g.boons.length ? `<div class="section"><h3>Boons &amp; Gifts</h3>${g.boons.map(b => `
+          <div class="dmGrantBox"><div class="dmGrantHead">✨ ${escapeHtml(b.name || '')}</div>${b.desc ? `<p class="infoText" style="margin:4px 0 0;white-space:pre-wrap;">${escapeHtml(b.desc)}</p>` : ''}</div>`).join('')}</div>` : '';
+      }
+
       // ---- Render: Inventory tab ----
       function renderInventory(){
+        renderDmGrants();
         const el = document.getElementById('invList');
         if(!sheet.inventory.length){
           el.innerHTML = '<p class="infoText">No items yet.</p>';
@@ -1648,7 +1697,7 @@
       document.getElementById('fLevel').addEventListener('input', () => { renderDerived(); renderCombat(); renderSkillsAndSaves(); renderFeatures(); renderSpells(); renderHeader(); });
 
       function openCharSheet(id){
-        editingCharId = id;
+        editingCharId = id; lastRemote = null;
         const c = characters.find(x => x.id === id);
         if(!c) return;
         const blank = blankCharacter(c.name || '');
@@ -1663,6 +1712,8 @@
           feats: Array.isArray(c.feats) ? [...c.feats] : [],
           spells: Array.isArray(c.spells) ? [...c.spells] : [],
           inventory: Array.isArray(c.inventory) ? [...c.inventory] : [],
+          dmGrants: normGrants(c.dmGrants),
+          dmOverrides: Object.assign({}, c.dmOverrides),
           choices: Object.fromEntries(Object.entries(c.choices || {}).map(([k, v]) => [k, Array.isArray(v) ? [...v] : []]))
         });
         ruleset = sheet.ruleset === '2014' ? '2014' : '2024';
@@ -1671,8 +1722,7 @@
         refreshRulesetDropdowns(); // populates race/background/feat options for this ruleset, then calls renderAll()
       }
 
-      function persistSheet(){
-        if(!editingCharId) return Promise.resolve();
+      function readFormIntoSheet(){
         sheet.ruleset = ruleset;
         sheet.name = document.getElementById('fName').value.trim() || 'Unnamed';
         sheet.hp_current = parseInt(document.getElementById('fHpCurrent').value, 10) || 0;
@@ -1693,9 +1743,13 @@
           weight: document.getElementById('fWeight').value, eyes: document.getElementById('fEyes').value,
           skin: document.getElementById('fSkin').value, hair: document.getElementById('fHair').value
         };
-
+      }
+      function persistSheet(){
+        if(!editingCharId) return Promise.resolve();
+        readFormIntoSheet();
         const payload = Object.assign({}, sheet, { updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
         delete payload.createdAt; // never overwrite on update
+        delete payload.dmOverrides; delete payload.dmGrants;   // DM-owned — a stale copy here must never clobber what the DM just granted
         return charsRef().doc(editingCharId).set(payload, { merge:true });
       }
       document.getElementById('sheetSaveBtn').addEventListener('click', () => {

@@ -1235,6 +1235,38 @@
       </div>
     </div>
 
+    <!-- Grant items & boons to a player's sheet -->
+    <div class="modalOverlay" id="grantModal">
+      <div class="modalBox">
+        <h2 id="grantTitle">Grant</h2>
+        <details id="dmSheetEd" style="margin:0 0 10px;border:1px solid var(--border);border-radius:8px;padding:6px 10px;">
+          <summary style="cursor:pointer;font-weight:700;font-size:13px;">✎ Edit the sheet (stats, AC, save DC, HP…)</summary>
+          <div id="dmEdFields" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-top:8px;font-size:11px;"></div>
+          <p style="font-size:11px;color:var(--text-dim);margin:8px 0 2px;"><b>Overrides</b> — leave blank to use the calculated value.</p>
+          <div id="dmEdOverrides" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;font-size:11px;"></div>
+          <button class="btn primary" id="dmEdSave" style="margin-top:8px;">Save changes</button>
+          <details style="margin-top:10px;"><summary style="cursor:pointer;font-size:12px;">Advanced — raw sheet data (JSON)</summary>
+            <p style="font-size:11px;color:var(--text-dim);margin:4px 0;">Every field on the sheet. Careful: invalid JSON is refused, but wrong values are saved as typed.</p>
+            <textarea id="dmEdJson" rows="10" style="width:100%;font-family:monospace;font-size:11px;"></textarea>
+            <button class="btn" id="dmEdJsonSave" style="margin-top:6px;">Save raw data</button></details>
+        </details>
+        <p style="color:var(--text-dim);font-size:12px;margin:0 0 8px;">Shows up live on the player's sheet (Inventory and Features tabs). Only you can remove these.</p>
+        <div id="grantCurrent"></div>
+        <h3 style="margin:12px 0 4px;font-size:13px;">Give an item</h3>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <input type="text" id="grantItemName" placeholder="Item (e.g. Potion of Healing)" style="flex:2 1 160px;">
+          <input type="number" id="grantItemQty" value="1" min="1" style="flex:0 0 64px;">
+        </div>
+        <input type="text" id="grantItemNote" placeholder="Note (optional — e.g. 2d4+2 HP, attuned)" style="width:100%;margin-top:6px;">
+        <button class="btn primary" id="grantItemBtn" style="margin-top:6px;">🎁 Give item</button>
+        <h3 style="margin:14px 0 4px;font-size:13px;">Grant a boon</h3>
+        <input type="text" id="grantBoonName" placeholder="Boon (e.g. Blessing of the Moon Queen)" style="width:100%;">
+        <textarea id="grantBoonDesc" rows="3" placeholder="What it does" style="width:100%;margin-top:6px;"></textarea>
+        <button class="btn primary" id="grantBoonBtn" style="margin-top:6px;">✨ Grant boon</button>
+        <div class="modalFooter"><button class="btn" id="grantClose">Done</button></div>
+      </div>
+    </div>
+
     <!-- Area effect: per-target save bonus / optional manual roll -->
     <div class="modalOverlay" id="aoeModal">
       <div class="modalBox">
@@ -3202,8 +3234,8 @@
           const castAb = CASTING_ABILITY[c.class] || '';
           return {
             ac: c.ac ?? 10,
-            pp: 10 + mod('wis') + (tier >= 1 ? pb : 0),
-            dc: castAb ? 8 + pb + mod(castAb) : null,
+            pp: (c.dmOverrides && c.dmOverrides.pp !== '' && c.dmOverrides.pp != null) ? c.dmOverrides.pp : 10 + mod('wis') + (tier >= 1 ? pb : 0),
+            dc: (c.dmOverrides && c.dmOverrides.spellDc !== '' && c.dmOverrides.spellDc != null) ? c.dmOverrides.spellDc : (castAb ? 8 + pb + mod(castAb) : null),
             speed: c.speed ?? 30
           };
         }
@@ -3238,7 +3270,7 @@
               <div class="pcAct" data-id="${escapeHtml(id)}">
                 <input type="number" class="pcInit" placeholder="Init" title="Initiative roll — Enter or ＋ adds to the fight">
                 <button class="btn primary pcAdd" title="Add to initiative">＋</button>
-                ${isPlayer ? '' : '<button class="btn pcEdit" title="Edit this sheet">✎</button>'}
+                ${isPlayer ? '<button class="btn pcGrant" title="Edit sheet, give items / boons">✎🎁</button>' : '<button class="btn pcEdit" title="Edit this sheet">✎</button>'}
               </div>
             </div>`).join('');
           el.querySelectorAll('.pcAct').forEach(box => {
@@ -3270,6 +3302,8 @@
             inp.addEventListener('keydown', e => { if(e.key === 'Enter') add(); });
             const ed = box.querySelector('.pcEdit');
             if(ed) ed.addEventListener('click', () => openSheetEditor(id));
+            const gb = box.querySelector('.pcGrant');
+            if(gb) gb.addEventListener('click', () => openGrantModal(id));
           });
         }
 
@@ -3280,6 +3314,7 @@
             playerChars = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
             renderRosterList();
             renderPartyStrip();
+            if(grantId) renderGrantModal();
           }, () => { /* non-fatal — DM roster still works without player characters */ });
         }
 
@@ -3359,7 +3394,7 @@
               <div class="rcActions">
                 <input type="number" class="rcInit" placeholder="Init" data-id="${c.id}">
                 <button class="btn primary rcAddBtn" data-id="${c.id}">Add to Fight</button>
-                ${c.isPlayer ? '' : `<button class="btn rcEditBtn" data-id="${c.id}">Edit</button><button class="btn danger rcDelBtn" data-id="${c.id}">✕</button>`}
+                ${c.isPlayer ? `<button class="btn rcGrantBtn" data-id="${c.id}">✎ Edit / Give</button>` : `<button class="btn rcEditBtn" data-id="${c.id}">Edit</button><button class="btn danger rcDelBtn" data-id="${c.id}">✕</button>`}
               </div>
             </div>
           `).join('');
@@ -3410,6 +3445,7 @@
               initInput.style.borderColor = '';
             });
           });
+          listEl.querySelectorAll('.rcGrantBtn').forEach(btn => btn.addEventListener('click', () => openGrantModal(btn.dataset.id)));
           listEl.querySelectorAll('.rcEditBtn').forEach(btn => {
             btn.addEventListener('click', () => openSheetEditor(btn.dataset.id));
           });
@@ -3430,6 +3466,93 @@
         const sheetModal = document.getElementById('sheetModal');
         let editingCreature = null;
         let editingIsNew = true;
+
+        // ---- Give items / boons to a player's sheet (writes only the dmGrants field) ----
+        let grantId = null;   // Firestore character doc id
+        const grantModal = document.getElementById('grantModal');
+        const grantDocRef = () => campaignRef('characters').doc(grantId);
+        const newGrantId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        function openGrantModal(pcId){
+          grantId = String(pcId).replace(/^pc:/, '');
+          document.getElementById('dmSheetEd').dataset.pc = '';
+          ['grantItemName','grantItemNote','grantBoonName','grantBoonDesc'].forEach(i => { document.getElementById(i).value = ''; });
+          document.getElementById('grantItemQty').value = 1;
+          renderGrantModal();
+          grantModal.classList.add('open');
+        }
+        function renderGrantModal(){
+          const pc = playerChars.find(x => x.id === grantId);
+          if(!pc){ closeModal(grantModal); grantId = null; return; }
+          const g = pc.dmGrants || {}, items = g.items || [], boons = g.boons || [];
+          document.getElementById('grantTitle').textContent = 'Edit / Grant — ' + (pc.name || 'Unnamed');
+          fillDmEditor(pc);
+          const row = (kind, o, label, sub) => `<div class="rcEmptyRow" style="display:flex;gap:8px;align-items:center;justify-content:space-between;border:1px solid var(--border);border-radius:6px;padding:4px 8px;margin-bottom:4px;">
+              <span style="font-size:12px;"><b>${label}</b>${sub ? '<br><span style="color:var(--text-dim)">' + escapeHtml(sub) + '</span>' : ''}</span>
+              <button class="btn danger" data-rmgrant="${kind}" data-gid="${escapeHtml(o.id)}" title="Take it back">✕</button></div>`;
+          document.getElementById('grantCurrent').innerHTML = (items.length || boons.length)
+            ? items.map(o => row('items', o, (o.quantity > 1 ? o.quantity + '× ' : '') + escapeHtml(o.name || ''), o.note)).join('')
+              + boons.map(o => row('boons', o, '✨ ' + escapeHtml(o.name || ''), o.desc)).join('')
+            : '<div class="sub" style="font-size:12px;">Nothing granted yet.</div>';
+          document.querySelectorAll('#grantCurrent [data-rmgrant]').forEach(b => b.addEventListener('click', () => {
+            const kind = b.dataset.rmgrant, obj = (kind === 'items' ? items : boons).find(x => x.id === b.dataset.gid);
+            if(obj) grantDocRef().update({ ['dmGrants.' + kind]: firebase.firestore.FieldValue.arrayRemove(obj) }).catch(e => showAlert('Could not remove: ' + e.message));
+          }));
+        }
+        function addGrant(kind, obj){
+          return grantDocRef().update({ ['dmGrants.' + kind]: firebase.firestore.FieldValue.arrayUnion(Object.assign({ id: newGrantId() }, obj)) })
+            .catch(e => showAlert('Could not save — has the updated firestore.rules been deployed? (' + e.message + ')'));
+        }
+        document.getElementById('grantItemBtn').addEventListener('click', () => {
+          const name = document.getElementById('grantItemName').value.trim(); if(!name || !grantId) return;
+          addGrant('items', { name, quantity: Math.max(1, parseInt(document.getElementById('grantItemQty').value, 10) || 1), note: document.getElementById('grantItemNote').value.trim() });
+          ['grantItemName','grantItemNote'].forEach(i => { document.getElementById(i).value = ''; }); document.getElementById('grantItemQty').value = 1;
+        });
+        document.getElementById('grantBoonBtn').addEventListener('click', () => {
+          const name = document.getElementById('grantBoonName').value.trim(); if(!name || !grantId) return;
+          addGrant('boons', { name, desc: document.getElementById('grantBoonDesc').value.trim() });
+          ['grantBoonName','grantBoonDesc'].forEach(i => { document.getElementById(i).value = ''; });
+        });
+        document.getElementById('grantClose').addEventListener('click', () => { closeModal(grantModal); grantId = null; });
+
+        // ---- DM edits to a player's sheet: common fields as a form, anything else via raw JSON ----
+        const DM_FIELDS = [
+          ['name','Name','text'],['class','Class','text'],['subclass','Subclass','text'],['race','Species','text'],['background','Background','text'],
+          ['level','Level','number'],['hp_current','HP','number'],['hp_max','Max HP','number'],['ac','AC','number'],['speed','Speed','number'],['gold','Gold','number'],
+          ['stats.str','STR','number'],['stats.dex','DEX','number'],['stats.con','CON','number'],['stats.int','INT','number'],['stats.wis','WIS','number'],['stats.cha','CHA','number']
+        ];
+        const DM_OVERRIDES = [['spellDc','Spell save DC'],['spellAtk','Spell attack bonus'],['pp','Passive Perception']];
+        const getPath = (o, path) => path.split('.').reduce((a, k) => (a == null ? undefined : a[k]), o);
+        function fillDmEditor(pc){
+          if(document.getElementById('dmSheetEd').dataset.pc === pc.id) return;   // don't clobber what the DM is typing on live updates
+          document.getElementById('dmSheetEd').dataset.pc = pc.id;
+          document.getElementById('dmEdFields').innerHTML = DM_FIELDS.map(([k, l, t]) => `<label>${l}<input type="${t}" data-dmf="${k}" value="${escapeHtml(String(getPath(pc, k) ?? ''))}" style="width:100%;"></label>`).join('');
+          const ov = pc.dmOverrides || {};
+          document.getElementById('dmEdOverrides').innerHTML = DM_OVERRIDES.map(([k, l]) => `<label>${l}<input type="number" data-dmo="${k}" value="${escapeHtml(String(ov[k] ?? ''))}" style="width:100%;"></label>`).join('');
+          const raw = Object.assign({}, pc); ['id','ownerId','createdAt','updatedAt'].forEach(k => delete raw[k]);
+          document.getElementById('dmEdJson').value = JSON.stringify(raw, null, 2);
+        }
+        document.getElementById('dmEdSave').addEventListener('click', () => {
+          if(!grantId) return;
+          const upd = {};
+          document.querySelectorAll('#dmEdFields [data-dmf]').forEach(i => {
+            const v = i.type === 'number' ? (i.value === '' ? null : Number(i.value)) : i.value;
+            if(v !== null) upd[i.dataset.dmf] = v;
+          });
+          document.querySelectorAll('#dmEdOverrides [data-dmo]').forEach(i => {
+            upd['dmOverrides.' + i.dataset.dmo] = i.value === '' ? firebase.firestore.FieldValue.delete() : Number(i.value);
+          });
+          grantDocRef().update(upd).then(() => { document.getElementById('dmSheetEd').dataset.pc = ''; showAlert('Saved — the player\'s sheet updates live.'); }).catch(e => showAlert('Could not save — has the updated firestore.rules been deployed? (' + e.message + ')'));
+        });
+        document.getElementById('dmEdJsonSave').addEventListener('click', () => {
+          if(!grantId) return;
+          let obj;
+          try { obj = JSON.parse(document.getElementById('dmEdJson').value); if(!obj || typeof obj !== 'object' || Array.isArray(obj)) throw new Error('must be a JSON object'); }
+          catch(e){ showAlert('That isn\'t valid JSON: ' + e.message); return; }
+          ['id','ownerId','createdAt','updatedAt'].forEach(k => delete obj[k]);
+          showConfirm('Overwrite this sheet with the raw data you typed?', () => {
+            grantDocRef().set(obj, { merge: true }).then(() => { document.getElementById('dmSheetEd').dataset.pc = ''; showAlert('Saved.'); }).catch(e => showAlert('Could not save: ' + e.message));
+          });
+        });
 
         function openSheetEditor(id){
           if(id){
