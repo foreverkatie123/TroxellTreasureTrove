@@ -92,7 +92,7 @@
       }
       .panelCollapseBtn:hover{ color:var(--accent-2); border-color:var(--accent-2); }
       .panel.collapsed{ padding-bottom:14px; }
-      .panel.collapsed > *:not(h3){ display:none !important; }
+      .panel.collapsed > *:not(h3):not(.panelPopoutBtn):not(.panelCollapseBtn){ display:none !important; }
       .panel.collapsed h3{ margin-bottom:0; }
       .panel.collapsed h3 .sub{ display:none; }
       .panelPoppedPlaceholder{
@@ -1494,6 +1494,7 @@
         (function(){
           function makeCollapsible(panelEl, storageKey, defaultCollapsed){
             if(!panelEl) return;
+            if(new URLSearchParams(location.search).get('panel')) return;   // a popped-out window always shows its panel open
             const h3 = panelEl.querySelector('h3');
             if(!h3) return;
             let collapsed = !!defaultCollapsed;
@@ -1516,11 +1517,16 @@
             apply();
             h3.appendChild(btn);
           }
-          makeCollapsible(document.getElementById('dicePanel'), 'blackstonePanelCollapsed_dice');
-          makeCollapsible(document.getElementById('miniTrackerPanel'), 'blackstonePanelCollapsed_miniTracker');
-          makeCollapsible(document.getElementById('weatherPanel'), 'blackstonePanelCollapsed_weather');
-          makeCollapsible(document.getElementById('tavernPanel'), 'blackstonePanelCollapsed_tavern');
-          makeCollapsible(document.getElementById('treasurePanel'), 'blackstonePanelCollapsed_treasure');
+          // Every titled panel gets a minimize button (same set that gets the ⤢ pop-out button).
+          // The original five keep their old storage keys so saved choices carry over.
+          const LEGACY = { dicePanel:'dice', miniTrackerPanel:'miniTracker', weatherPanel:'weather', tavernPanel:'tavern', treasurePanel:'treasure' };
+          document.querySelectorAll('#appBody > .panel').forEach(panel => {
+            const h3 = panel.querySelector('h3');
+            if(!h3) return;
+            const label = Array.from(h3.childNodes).filter(n => n.nodeType === Node.TEXT_NODE).map(n => n.textContent).join('').trim() || h3.textContent.trim();
+            const slug = (LEGACY[panel.id] || label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''));
+            makeCollapsible(panel, 'blackstonePanelCollapsed_' + slug);
+          });
         })();
 
         // ---- Panel pop-out: tear any panel out into its own real window ----
@@ -2622,9 +2628,18 @@
           showConfirm('Reset fog — re-hide all revealed regions?', () => send('resetFog'));
         });
 
+        // Ruler and spell placement need mouse input on the TV overlay, so turning either on also
+        // turns on "Enable Interaction" (the button label and state follow via onOverlayInteractive).
+        let overlayInteractiveNow = false;   // mirrors the Enable/Disable Interaction state
+        function ensureOverlayInteractive(){
+          if(window.blackstoneDesktop && window.blackstoneDesktop.setOverlayInteractive) window.blackstoneDesktop.setOverlayInteractive(true);
+        }
         document.getElementById('rulerBtn').addEventListener('click', () => {
           const nowOn = lastSnapshot && lastSnapshot.mode === 'ruler';
+          // Ruler is on but interaction switched itself off after the last drag → this click means "measure again".
+          if(nowOn && window.blackstoneDesktop && !overlayInteractiveNow){ ensureOverlayInteractive(); return; }
           send('setRulerMode', { on: !nowOn });
+          if(!nowOn) ensureOverlayInteractive();
         });
 
         document.getElementById('gridToggleBtn').addEventListener('click', () => send('toggleGrid'));
@@ -2634,6 +2649,7 @@
             send('cancelSpell');
           } else {
             send('armSpell', { shape: document.getElementById('fxShape').value, dtype: document.getElementById('fxType').value });
+            ensureOverlayInteractive();
           }
         });
         document.getElementById('fxClearAllBtn').addEventListener('click', () => {
@@ -3857,7 +3873,7 @@
             window.blackstoneDesktop.moveOverlay(Number(displaySelect.value));
           });
           window.blackstoneDesktop.onOverlayInteractive(on => {
-            interactive = !!on;
+            interactive = !!on; overlayInteractiveNow = !!on;
             clickBtn.textContent = interactive ? 'Disable Interaction' : 'Enable Interaction';
             clickBtn.classList.toggle('armed', interactive);
           });
