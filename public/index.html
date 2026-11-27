@@ -304,8 +304,8 @@
         <div class="section">
           <h3>Ruleset</h3>
           <div class="chipRow" id="rulesetChips">
-            <button class="chip" data-ruleset="2024">2024 Rules (live from Open5e)</button>
-            <button class="chip" data-ruleset="2014">2014 Rules (built in)</button>
+            <button class="chip" data-ruleset="2024">2024 Rules</button>
+            <button class="chip" data-ruleset="2014">2014 Rules</button>
           </div>
           <p class="infoText" id="rulesetStatus" style="margin-top:8px;"></p>
         </div>
@@ -321,7 +321,7 @@
             <div>
               <label>Subclass</label>
               <select id="fSubclass"><option value="">— pick class first —</option></select>
-              <input type="text" id="fSubclassText" class="hidden" placeholder="Type your subclass (2024 subclass lists aren't fetched live)">
+              <input type="text" id="fSubclassText" class="hidden" placeholder="Type your subclass">
             </div>
           </div>
           <div class="row2">
@@ -693,7 +693,7 @@
           renderAll();
           return;
         }
-        document.getElementById('rulesetStatus').textContent = 'Fetching 2024 races, backgrounds, and feats from Open5e…';
+        document.getElementById('rulesetStatus').textContent = 'Fetching 2024 races, backgrounds, and feats…';
         document.getElementById('fRace').innerHTML = '<option value="">Loading…</option>';
         document.getElementById('fBackground').innerHTML = '<option value="">Loading…</option>';
         document.getElementById('featPicker').innerHTML = '<option value="">Loading…</option>';
@@ -712,11 +712,10 @@
               list.map((f,i) => `<option value="live:${i}">${escapeHtml(f.name)}</option>`).join('');
           })
         ]).then(() => {
-          document.getElementById('rulesetStatus').textContent = '2024 SRD content loaded from Open5e.';
           renderAll();
         }).catch(err => {
           document.getElementById('rulesetStatus').textContent =
-            'Could not reach Open5e (' + err.message + ') — try 2014 rules instead, or check your connection.';
+            'Could not reach data (' + err.message + ') — try 2014 rules instead, or check your connection.';
           renderAll();
         });
       }
