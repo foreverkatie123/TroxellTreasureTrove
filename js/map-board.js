@@ -1,4 +1,3 @@
-
 const stage = document.getElementById('stage');
 const mapLayer = document.getElementById('mapLayer');
 const mapImage = document.getElementById('mapImage');
@@ -209,6 +208,8 @@ window.addEventListener('mouseup', e => {
     if(mode === 'ruler'){ updateRulerPreview(dragOrigin, cur); }
     else if(mode === 'spell'){ finalizeSpell(dragOrigin, cur); }
     dragOrigin = null;
+    // The measurement / spell is placed — hand the mouse back to the program underneath.
+    if(window.blackstoneDesktop && window.blackstoneDesktop.setOverlayInteractive) window.blackstoneDesktop.setOverlayInteractive(false);
   }
 });
 stage.addEventListener('click', e => {

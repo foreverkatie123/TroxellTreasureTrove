@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My Character — Troxell Treasure Trove</title>
+<title>Troxell Treasure Trove</title>
 <style>
   :root{
     --bg:#0a0e13; --panel:#121a21; --border:#2a3944;
@@ -88,10 +88,11 @@
   .section h3{ margin:0 0 10px; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-dim); }
   .infoText{ color:var(--text-dim); font-size:12.5px; line-height:1.6; }
 
-  .abilityGrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .abilityGrid{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+  .abilityBox, .statBox{ min-width:0; }
   .abilityBox{ background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:8px; text-align:center; }
   .abilityBox label{ margin:0 0 4px; }
-  .abilityBox input{ text-align:center; padding:6px; font-size:15px; margin-top:0; }
+  .abilityBox input{ text-align:center; padding:6px; font-size:15px; margin-top:0; min-width:0; }
   .abilityBox .abMod{ color:var(--accent-2); font-size:12px; margin-top:4px; }
   .derivedRow{ display:flex; gap:14px; margin-top:12px; padding-top:12px; border-top:1px solid var(--border); font-size:12px; color:var(--text-dim); flex-wrap:wrap; }
   .derivedRow b{ color:var(--text); }
@@ -110,7 +111,8 @@
   .hpRow .hpNums{ flex:1; display:flex; align-items:center; justify-content:center; gap:6px; }
   .hpRow .hpNums input{ width:64px; text-align:center; margin-top:0; }
 
-  .statBoxRow{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .statBoxRow{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+  .statBox input{ min-width:0; }
   .statBox{ background:#0d1318; border:1px solid var(--border); border-radius:10px; padding:10px; text-align:center; }
   .statBox label{ margin:0 0 4px; }
   .statBox input{ text-align:center; font-size:18px; font-weight:700; padding:6px; margin-top:0; }
@@ -136,6 +138,13 @@
   .saveRow .lbl, .skillRow .lbl{ flex:1; font-size:13px; }
   .saveRow .bonus, .skillRow .bonus{ font-size:13px; font-weight:600; color:var(--text); width:32px; text-align:right; flex-shrink:0; }
 
+  .lvlRow{ display:flex; gap:8px; align-items:center; } .lvlRow input{ width:70px; margin-top:4px; text-align:center; flex-shrink:0; } .lvlRow .btn{ margin-top:4px; flex:1; min-height:44px; }
+  .restRow{ display:flex; gap:10px; } .restRow .btn{ margin-top:0; flex:1; }
+  .slotLine{ display:flex; align-items:center; gap:8px; margin:6px 0; flex-wrap:wrap; }
+  .slotLine .slotLbl{ min-width:62px; color:var(--text-dim); font-size:12px; }
+  .slotPip{ width:30px; height:30px; border-radius:50%; border:2px solid var(--accent-2); background:var(--accent-2); cursor:pointer; padding:0; }
+  .slotPip.used{ background:transparent; border-color:var(--border); }
+  .slotNote{ color:var(--text-dim); font-size:11.5px; margin-top:6px; }
   .chipRow{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
   .chip{
     padding:5px 10px; border-radius:14px; font-size:11.5px; border:1px solid var(--border);
@@ -143,6 +152,8 @@
   }
   .chip.selected{ background:var(--accent-2); border-color:var(--accent-2); color:#06171a; font-weight:600; }
   .chip.disabled{ opacity:.4; cursor:not-allowed; }
+  .chip.locked{ cursor:default; }
+  .chip.locked:not(.selected){ opacity:.35; cursor:not-allowed; }
 
   details{ border-bottom:1px solid var(--border); padding:8px 0; }
   details:last-child{ border-bottom:none; }
@@ -173,6 +184,51 @@
   .addRow .addLevel{ flex:1; }
   .addRow .addQty{ width:56px; flex-shrink:0; }
   .addRow button{ flex-shrink:0; width:auto; padding:9px 12px; margin-top:0; }
+
+  /* ---- Phones & small screens ---- */
+  @media (max-width:600px){
+    body{ padding:12px 10px 48px; }
+    h1{ font-size:19px; }
+    .panel{ padding:14px; border-radius:10px; }
+    input[type=text], input[type=number], select, textarea{ font-size:16px; padding:11px 10px; } /* 16px stops iOS zooming on focus */
+    .btn{ min-height:44px; }
+    .btn.small{ min-height:38px; }
+    .row2, .row3{ flex-wrap:wrap; }
+    .row2 > div, .row3 > div{ flex:1 1 140px; min-width:0; }
+    .sheetHeader{ flex-wrap:wrap; }
+    .sheetHeader .sheetActions{ width:100%; }
+    .sheetHeader .sheetActions .btn{ flex:1; }
+    .dieRow{ flex-wrap:wrap; gap:8px; }
+    .dieRow .sheetActions{ flex:1 1 auto; min-width:0; }
+    .dieRow .sheetActions .btn{ flex:1; min-height:44px; }
+    .tabBar{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; }
+    .tabBtn{ padding:11px 2px; font-size:11px; letter-spacing:.02em; text-align:center; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+    .section{ padding:12px; }
+    .hpRow button{ width:44px; height:44px; }
+    .hpRow .hpNums input{ width:56px; }
+    .deathDot{ width:26px; height:26px; }
+    .profDot{ width:22px; height:22px; }
+    .saveRow, .skillRow{ padding:8px 2px; }
+    .bgGrid, .bgPersonality{ grid-template-columns:1fr; }
+    .saveGrid{ grid-template-columns:1fr; }
+    .abilityBox input{ padding:8px 2px; }
+    .saveRow .lbl, .skillRow .lbl{ min-width:0; overflow:hidden; text-overflow:ellipsis; }
+    .addRow{ flex-wrap:wrap; }
+    .addRow .addName{ flex:1 1 100%; }
+    .addRow .addLevel{ flex:1 1 90px; }
+    .addRow button{ flex:1 1 auto; min-height:44px; }
+    .listRow{ padding:10px 0; }
+    .removeX{ padding:8px 10px; font-size:16px; }
+    .statBoxRow{ gap:6px; }
+    .statBox{ padding:8px 4px; }
+  }
+  @media (max-width:380px){
+    .saveGrid{ grid-template-columns:1fr; }
+    .abilityGrid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  }
+      .dmGrantBox{ border:1px solid var(--accent, #c9a14a); border-radius:8px; padding:8px 10px; margin:0 0 10px; background:rgba(201,161,74,.08); }
+      .dmGrantHead{ font-weight:700; margin-bottom:4px; }
+      .dmNote{ display:block; color:var(--text-dim, #999); font-size:12px; }
 </style>
 </head>
 <body>
@@ -185,6 +241,14 @@
 
     <!-- Sign-in screen -->
     <div id="signInScreen" class="panel hidden">
+      <div class="banner warn hidden" id="inAppWarn">
+        <b>Open this page in your browser first.</b><br>
+        Google blocks sign-in inside chat apps (Messenger, Facebook, Instagram, etc.). Tap <b>⋯ / Share</b> and choose <b>Open in Chrome</b> or <b>Open in Safari</b> — or copy the link and paste it into your browser.
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+          <button class="btn small" id="copyLinkBtn">Copy link</button>
+          <a class="btn small hidden" id="openChromeBtn" style="text-decoration:none;">Open in Chrome</a>
+        </div>
+      </div>
       <p style="margin-top:0;color:var(--text-dim);font-size:13px;">Sign in to create and manage your character. Ask your DM for your campaign's code once you're signed in.</p>
       <button class="btn google" id="googleSignInBtn">
         <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.5 6 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l5.7-5.7C34.5 6.9 29.5 5 24 5c-7.8 0-14.5 4.4-17.7 10.7z"/><path fill="#4CAF50" d="M24 44c5.3 0 10.1-1.8 13.8-5l-6.4-5.4C29.3 35.4 26.8 36 24 36c-5.2 0-9.6-3.1-11.3-7.6l-6.5 5C9.4 39.5 16.1 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.4-2.3 4.4-4.2 5.9l6.4 5.4C40.3 36.5 44 30.8 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
@@ -246,24 +310,25 @@
         <div class="section">
           <h3>Ruleset</h3>
           <div class="chipRow" id="rulesetChips">
-            <button class="chip" data-ruleset="2024">2024 Rules (live from Open5e)</button>
-            <button class="chip" data-ruleset="2014">2014 Rules (built in)</button>
+            <button class="chip" data-ruleset="2024">2024 Rules</button>
+            <button class="chip" data-ruleset="2014">2014 Rules</button>
           </div>
           <p class="infoText" id="rulesetStatus" style="margin-top:8px;"></p>
+          <!-- <p class="infoText hidden" id="rulesetLock" style="margin-top:8px;">🔒 The rules are chosen when a character is created and can't be changed afterwards. Ask your DM if this needs to change.</p> -->
         </div>
 
         <div class="section">
           <h3>Identity</h3>
           <div class="row2">
             <div><label>Character name</label><input type="text" id="fName" placeholder="Kaelith"></div>
-            <div><label>Level</label><input type="number" id="fLevel" min="1" max="20" value="1"></div>
+            <div><label>Level</label><div class="lvlRow"><input type="number" id="fLevel" min="1" max="20" value="1" readonly><button class="btn small primary" id="levelUpBtn">⬆ Level up</button></div></div>
           </div>
           <div class="row2">
             <div><label>Class</label><select id="fClass"><option value="">— choose —</option></select></div>
             <div>
               <label>Subclass</label>
               <select id="fSubclass"><option value="">— pick class first —</option></select>
-              <input type="text" id="fSubclassText" class="hidden" placeholder="Type your subclass (2024 subclass lists aren't fetched live)">
+              <input type="text" id="fSubclassText" class="hidden" placeholder="Type your subclass">
             </div>
           </div>
           <div class="row2">
@@ -314,6 +379,14 @@
       <!-- COMBAT -->
       <div class="tabPanel" data-panel="combat">
         <div class="section">
+          <h3>Rest</h3>
+          <div class="restRow">
+            <button class="btn" id="shortRestBtn">☕ Short rest</button>
+            <button class="btn primary" id="longRestBtn">🌙 Long rest</button>
+          </div>
+          <p class="infoText" id="restMsg" style="margin-top:8px;">Short rest refreshes short-rest powers (Ki, Warlock slots). Long rest restores HP, spell slots, rage and more.</p>
+        </div>
+        <div class="section">
           <h3>Hit points</h3>
           <div class="hpBar"><div id="hpBarFill" style="width:100%;background:#3fae5c;"></div></div>
           <div class="hpRow">
@@ -356,7 +429,7 @@
               <button class="btn small" id="hitDiceRestoreBtn">Restore</button>
             </div>
           </div>
-          <p class="infoText" style="margin-top:8px;">Regain half your total (rounded up) on a long rest.</p>
+          <p class="infoText" style="margin-top:8px;">Spend one to heal (rolls the die + Con). A long rest gives back half your total, minimum 1.</p>
         </div>
 
         <div class="section hidden" id="classResourceSection">
@@ -408,6 +481,10 @@
           <p class="infoText" id="classFeaturesNext" style="margin-top:8px;"></p>
           <div id="classFeaturesLive" class="infoText hidden"></div>
         </div>
+
+        <div id="dmBoons"></div>
+
+        <div id="choiceSections"></div>
 
         <div class="section">
           <h3>Feats</h3>
@@ -474,6 +551,7 @@
       <div class="tabPanel" data-panel="inventory">
         <div class="section">
           <h3>Inventory</h3>
+          <div id="dmItems"></div>
           <div id="invList"></div>
           <div class="addRow">
             <input type="text" id="addInvName" class="addName" placeholder="Item name">
@@ -507,6 +585,11 @@
       <button class="btn danger" id="sheetDeleteBtn" style="margin-top:6px;">Delete Character</button>
     </div>
 
+    <!-- Guided character creator (js/wizard.js fills this in) -->
+    <div id="wizardScreen" class="panel hidden"></div>
+    <!-- Level-up walkthrough (js/levelup.js fills this in) -->
+    <div id="levelUpScreen" class="panel hidden"></div>
+
     <div class="footNote">Signed in with Google. Your character is only visible to you and your DM.</div>
   </div>
 
@@ -516,7 +599,11 @@
   <script defer src="/__/firebase/12.16.0/firebase-firestore-compat.js"></script>
   <script defer src="/__/firebase/init.js"></script>
 
+  <script src="js/ui-dialogs.js"></script>
   <script src="js/dnd-data.js"></script>
+  <script src="js/wizard-data.js"></script>
+  <script src="js/wizard.js"></script>
+  <script src="js/levelup.js"></script>
   <script defer>
     (function(){
       const CAMPAIGN_KEY = 'blackstonePlayerCampaignId_v1';
@@ -543,9 +630,12 @@
       let liveBackgroundKeyByName = {};
       let liveFeatList = [];
 
+      // Open5e renamed /v2/races/ to /v2/species/; keep calling code using 'races'.
+      const ENDPOINT_ALIAS = { races:'species' };
+      const apiEndpoint = e => ENDPOINT_ALIAS[e] || e;
       function fetchAllPages(url, acc){
         acc = acc || [];
-        return fetch(url).then(r => r.json()).then(data => {
+        return fetch(url).then(r => { if(!r.ok) throw new Error('Open5e returned HTTP ' + r.status); return r.json(); }).then(data => {
           const results = acc.concat(data.results || []);
           if(data.next) return fetchAllPages(data.next, results);
           return results;
@@ -555,7 +645,7 @@
         const cacheKey = `${ruleset}:${endpoint}`;
         if(liveIndexCache[cacheKey]) return Promise.resolve(liveIndexCache[cacheKey]);
         const docKey = RULESET_DOC_KEY[ruleset];
-        return fetchAllPages(`${OPEN5E_BASE}/v2/${endpoint}/?document__key__in=${docKey}&fields=key,name`)
+        return fetchAllPages(`${OPEN5E_BASE}/v2/${apiEndpoint(endpoint)}/?document__key__in=${docKey}&fields=key,name`)
           .then(results => {
             const list = results.map(r => ({ key:r.key, name:r.name }));
             liveIndexCache[cacheKey] = list;
@@ -565,7 +655,7 @@
       function fetchLiveDetail(endpoint, key){
         const cacheKey = `${ruleset}:${endpoint}:${key}`;
         if(liveDetailCache[cacheKey]) return Promise.resolve(liveDetailCache[cacheKey]);
-        return fetch(`${OPEN5E_BASE}/v2/${endpoint}/${key}/`)
+        return fetch(`${OPEN5E_BASE}/v2/${apiEndpoint(endpoint)}/${key}/`)
           .then(r => { if(!r.ok) throw new Error('not found'); return r.json(); })
           .then(d => { liveDetailCache[cacheKey] = d; return d; });
       }
@@ -602,12 +692,35 @@
         return parts.join('');
       }
 
+      // A character that has a class, species or background is "created": its rules are locked.
+      const rulesetLocked = () => !!(sheet && (sheet.class || sheet.race || sheet.background));
       function setRulesetChipUI(){
-        document.getElementById('rulesetChips').querySelectorAll('.chip').forEach(c => c.classList.toggle('selected', c.dataset.ruleset === ruleset));
+        const locked = rulesetLocked();
+        document.getElementById('rulesetChips').querySelectorAll('.chip').forEach(c => {
+          c.classList.toggle('selected', c.dataset.ruleset === ruleset);
+          c.classList.toggle('locked', locked);
+          c.disabled = locked && c.dataset.ruleset !== ruleset;
+        });
+        document.getElementById('rulesetLock').classList.toggle('hidden', !locked);
         document.getElementById('fSubclass').classList.toggle('hidden', ruleset !== '2014');
         document.getElementById('fSubclassText').classList.toggle('hidden', ruleset === '2014');
       }
 
+      // When switching rules, keep what the character already has selectable (otherwise it looks like it was erased).
+      function keepCurrentOptions(){
+        [['fRace', sheet && sheet.race], ['fBackground', sheet && sheet.background]].forEach(([id, val]) => {
+          const sel = document.getElementById(id);
+          if(val && ![...sel.options].some(o => o.value === val)){
+            const o = document.createElement('option'); o.value = val; o.textContent = val + ' (current)'; sel.appendChild(o);
+          }
+        });
+      }
+      function useBuiltInLists(){
+        populateSelect(document.getElementById('fRace'), Object.keys(DND.RACE_TRAITS), '— choose —');
+        populateSelect(document.getElementById('fBackground'), Object.keys(DND.BACKGROUNDS), '— choose —');
+        document.getElementById('featPicker').innerHTML = '<option value="">— choose a feat to add —</option>' +
+          DND.FEATS.map((f,i) => `<option value="${i}">${escapeHtml(f.name)}</option>`).join('');
+      }
       function refreshRulesetDropdowns(){
         setRulesetChipUI();
         if(ruleset === '2014'){
@@ -615,11 +728,12 @@
           populateSelect(document.getElementById('fBackground'), Object.keys(DND.BACKGROUNDS), '— choose —');
           document.getElementById('featPicker').innerHTML = '<option value="">— choose a feat to add —</option>' +
             DND.FEATS.map((f,i) => `<option value="${i}">${escapeHtml(f.name)}</option>`).join('');
-          document.getElementById('rulesetStatus').textContent = 'Using the built-in 2014 rules — no internet needed.';
+          document.getElementById('rulesetStatus').textContent = '';
+          keepCurrentOptions();
           renderAll();
           return;
         }
-        document.getElementById('rulesetStatus').textContent = 'Fetching 2024 races, backgrounds, and feats from Open5e…';
+        document.getElementById('rulesetStatus').textContent = 'Fetching 2024 races, backgrounds, and feats…';
         document.getElementById('fRace').innerHTML = '<option value="">Loading…</option>';
         document.getElementById('fBackground').innerHTML = '<option value="">Loading…</option>';
         document.getElementById('featPicker').innerHTML = '<option value="">Loading…</option>';
@@ -638,17 +752,21 @@
               list.map((f,i) => `<option value="live:${i}">${escapeHtml(f.name)}</option>`).join('');
           })
         ]).then(() => {
-          document.getElementById('rulesetStatus').textContent = '2024 SRD content loaded from Open5e.';
+          document.getElementById('rulesetStatus').textContent = '2024 SRD content loaded.';
+          keepCurrentOptions();
           renderAll();
         }).catch(err => {
+          useBuiltInLists();
           document.getElementById('rulesetStatus').textContent =
-            'Could not reach Open5e (' + err.message + ') — try 2014 rules instead, or check your connection.';
+            'Could not reach Open5e (' + err.message + ') — using the built-in lists for now. You can still switch rules and keep playing.';
+          keepCurrentOptions();
           renderAll();
         });
       }
       document.getElementById('rulesetChips').querySelectorAll('.chip').forEach(chip => {
         chip.addEventListener('click', () => {
           if(chip.dataset.ruleset === ruleset) return;
+          if(rulesetLocked()){ UI.toast('Rules are locked for this character.'); return; }
           ruleset = chip.dataset.ruleset;
           if(sheet) sheet.ruleset = ruleset;
           refreshRulesetDropdowns();
@@ -656,7 +774,7 @@
       });
 
       function show(id){
-        ['screenLoading','signInScreen','joinScreen','charListScreen','charSheetScreen'].forEach(s => {
+        ['screenLoading','signInScreen','joinScreen','charListScreen','charSheetScreen','wizardScreen','levelUpScreen'].forEach(s => {
           document.getElementById(s).classList.toggle('hidden', s !== id);
         });
       }
@@ -679,7 +797,7 @@
           let savedCampaign = null;
           try{ savedCampaign = localStorage.getItem(CAMPAIGN_KEY); }catch(err){}
           if(savedCampaign){
-            joinCampaign(savedCampaign);
+            joinCampaignExact(savedCampaign);
           }else{
             document.getElementById('joinUserPhoto').src = user.photoURL || '';
             document.getElementById('joinUserName').textContent = user.displayName || user.email || 'Player';
@@ -692,7 +810,27 @@
       document.getElementById('googleSignInBtn').addEventListener('click', () => {
         const provider = new firebase.auth.GoogleAuthProvider();
         provider.setCustomParameters({ prompt: 'select_account' }); // always ask which account, never silently reuse a cached one
-        firebase.auth().signInWithPopup(provider).catch(err => alert('Sign-in failed: ' + err.message));
+        firebase.auth().signInWithPopup(provider).catch(err => {
+          if(IN_APP_BROWSER || /network-request-failed|disallowed|popup/i.test(err.code + ' ' + err.message)){
+            document.getElementById('inAppWarn').classList.remove('hidden');
+            UI.alert('If you opened this link from a chat app, open it in Chrome or Safari instead (see the notice on this page).', { title:'Sign-in failed' });
+          } else UI.alert(err.message, { title:'Sign-in failed' });
+        });
+      });
+      // Chat apps' built-in browsers (Messenger, Facebook, Instagram, TikTok…) block Google sign-in.
+      const IN_APP_BROWSER = /FBAN|FBAV|FB_IAB|Messenger|Instagram|Line\/|MicroMessenger|TikTok|Snapchat|Twitter|; wv\)/i.test(navigator.userAgent);
+      if(IN_APP_BROWSER){
+        document.getElementById('inAppWarn').classList.remove('hidden');
+        if(/Android/i.test(navigator.userAgent)){
+          const a = document.getElementById('openChromeBtn');
+          a.href = 'intent://' + location.host + location.pathname + '#Intent;scheme=https;package=com.android.chrome;end';
+          a.classList.remove('hidden');
+        }
+      }
+      document.getElementById('copyLinkBtn').addEventListener('click', () => {
+        const done = () => { document.getElementById('copyLinkBtn').textContent = 'Copied ✓'; };
+        if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(location.href).then(done).catch(() => UI.prompt('Copy this link:', { value:location.href, readonly:true }));
+        else UI.prompt('Copy this link:', { value:location.href, readonly:true });
       });
       function signOut(){
         if(charsUnsub){ charsUnsub(); charsUnsub = null; }
@@ -702,7 +840,22 @@
       document.getElementById('signOutBtn1').addEventListener('click', signOut);
       document.getElementById('signOutBtn2').addEventListener('click', signOut);
 
+      // Campaign codes are not case-sensitive ("Flab" = "flab"). Firestore IDs are, so resolve via the
+      // lowercase field the DM Remote writes, then an exact-ID match (older campaigns), then lowercase.
+      function resolveCampaignCode(raw){
+        const typed = (raw || '').trim() || 'default';
+        const lower = typed.toLowerCase();
+        return db.collection('campaigns').where('codeLower', '==', lower).limit(1).get()
+          .then(snap => {
+            if(!snap.empty) return snap.docs[0].id;
+            return db.collection('campaigns').doc(typed).get().then(d => d.exists ? typed : lower);
+          })
+          .catch(() => typed);
+      }
       function joinCampaign(id){
+        return resolveCampaignCode(id).then(joinCampaignExact);
+      }
+      function joinCampaignExact(id){
         campaignId = (id || '').trim() || 'default';
         try{ localStorage.setItem(CAMPAIGN_KEY, campaignId); }catch(err){}
         document.getElementById('listUserPhoto').src = currentUser.photoURL || '';
@@ -733,6 +886,7 @@
         charsUnsub = charsRef().where('ownerId', '==', currentUser.uid).onSnapshot(snap => {
           characters = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
           renderCharList();
+          if(editingCharId && sheet) applyRemoteChanges();
         }, err => {
           document.getElementById('charList').innerHTML =
             `<div class="emptyState">Could not load characters: ${escapeHtml(err.message)}</div>`;
@@ -754,12 +908,14 @@
           card.addEventListener('click', () => openCharSheet(card.dataset.id));
         });
       }
-      document.getElementById('newCharBtn').addEventListener('click', () => {
-        const name = prompt('Character name?');
+      document.getElementById('newCharBtn').addEventListener('click', async () => {
+        if(window.Wizard){ window.Wizard.start(); return; }
+        // fallback if the wizard scripts failed to load: quick blank character
+        const name = await UI.prompt('Character name?', { placeholder:'e.g. Thorn Ironfoot', ok:'Create' });
         if(!name || !name.trim()) return;
         charsRef().add(blankCharacter(name.trim()))
           .then(doc => openCharSheet(doc.id))
-          .catch(err => alert('Could not create character: ' + err.message));
+          .catch(err => UI.alert(err.message, { title:'Could not create character' }));
       });
       function blankCharacter(name){
         return {
@@ -769,11 +925,11 @@
           stats: { str:10, dex:10, con:10, int:10, wis:10, cha:10 },
           hp_current:10, hp_max:10, ac:10, speed:30, gold:0,
           skillProf: {}, saveProf: {},
-          proficiencies:'', feats: [], spells: [], inventory: [],
+          proficiencies:'', feats: [], spells: [], inventory: [], choices: {},
           personality: { traits:'', ideals:'', bonds:'', flaws:'' },
           appearance: { age:'', height:'', weight:'', eyes:'', skin:'', hair:'' },
           deathSaves: { success:[false,false,false], fail:[false,false,false] },
-          resourceState: { hitDiceUsed:0, classResourceUsed:0 },
+          resourceState: { hitDiceUsed:0, classResourceUsed:0, slotsUsed:[0,0,0,0,0,0,0,0,0] },
           notes:'',
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -797,8 +953,8 @@
       function cantripsKnownMax(cls, level){ return (DND.CANTRIPS_KNOWN[cls] && DND.CANTRIPS_KNOWN[cls][level-1]) ?? null; }
       function spellsKnownMax(cls, level){ return (DND.SPELLS_KNOWN[cls] && DND.SPELLS_KNOWN[cls][level-1]) ?? null; }
       function preparedMax(cls, level, mod){
-        if(!['Cleric','Druid','Paladin','Wizard'].includes(cls)) return null;
-        const effLevel = cls === 'Paladin' ? Math.floor(level/2) : level;
+        if(!['Cleric','Druid','Paladin','Wizard','Artificer'].includes(cls)) return null;
+        const effLevel = (cls === 'Paladin' || cls === 'Artificer') ? Math.floor(level/2) : level;
         return Math.max(1, mod + effLevel);
       }
 
@@ -913,7 +1069,11 @@
         document.getElementById('fClass').value = sheet.class || '';
         if(ruleset === '2014'){
           populateSelect(document.getElementById('fSubclass'), DND.SUBCLASSES[sheet.class] || [], sheet.class ? '— choose —' : '— pick class first —');
-          document.getElementById('fSubclass').value = sheet.subclass || '';
+          const subSel = document.getElementById('fSubclass');
+          if(sheet.subclass && ![...subSel.options].some(o => o.value === sheet.subclass)){
+            const o = document.createElement('option'); o.value = sheet.subclass; o.textContent = sheet.subclass + ' (current)'; subSel.appendChild(o);
+          }
+          subSel.value = sheet.subclass || '';
         } else {
           document.getElementById('fSubclassText').value = sheet.subclass || '';
         }
@@ -1044,7 +1204,13 @@
       document.getElementById('hpPlusBtn').addEventListener('click', () => { sheet.hp_current = Math.min(sheet.hp_max||0, (sheet.hp_current||0) + 1); renderCombat(); });
       document.getElementById('hitDiceSpendBtn').addEventListener('click', () => {
         const max = sheet.level;
+        if((sheet.resourceState.hitDiceUsed || 0) >= max){ restMsg('No Hit Dice left.'); return; }
         sheet.resourceState.hitDiceUsed = Math.min(max, sheet.resourceState.hitDiceUsed + 1);
+        const die = DND.CLASS_HIT_DIE[sheet.class] || 8;
+        const roll = 1 + Math.floor(Math.random() * die), con = getMod(sheet.stats.con);
+        const heal = Math.max(0, roll + con);
+        sheet.hp_current = Math.min(sheet.hp_max || 0, (sheet.hp_current || 0) + heal);
+        restMsg(`Spent a Hit Die: rolled ${roll}${con >= 0 ? '+' : ''}${con} = healed ${heal} HP.`);
         renderCombat();
       });
       document.getElementById('hitDiceRestoreBtn').addEventListener('click', () => {
@@ -1163,11 +1329,42 @@
         }
 
         renderFeatList();
+        renderChoices();
 
         document.getElementById('fTraits').value = sheet.personality.traits || '';
         document.getElementById('fIdeals').value = sheet.personality.ideals || '';
         document.getElementById('fBonds').value = sheet.personality.bonds || '';
         document.getElementById('fFlaws').value = sheet.personality.flaws || '';
+      }
+      // ---- "Choose N from a list" class features (e.g. Warlock invocations) ----
+      function renderChoices(){
+        const host = document.getElementById('choiceSections');
+        const sets = window.WZ ? WZ.choiceSetsFor(sheet.class) : [];
+        host.innerHTML = '';
+        sets.forEach(set => {
+          const rs = sheet.ruleset === '2014' ? '2014' : '2024';
+          const max = set.known(sheet.level || 1, rs);
+          if(!max && !(sheet.choices[set.id] || []).length) return;
+          const chosen = sheet.choices[set.id] = sheet.choices[set.id] || [];
+          const opts = set.options(rs), byName = Object.fromEntries(opts.map(o => [o.n, o]));
+          const avail = opts.filter(o => !chosen.includes(o.n));
+          const over = chosen.length > max;
+          const sec = document.createElement('div'); sec.className = 'section';
+          sec.innerHTML = `<h3>${escapeHtml(set.label)} <span style="text-transform:none;letter-spacing:0;">— ${chosen.length} / ${max} chosen</span></h3>
+            ${chosen.length ? chosen.map((n, i) => `<div class="featCard"><div class="featTop"><span class="featName">${escapeHtml(n)}</span><button class="removeX" data-rmc="${i}">✕</button></div>
+              <div class="featDesc">${escapeHtml((byName[n] && byName[n].b) || 'Custom choice')}</div></div>`).join('') : '<p class="infoText">None chosen yet.</p>'}
+            ${over ? '<p class="infoText" style="color:#e0a83f;">You have more than your level allows — remove one, or ask your DM.</p>' : ''}
+            <div class="addRow"><select class="addName" data-pick>
+              <option value="">— add ${escapeHtml(set.noun)} —</option>
+              ${avail.map(o => `<option value="${escapeHtml(o.n)}">${escapeHtml(o.n)}${o.min > (sheet.level || 1) ? ' (level ' + o.min + ')' : ''}</option>`).join('')}</select>
+              <button class="btn small" data-addc>+ Add</button></div>
+            <div class="addRow"><input type="text" class="addName" data-custom placeholder="Other / homebrew ${escapeHtml(set.noun)}"><button class="btn small" data-addcustom>+ Add</button></div>
+            <p class="infoText" style="margin-top:8px;">Prerequisites are a guide — confirm them in your book or with your DM.</p>`;
+          host.appendChild(sec);
+          sec.querySelectorAll('[data-rmc]').forEach(b => b.addEventListener('click', () => { chosen.splice(+b.dataset.rmc, 1); renderChoices(); }));
+          sec.querySelector('[data-addc]').addEventListener('click', () => { const v = sec.querySelector('[data-pick]').value; if(v){ chosen.push(v); renderChoices(); } });
+          sec.querySelector('[data-addcustom]').addEventListener('click', () => { const v = sec.querySelector('[data-custom]').value.trim(); if(v){ chosen.push(v); renderChoices(); } });
+        });
       }
       function renderFeatList(){
         const el = document.getElementById('featList');
@@ -1244,7 +1441,7 @@
             ability = feat.asi.choose[0];
           } else {
             const selected = document.getElementById('featAsiChips').querySelector('.chip.selected');
-            if(!selected){ alert('Choose an ability score for this feat first.'); return; }
+            if(!selected){ UI.alert('Choose an ability score for this feat first.'); return; }
             ability = selected.dataset.asiability || selected.getAttribute('data-asiAbility');
           }
           sheet.stats[ability] = Math.min(20, (sheet.stats[ability]||10) + feat.asi.amount);
@@ -1257,6 +1454,66 @@
       });
 
       // ---- Render: Spells tab ----
+      // ---- Spell slots (tap a slot to mark it used) ----
+      const PACT_COUNT = [1,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,4,4,4,4];
+      const PACT_LEVEL = [1,1,2,2,3,3,4,4,5,5,5,5,5,5,5,5,5,5,5,5];
+      function slotRows(){ return slotRowsFor(sheet.class, sheet.level); }
+      function slotRowsFor(cls, level){
+        const lv = Math.max(1, Math.min(20, level || 1));
+        if(!cls || DND.NON_CASTERS.has(cls)) return null;
+        if(cls === 'Warlock') return { pact:true, rows:[{ lvl:PACT_LEVEL[lv-1], count:PACT_COUNT[lv-1] }] };
+        let table;
+        if(cls === 'Paladin' || cls === 'Ranger') table = lv < 2 ? null : DND.SPELL_SLOTS[Math.ceil(lv/2)];
+        else if(cls === 'Artificer') table = DND.SPELL_SLOTS[Math.ceil(lv/2)];
+        else table = DND.SPELL_SLOTS[lv];
+        if(!table) return { rows:[] };
+        return { rows: table.map((c,i) => ({ lvl:i+1, count:c })).filter(r => r.count > 0) };
+      }
+      function renderSlotPips(info){
+        const used = sheet.resourceState.slotsUsed || (sheet.resourceState.slotsUsed = [0,0,0,0,0,0,0,0,0]);
+        const el = document.getElementById('spellSlotsRow');
+        if(!info.rows.length){ el.innerHTML = 'No spell slots yet at this level.'; return; }
+        el.innerHTML = info.rows.map(r => {
+          const u = Math.min(used[r.lvl-1] || 0, r.count);
+          let pips = '';
+          for(let i = 0; i < r.count; i++) pips += `<button class="slotPip ${i < r.count - u ? '' : 'used'}" data-lvl="${r.lvl}" data-i="${i}" aria-label="Level ${r.lvl} slot"></button>`;
+          return `<div class="slotLine"><span class="slotLbl">${info.pact ? 'Pact · lvl ' + r.lvl : 'Level ' + r.lvl}</span>${pips}<span class="wzDim">${r.count - u}/${r.count}</span></div>`;
+        }).join('') + `<div class="slotNote">${info.pact ? 'Pact Magic slots come back on a short rest. ' : ''}Tap a slot to spend it, tap a spent one to get it back.</div>`;
+      }
+      document.getElementById('spellSlotsRow').addEventListener('click', e => {
+        const b = e.target.closest('.slotPip'); if(!b) return;
+        const lvl = +b.dataset.lvl, info = slotRows(); if(!info) return;
+        const row = info.rows.find(r => r.lvl === lvl); if(!row) return;
+        const used = sheet.resourceState.slotsUsed || (sheet.resourceState.slotsUsed = [0,0,0,0,0,0,0,0,0]);
+        const avail = row.count - Math.min(used[lvl-1] || 0, row.count);
+        const isUsedPip = b.classList.contains('used');
+        used[lvl-1] = Math.max(0, Math.min(row.count, (used[lvl-1] || 0) + (isUsedPip ? -1 : (avail > 0 ? 1 : 0))));
+        renderSlotPips(info);
+      });
+
+      // ---- Rests ----
+      function restMsg(t){ document.getElementById('restMsg').textContent = t; }
+      document.getElementById('shortRestBtn').addEventListener('click', () => {
+        const res = DND.CLASS_RESOURCE[sheet.class], bits = [];
+        if(res && res.resetsOn === 'short'){ sheet.resourceState.classResourceUsed = 0; bits.push(res.label + ' restored'); }
+        const info = slotRows();
+        if(info && info.pact){ sheet.resourceState.slotsUsed = [0,0,0,0,0,0,0,0,0]; bits.push('Pact Magic slots restored'); }
+        bits.push('spend Hit Dice on the Combat tab below if you need healing');
+        restMsg('Short rest: ' + bits.join('; ') + '.');
+        renderCombat(); renderSpells();
+      });
+      document.getElementById('longRestBtn').addEventListener('click', async () => {
+        if(!(await UI.confirm('This restores HP, spell slots and class resources, and gives back some Hit Dice.', { title:'Take a long rest?', ok:'Long rest' }))) return;
+        const rs = sheet.resourceState;
+        sheet.hp_current = sheet.hp_max || 0;
+        rs.slotsUsed = [0,0,0,0,0,0,0,0,0];
+        rs.classResourceUsed = 0;
+        rs.hitDiceUsed = Math.max(0, (rs.hitDiceUsed || 0) - Math.max(1, Math.floor((sheet.level || 1) / 2)));
+        sheet.deathSaves = { success:[false,false,false], fail:[false,false,false] };
+        restMsg('Long rest: HP full, spell slots and class resources restored, some Hit Dice back. Remember to Save.');
+        renderCombat(); renderSpells();
+      });
+
       function renderSpells(){
         const cls = sheet.class;
         const isNonCaster = DND.NON_CASTERS.has(cls);
@@ -1269,8 +1526,9 @@
           castSection.classList.remove('hidden');
           const mod = getMod(sheet.stats[spellAbility]);
           document.getElementById('spellAbilityVal').textContent = spellAbility.toUpperCase();
-          document.getElementById('spellDcVal').textContent = 8 + pb + mod;
-          document.getElementById('spellAtkVal').textContent = modStr(pb + mod);
+          const ov = sheet.dmOverrides || {};
+          document.getElementById('spellDcVal').textContent = ov.spellDc != null && ov.spellDc !== '' ? ov.spellDc : 8 + pb + mod;
+          document.getElementById('spellAtkVal').textContent = ov.spellAtk != null && ov.spellAtk !== '' ? modStr(parseInt(ov.spellAtk, 10) || 0) : modStr(pb + mod);
         } else castSection.classList.add('hidden');
 
         const cantripCount = sheet.spells.filter(s => s.level === 0).length;
@@ -1288,11 +1546,10 @@
         document.getElementById('spellCapRow').innerHTML = capParts.join(' &nbsp;·&nbsp; ');
 
         const slotsSection = document.getElementById('spellSlotsSection');
-        const slots = isNonCaster ? null : (DND.HALF_CASTERS.has(cls) ? DND.SPELL_SLOTS[Math.max(1,Math.floor(sheet.level/2))] : DND.SPELL_SLOTS[sheet.level]);
-        if(slots){
+        const rows = slotRows();
+        if(rows){
           slotsSection.classList.remove('hidden');
-          const parts = slots.map((c,i) => c > 0 ? `Lvl ${i+1}: <b>${c}</b>` : '').filter(Boolean);
-          document.getElementById('spellSlotsRow').innerHTML = parts.join(' &nbsp;·&nbsp; ') || 'No slots yet.';
+          renderSlotPips(rows);
         } else slotsSection.classList.add('hidden');
 
         renderSpellList();
@@ -1303,7 +1560,7 @@
           el.innerHTML = '<p class="infoText">No spells added yet.</p>';
           return;
         }
-        const showPrepared = ['Cleric','Druid','Paladin','Wizard'].includes(sheet.class);
+        const showPrepared = ['Cleric','Druid','Paladin','Wizard','Artificer'].includes(sheet.class);
         const sorted = sheet.spells.map((s,i) => ({...s, idx:i})).sort((a,b) => a.level - b.level || a.name.localeCompare(b.name));
         el.innerHTML = sorted.map(s => `
           <div class="listRow">
@@ -1336,8 +1593,49 @@
         renderSpells();
       });
 
+      // The DM can edit any field on a sheet. When that happens while the sheet is open, pull their
+      // changes in (keeping whatever the player has typed but not saved yet) and tell the player.
+      let lastRemote = null, lastRemoteId = null;
+      function applyRemoteChanges(){
+        const mine = characters.find(x => x.id === editingCharId);
+        if(!mine) return;
+        const strip = o => { const c = Object.assign({}, o); delete c.updatedAt; delete c.id; return c; };
+        if(lastRemoteId !== editingCharId || !lastRemote){ lastRemoteId = editingCharId; lastRemote = JSON.parse(JSON.stringify(strip(mine))); return; }
+        const now = strip(mine), changed = [];
+        Object.keys(now).concat(Object.keys(lastRemote)).forEach(k => {
+          if(changed.includes(k)) return;
+          if(JSON.stringify(now[k]) !== JSON.stringify(lastRemote[k]) && JSON.stringify(now[k]) !== JSON.stringify(sheet[k])) changed.push(k);
+        });
+        const before = grantCount(sheet.dmGrants);
+        lastRemote = JSON.parse(JSON.stringify(now));
+        if(!changed.length) return;
+        readFormIntoSheet();   // keep unsaved typing
+        changed.forEach(k => { if(now[k] === undefined) delete sheet[k]; else sheet[k] = JSON.parse(JSON.stringify(now[k])); });
+        sheet.dmGrants = normGrants(sheet.dmGrants);
+        if(changed.includes('ruleset')) ruleset = sheet.ruleset === '2014' ? '2014' : '2024';
+        renderAll();
+        const onlyGrants = changed.every(k => k === 'dmGrants');
+        UI.toast(onlyGrants && grantCount(sheet.dmGrants) > before ? 'Your DM gave you something new — check Inventory / Features.' : 'Your DM updated your sheet.');
+      }
+
+      // ---- Items & boons granted by the DM (stored in dmGrants; only the DM Remote writes it) ----
+      function normGrants(g){
+        g = g || {};
+        return { items: Array.isArray(g.items) ? g.items.slice() : [], boons: Array.isArray(g.boons) ? g.boons.slice() : [] };
+      }
+      function grantCount(g){ g = normGrants(g); return g.items.length + g.boons.length; }
+      function renderDmGrants(){
+        const g = normGrants(sheet && sheet.dmGrants);
+        const itemsEl = document.getElementById('dmItems'), boonsEl = document.getElementById('dmBoons');
+        if(itemsEl) itemsEl.innerHTML = g.items.length ? `<div class="dmGrantBox"><div class="dmGrantHead">🎁 From your DM</div>${g.items.map(it => `
+          <div class="listRow"><span class="rowMain">${it.quantity > 1 ? it.quantity + '× ' : ''}${escapeHtml(it.name || '')}${it.note ? `<small class="dmNote">${escapeHtml(it.note)}</small>` : ''}</span></div>`).join('')}</div>` : '';
+        if(boonsEl) boonsEl.innerHTML = g.boons.length ? `<div class="section"><h3>Boons &amp; Gifts</h3>${g.boons.map(b => `
+          <div class="dmGrantBox"><div class="dmGrantHead">✨ ${escapeHtml(b.name || '')}</div>${b.desc ? `<p class="infoText" style="margin:4px 0 0;white-space:pre-wrap;">${escapeHtml(b.desc)}</p>` : ''}</div>`).join('')}</div>` : '';
+      }
+
       // ---- Render: Inventory tab ----
       function renderInventory(){
+        renderDmGrants();
         const el = document.getElementById('invList');
         if(!sheet.inventory.length){
           el.innerHTML = '<p class="infoText">No items yet.</p>';
@@ -1399,7 +1697,7 @@
       document.getElementById('fLevel').addEventListener('input', () => { renderDerived(); renderCombat(); renderSkillsAndSaves(); renderFeatures(); renderSpells(); renderHeader(); });
 
       function openCharSheet(id){
-        editingCharId = id;
+        editingCharId = id; lastRemote = null;
         const c = characters.find(x => x.id === id);
         if(!c) return;
         const blank = blankCharacter(c.name || '');
@@ -1413,7 +1711,10 @@
           resourceState: Object.assign({}, blank.resourceState, c.resourceState),
           feats: Array.isArray(c.feats) ? [...c.feats] : [],
           spells: Array.isArray(c.spells) ? [...c.spells] : [],
-          inventory: Array.isArray(c.inventory) ? [...c.inventory] : []
+          inventory: Array.isArray(c.inventory) ? [...c.inventory] : [],
+          dmGrants: normGrants(c.dmGrants),
+          dmOverrides: Object.assign({}, c.dmOverrides),
+          choices: Object.fromEntries(Object.entries(c.choices || {}).map(([k, v]) => [k, Array.isArray(v) ? [...v] : []]))
         });
         ruleset = sheet.ruleset === '2014' ? '2014' : '2024';
         document.getElementById('sheetTabBar').querySelector('[data-tab="core"]').click();
@@ -1421,8 +1722,7 @@
         refreshRulesetDropdowns(); // populates race/background/feat options for this ruleset, then calls renderAll()
       }
 
-      document.getElementById('sheetSaveBtn').addEventListener('click', () => {
-        if(!editingCharId) return;
+      function readFormIntoSheet(){
         sheet.ruleset = ruleset;
         sheet.name = document.getElementById('fName').value.trim() || 'Unnamed';
         sheet.hp_current = parseInt(document.getElementById('fHpCurrent').value, 10) || 0;
@@ -1443,18 +1743,71 @@
           weight: document.getElementById('fWeight').value, eyes: document.getElementById('fEyes').value,
           skin: document.getElementById('fSkin').value, hair: document.getElementById('fHair').value
         };
-
+      }
+      function persistSheet(){
+        if(!editingCharId) return Promise.resolve();
+        readFormIntoSheet();
         const payload = Object.assign({}, sheet, { updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
         delete payload.createdAt; // never overwrite on update
-        charsRef().doc(editingCharId).set(payload, { merge:true })
-          .then(() => show('charListScreen'))
-          .catch(err => alert('Save failed: ' + err.message));
+        delete payload.dmOverrides; delete payload.dmGrants;   // DM-owned — a stale copy here must never clobber what the DM just granted
+        return charsRef().doc(editingCharId).set(payload, { merge:true });
+      }
+      document.getElementById('sheetSaveBtn').addEventListener('click', () => {
+        persistSheet().then(() => show('charListScreen')).catch(err => UI.alert(err.message, { title:'Save failed' }));
       });
-      document.getElementById('sheetDeleteBtn').addEventListener('click', () => {
+      document.getElementById('sheetDeleteBtn').addEventListener('click', async () => {
         if(!editingCharId) return;
-        if(!confirm('Delete this character? This cannot be undone.')) return;
-        charsRef().doc(editingCharId).delete().then(() => show('charListScreen')).catch(err => alert('Delete failed: ' + err.message));
+        if(!(await UI.confirm('This cannot be undone.', { title:'Delete this character?', ok:'Delete', danger:true }))) return;
+        charsRef().doc(editingCharId).delete().then(() => show('charListScreen')).catch(err => UI.alert(err.message, { title:'Delete failed' }));
       });
+
+      // ---- Hooks for the guided creator (js/wizard.js) ----
+      window.PlayerApp = {
+        show,
+        getSheet: () => sheet,
+        renderAll, persistSheet, slotRowsFor, getMod, profBonus, preparedMax, cantripsKnownMax, spellsKnownMax,
+        blankCharacter,
+        openCharSheet,
+        // Always reads the 2024 SRD list, whatever ruleset the open sheet is using.
+        liveIndex(endpoint){
+          const prev = ruleset; ruleset = '2024';
+          const p = loadLiveIndex(endpoint);   // reads `ruleset` synchronously
+          ruleset = prev;
+          return p;
+        },
+        liveDetail(endpoint, key){
+          const prev = ruleset; ruleset = '2024';
+          const p = fetchLiveDetail(endpoint, key);  // reads `ruleset` synchronously
+          ruleset = prev;
+          return p;
+        },
+        // Full object lists (items, weapons, armor) for the 2024 SRD, cached.
+        liveAll(endpoint){
+          const ck = '2024:all:' + endpoint;
+          if(liveIndexCache[ck]) return Promise.resolve(liveIndexCache[ck]);
+          return fetchAllPages(`${OPEN5E_BASE}/v2/${apiEndpoint(endpoint)}/?document__key__in=srd-2024&limit=200`)
+            .then(list => (liveIndexCache[ck] = list));
+        },
+        // All 2024 SRD spells (name, level, school, classes when Open5e provides them), cached.
+        liveSpells(){
+          const ck = '2024:spells';
+          if(liveIndexCache[ck]) return Promise.resolve(liveIndexCache[ck]);
+          return fetchAllPages(`${OPEN5E_BASE}/v2/spells/?document__key__in=srd-2024&limit=200`).then(list => {
+            const out = list.map(o => {
+              const lvl = typeof o.level === 'number' ? o.level : parseInt(o.level, 10);
+              let cls = o.classes || o.class_list || o.spell_lists || [];
+              if(typeof cls === 'string') cls = cls.split(/,\s*/);
+              cls = (Array.isArray(cls) ? cls : []).map(c => String(typeof c === 'string' ? c : (c && (c.name || c.key)) || '').toLowerCase().replace(/^srd(-2024)?_/, ''));
+              const school = o.school && (o.school.name || o.school) || '';
+              return { name:o.name, level: isNaN(lvl) ? 0 : lvl, school:String(school), classes:cls, desc:String(o.desc || '').slice(0, 220) };
+            }).filter(x => x.name);
+            return (liveIndexCache[ck] = out);
+          });
+        },
+        createCharacter(data){
+          return charsRef().add(data).then(doc => doc.id);
+        }
+      };
     })();
   </script>
 </body>

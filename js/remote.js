@@ -59,6 +59,7 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
           combatLog: combatLog.slice(-80), // includes dmOnly lines — the Remote shows everything, the TV filters them
           lairAction: { enabled: lairAction.enabled, initCount: lairAction.initCount, triggered: lairAction.triggered },
           gridOn: typeof gridOn === 'boolean' ? gridOn : true,
+          gridColor: typeof gridColor === 'string' ? gridColor : '#7ad4e0',
           hudScale: typeof hudScale === 'number' ? hudScale : 1
         };
       }
@@ -626,6 +627,15 @@ document.getElementById('openRemoteBtn').addEventListener('click', openRemote);
             gridOn = !gridOn;
             const gridToggleEl = document.getElementById('gridToggle');
             if(gridToggleEl) gridToggleEl.classList.toggle('on', gridOn);
+            if(typeof drawGrid === 'function') drawGrid();
+            afterStateChange();
+            break;
+          }
+          case 'setGridColor': {
+            const col = String((payload && payload.color) || '').toLowerCase();
+            if(!/^#[0-9a-f]{6}$/.test(col)) break; // only accept #rrggbb
+            gridColor = col;
+            document.querySelectorAll('.swatch').forEach(s => s.classList.toggle('selected', s.dataset.color === col));
             if(typeof drawGrid === 'function') drawGrid();
             afterStateChange();
             break;
