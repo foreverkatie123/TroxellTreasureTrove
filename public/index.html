@@ -88,10 +88,11 @@
   .section h3{ margin:0 0 10px; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-dim); }
   .infoText{ color:var(--text-dim); font-size:12.5px; line-height:1.6; }
 
-  .abilityGrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .abilityGrid{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+  .abilityBox, .statBox{ min-width:0; }
   .abilityBox{ background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:8px; text-align:center; }
   .abilityBox label{ margin:0 0 4px; }
-  .abilityBox input{ text-align:center; padding:6px; font-size:15px; margin-top:0; }
+  .abilityBox input{ text-align:center; padding:6px; font-size:15px; margin-top:0; min-width:0; }
   .abilityBox .abMod{ color:var(--accent-2); font-size:12px; margin-top:4px; }
   .derivedRow{ display:flex; gap:14px; margin-top:12px; padding-top:12px; border-top:1px solid var(--border); font-size:12px; color:var(--text-dim); flex-wrap:wrap; }
   .derivedRow b{ color:var(--text); }
@@ -110,7 +111,8 @@
   .hpRow .hpNums{ flex:1; display:flex; align-items:center; justify-content:center; gap:6px; }
   .hpRow .hpNums input{ width:64px; text-align:center; margin-top:0; }
 
-  .statBoxRow{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .statBoxRow{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+  .statBox input{ min-width:0; }
   .statBox{ background:#0d1318; border:1px solid var(--border); border-radius:10px; padding:10px; text-align:center; }
   .statBox label{ margin:0 0 4px; }
   .statBox input{ text-align:center; font-size:18px; font-weight:700; padding:6px; margin-top:0; }
@@ -136,6 +138,12 @@
   .saveRow .lbl, .skillRow .lbl{ flex:1; font-size:13px; }
   .saveRow .bonus, .skillRow .bonus{ font-size:13px; font-weight:600; color:var(--text); width:32px; text-align:right; flex-shrink:0; }
 
+  .restRow{ display:flex; gap:10px; } .restRow .btn{ margin-top:0; flex:1; }
+  .slotLine{ display:flex; align-items:center; gap:8px; margin:6px 0; flex-wrap:wrap; }
+  .slotLine .slotLbl{ min-width:62px; color:var(--text-dim); font-size:12px; }
+  .slotPip{ width:30px; height:30px; border-radius:50%; border:2px solid var(--accent-2); background:var(--accent-2); cursor:pointer; padding:0; }
+  .slotPip.used{ background:transparent; border-color:var(--border); }
+  .slotNote{ color:var(--text-dim); font-size:11.5px; margin-top:6px; }
   .chipRow{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
   .chip{
     padding:5px 10px; border-radius:14px; font-size:11.5px; border:1px solid var(--border);
@@ -185,11 +193,13 @@
     .row2, .row3{ flex-wrap:wrap; }
     .row2 > div, .row3 > div{ flex:1 1 140px; min-width:0; }
     .sheetHeader{ flex-wrap:wrap; }
-    .sheetActions{ width:100%; }
-    .sheetActions .btn{ flex:1; }
-    .tabBar{ flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; margin-left:-4px; margin-right:-4px; padding-left:4px; padding-right:4px; scrollbar-width:none; }
-    .tabBar::-webkit-scrollbar{ display:none; }
-    .tabBtn{ flex-shrink:0; padding:10px 14px; font-size:12px; }
+    .sheetHeader .sheetActions{ width:100%; }
+    .sheetHeader .sheetActions .btn{ flex:1; }
+    .dieRow{ flex-wrap:wrap; gap:8px; }
+    .dieRow .sheetActions{ flex:1 1 auto; min-width:0; }
+    .dieRow .sheetActions .btn{ flex:1; min-height:44px; }
+    .tabBar{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; }
+    .tabBtn{ padding:11px 2px; font-size:11px; letter-spacing:.02em; text-align:center; min-width:0; overflow:hidden; text-overflow:ellipsis; }
     .section{ padding:12px; }
     .hpRow button{ width:44px; height:44px; }
     .hpRow .hpNums input{ width:56px; }
@@ -197,6 +207,9 @@
     .profDot{ width:22px; height:22px; }
     .saveRow, .skillRow{ padding:8px 2px; }
     .bgGrid, .bgPersonality{ grid-template-columns:1fr; }
+    .saveGrid{ grid-template-columns:1fr; }
+    .abilityBox input{ padding:8px 2px; }
+    .saveRow .lbl, .skillRow .lbl{ min-width:0; overflow:hidden; text-overflow:ellipsis; }
     .addRow{ flex-wrap:wrap; }
     .addRow .addName{ flex:1 1 100%; }
     .addRow .addLevel{ flex:1 1 90px; }
@@ -208,7 +221,7 @@
   }
   @media (max-width:380px){
     .saveGrid{ grid-template-columns:1fr; }
-    .abilityGrid{ grid-template-columns:repeat(2,1fr); }
+    .abilityGrid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
   }
 </style>
 </head>
@@ -222,6 +235,14 @@
 
     <!-- Sign-in screen -->
     <div id="signInScreen" class="panel hidden">
+      <div class="banner warn hidden" id="inAppWarn">
+        <b>Open this page in your browser first.</b><br>
+        Google blocks sign-in inside chat apps (Messenger, Facebook, Instagram, etc.). Tap <b>⋯ / Share</b> and choose <b>Open in Chrome</b> or <b>Open in Safari</b> — or copy the link and paste it into your browser.
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+          <button class="btn small" id="copyLinkBtn">Copy link</button>
+          <a class="btn small hidden" id="openChromeBtn" style="text-decoration:none;">Open in Chrome</a>
+        </div>
+      </div>
       <p style="margin-top:0;color:var(--text-dim);font-size:13px;">Sign in to create and manage your character. Ask your DM for your campaign's code once you're signed in.</p>
       <button class="btn google" id="googleSignInBtn">
         <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.5 6 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l5.7-5.7C34.5 6.9 29.5 5 24 5c-7.8 0-14.5 4.4-17.7 10.7z"/><path fill="#4CAF50" d="M24 44c5.3 0 10.1-1.8 13.8-5l-6.4-5.4C29.3 35.4 26.8 36 24 36c-5.2 0-9.6-3.1-11.3-7.6l-6.5 5C9.4 39.5 16.1 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.4-2.3 4.4-4.2 5.9l6.4 5.4C40.3 36.5 44 30.8 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
@@ -300,7 +321,7 @@
             <div>
               <label>Subclass</label>
               <select id="fSubclass"><option value="">— pick class first —</option></select>
-              <input type="text" id="fSubclassText" class="hidden" placeholder="Type your subclass">
+              <input type="text" id="fSubclassText" class="hidden" placeholder="Type your subclass (2024 subclass lists aren't fetched live)">
             </div>
           </div>
           <div class="row2">
@@ -351,6 +372,14 @@
       <!-- COMBAT -->
       <div class="tabPanel" data-panel="combat">
         <div class="section">
+          <h3>Rest</h3>
+          <div class="restRow">
+            <button class="btn" id="shortRestBtn">☕ Short rest</button>
+            <button class="btn primary" id="longRestBtn">🌙 Long rest</button>
+          </div>
+          <p class="infoText" id="restMsg" style="margin-top:8px;">Short rest refreshes short-rest powers (Ki, Warlock slots). Long rest restores HP, spell slots, rage and more.</p>
+        </div>
+        <div class="section">
           <h3>Hit points</h3>
           <div class="hpBar"><div id="hpBarFill" style="width:100%;background:#3fae5c;"></div></div>
           <div class="hpRow">
@@ -393,7 +422,7 @@
               <button class="btn small" id="hitDiceRestoreBtn">Restore</button>
             </div>
           </div>
-          <p class="infoText" style="margin-top:8px;">Regain half your total (rounded up) on a long rest.</p>
+          <p class="infoText" style="margin-top:8px;">Spend one to heal (rolls the die + Con). A long rest gives back half your total, minimum 1.</p>
         </div>
 
         <div class="section hidden" id="classResourceSection">
@@ -724,7 +753,7 @@
           let savedCampaign = null;
           try{ savedCampaign = localStorage.getItem(CAMPAIGN_KEY); }catch(err){}
           if(savedCampaign){
-            joinCampaign(savedCampaign);
+            joinCampaignExact(savedCampaign);
           }else{
             document.getElementById('joinUserPhoto').src = user.photoURL || '';
             document.getElementById('joinUserName').textContent = user.displayName || user.email || 'Player';
@@ -737,7 +766,27 @@
       document.getElementById('googleSignInBtn').addEventListener('click', () => {
         const provider = new firebase.auth.GoogleAuthProvider();
         provider.setCustomParameters({ prompt: 'select_account' }); // always ask which account, never silently reuse a cached one
-        firebase.auth().signInWithPopup(provider).catch(err => alert('Sign-in failed: ' + err.message));
+        firebase.auth().signInWithPopup(provider).catch(err => {
+          if(IN_APP_BROWSER || /network-request-failed|disallowed|popup/i.test(err.code + ' ' + err.message)){
+            document.getElementById('inAppWarn').classList.remove('hidden');
+            alert('Sign-in failed. If you opened this link from a chat app, open it in Chrome or Safari instead (see the notice on this page).');
+          } else alert('Sign-in failed: ' + err.message);
+        });
+      });
+      // Chat apps' built-in browsers (Messenger, Facebook, Instagram, TikTok…) block Google sign-in.
+      const IN_APP_BROWSER = /FBAN|FBAV|FB_IAB|Messenger|Instagram|Line\/|MicroMessenger|TikTok|Snapchat|Twitter|; wv\)/i.test(navigator.userAgent);
+      if(IN_APP_BROWSER){
+        document.getElementById('inAppWarn').classList.remove('hidden');
+        if(/Android/i.test(navigator.userAgent)){
+          const a = document.getElementById('openChromeBtn');
+          a.href = 'intent://' + location.host + location.pathname + '#Intent;scheme=https;package=com.android.chrome;end';
+          a.classList.remove('hidden');
+        }
+      }
+      document.getElementById('copyLinkBtn').addEventListener('click', () => {
+        const done = () => { document.getElementById('copyLinkBtn').textContent = 'Copied ✓'; };
+        if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(location.href).then(done).catch(() => prompt('Copy this link:', location.href));
+        else prompt('Copy this link:', location.href);
       });
       function signOut(){
         if(charsUnsub){ charsUnsub(); charsUnsub = null; }
@@ -747,7 +796,22 @@
       document.getElementById('signOutBtn1').addEventListener('click', signOut);
       document.getElementById('signOutBtn2').addEventListener('click', signOut);
 
+      // Campaign codes are not case-sensitive ("Flab" = "flab"). Firestore IDs are, so resolve via the
+      // lowercase field the DM Remote writes, then an exact-ID match (older campaigns), then lowercase.
+      function resolveCampaignCode(raw){
+        const typed = (raw || '').trim() || 'default';
+        const lower = typed.toLowerCase();
+        return db.collection('campaigns').where('codeLower', '==', lower).limit(1).get()
+          .then(snap => {
+            if(!snap.empty) return snap.docs[0].id;
+            return db.collection('campaigns').doc(typed).get().then(d => d.exists ? typed : lower);
+          })
+          .catch(() => typed);
+      }
       function joinCampaign(id){
+        return resolveCampaignCode(id).then(joinCampaignExact);
+      }
+      function joinCampaignExact(id){
         campaignId = (id || '').trim() || 'default';
         try{ localStorage.setItem(CAMPAIGN_KEY, campaignId); }catch(err){}
         document.getElementById('listUserPhoto').src = currentUser.photoURL || '';
@@ -820,7 +884,7 @@
           personality: { traits:'', ideals:'', bonds:'', flaws:'' },
           appearance: { age:'', height:'', weight:'', eyes:'', skin:'', hair:'' },
           deathSaves: { success:[false,false,false], fail:[false,false,false] },
-          resourceState: { hitDiceUsed:0, classResourceUsed:0 },
+          resourceState: { hitDiceUsed:0, classResourceUsed:0, slotsUsed:[0,0,0,0,0,0,0,0,0] },
           notes:'',
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -1091,7 +1155,13 @@
       document.getElementById('hpPlusBtn').addEventListener('click', () => { sheet.hp_current = Math.min(sheet.hp_max||0, (sheet.hp_current||0) + 1); renderCombat(); });
       document.getElementById('hitDiceSpendBtn').addEventListener('click', () => {
         const max = sheet.level;
+        if((sheet.resourceState.hitDiceUsed || 0) >= max){ restMsg('No Hit Dice left.'); return; }
         sheet.resourceState.hitDiceUsed = Math.min(max, sheet.resourceState.hitDiceUsed + 1);
+        const die = DND.CLASS_HIT_DIE[sheet.class] || 8;
+        const roll = 1 + Math.floor(Math.random() * die), con = getMod(sheet.stats.con);
+        const heal = Math.max(0, roll + con);
+        sheet.hp_current = Math.min(sheet.hp_max || 0, (sheet.hp_current || 0) + heal);
+        restMsg(`Spent a Hit Die: rolled ${roll}${con >= 0 ? '+' : ''}${con} = healed ${heal} HP.`);
         renderCombat();
       });
       document.getElementById('hitDiceRestoreBtn').addEventListener('click', () => {
@@ -1304,6 +1374,65 @@
       });
 
       // ---- Render: Spells tab ----
+      // ---- Spell slots (tap a slot to mark it used) ----
+      const PACT_COUNT = [1,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,4,4,4,4];
+      const PACT_LEVEL = [1,1,2,2,3,3,4,4,5,5,5,5,5,5,5,5,5,5,5,5];
+      function slotRows(){
+        const cls = sheet.class, lv = Math.max(1, Math.min(20, sheet.level || 1));
+        if(!cls || DND.NON_CASTERS.has(cls)) return null;
+        if(cls === 'Warlock') return { pact:true, rows:[{ lvl:PACT_LEVEL[lv-1], count:PACT_COUNT[lv-1] }] };
+        let table;
+        if(cls === 'Paladin' || cls === 'Ranger') table = lv < 2 ? null : DND.SPELL_SLOTS[Math.ceil(lv/2)];
+        else if(cls === 'Artificer') table = DND.SPELL_SLOTS[Math.ceil(lv/2)];
+        else table = DND.SPELL_SLOTS[lv];
+        if(!table) return { rows:[] };
+        return { rows: table.map((c,i) => ({ lvl:i+1, count:c })).filter(r => r.count > 0) };
+      }
+      function renderSlotPips(info){
+        const used = sheet.resourceState.slotsUsed || (sheet.resourceState.slotsUsed = [0,0,0,0,0,0,0,0,0]);
+        const el = document.getElementById('spellSlotsRow');
+        if(!info.rows.length){ el.innerHTML = 'No spell slots yet at this level.'; return; }
+        el.innerHTML = info.rows.map(r => {
+          const u = Math.min(used[r.lvl-1] || 0, r.count);
+          let pips = '';
+          for(let i = 0; i < r.count; i++) pips += `<button class="slotPip ${i < r.count - u ? '' : 'used'}" data-lvl="${r.lvl}" data-i="${i}" aria-label="Level ${r.lvl} slot"></button>`;
+          return `<div class="slotLine"><span class="slotLbl">${info.pact ? 'Pact · lvl ' + r.lvl : 'Level ' + r.lvl}</span>${pips}<span class="wzDim">${r.count - u}/${r.count}</span></div>`;
+        }).join('') + `<div class="slotNote">${info.pact ? 'Pact Magic slots come back on a short rest. ' : ''}Tap a slot to spend it, tap a spent one to get it back.</div>`;
+      }
+      document.getElementById('spellSlotsRow').addEventListener('click', e => {
+        const b = e.target.closest('.slotPip'); if(!b) return;
+        const lvl = +b.dataset.lvl, info = slotRows(); if(!info) return;
+        const row = info.rows.find(r => r.lvl === lvl); if(!row) return;
+        const used = sheet.resourceState.slotsUsed || (sheet.resourceState.slotsUsed = [0,0,0,0,0,0,0,0,0]);
+        const avail = row.count - Math.min(used[lvl-1] || 0, row.count);
+        const isUsedPip = b.classList.contains('used');
+        used[lvl-1] = Math.max(0, Math.min(row.count, (used[lvl-1] || 0) + (isUsedPip ? -1 : (avail > 0 ? 1 : 0))));
+        renderSlotPips(info);
+      });
+
+      // ---- Rests ----
+      function restMsg(t){ document.getElementById('restMsg').textContent = t; }
+      document.getElementById('shortRestBtn').addEventListener('click', () => {
+        const res = DND.CLASS_RESOURCE[sheet.class], bits = [];
+        if(res && res.resetsOn === 'short'){ sheet.resourceState.classResourceUsed = 0; bits.push(res.label + ' restored'); }
+        const info = slotRows();
+        if(info && info.pact){ sheet.resourceState.slotsUsed = [0,0,0,0,0,0,0,0,0]; bits.push('Pact Magic slots restored'); }
+        bits.push('spend Hit Dice on the Combat tab below if you need healing');
+        restMsg('Short rest: ' + bits.join('; ') + '.');
+        renderCombat(); renderSpells();
+      });
+      document.getElementById('longRestBtn').addEventListener('click', () => {
+        if(!confirm('Take a long rest? This restores HP, spell slots and resources.')) return;
+        const rs = sheet.resourceState;
+        sheet.hp_current = sheet.hp_max || 0;
+        rs.slotsUsed = [0,0,0,0,0,0,0,0,0];
+        rs.classResourceUsed = 0;
+        rs.hitDiceUsed = Math.max(0, (rs.hitDiceUsed || 0) - Math.max(1, Math.floor((sheet.level || 1) / 2)));
+        sheet.deathSaves = { success:[false,false,false], fail:[false,false,false] };
+        restMsg('Long rest: HP full, spell slots and class resources restored, some Hit Dice back. Remember to Save.');
+        renderCombat(); renderSpells();
+      });
+
       function renderSpells(){
         const cls = sheet.class;
         const isNonCaster = DND.NON_CASTERS.has(cls);
@@ -1335,11 +1464,10 @@
         document.getElementById('spellCapRow').innerHTML = capParts.join(' &nbsp;·&nbsp; ');
 
         const slotsSection = document.getElementById('spellSlotsSection');
-        const slots = isNonCaster ? null : (DND.HALF_CASTERS.has(cls) ? DND.SPELL_SLOTS[Math.max(1,Math.floor(sheet.level/2))] : DND.SPELL_SLOTS[sheet.level]);
-        if(slots){
+        const rows = slotRows();
+        if(rows){
           slotsSection.classList.remove('hidden');
-          const parts = slots.map((c,i) => c > 0 ? `Lvl ${i+1}: <b>${c}</b>` : '').filter(Boolean);
-          document.getElementById('spellSlotsRow').innerHTML = parts.join(' &nbsp;·&nbsp; ') || 'No slots yet.';
+          renderSlotPips(rows);
         } else slotsSection.classList.add('hidden');
 
         renderSpellList();
@@ -1520,6 +1648,13 @@
           const p = fetchLiveDetail(endpoint, key);  // reads `ruleset` synchronously
           ruleset = prev;
           return p;
+        },
+        // Full object lists (items, weapons, armor) for the 2024 SRD, cached.
+        liveAll(endpoint){
+          const ck = '2024:all:' + endpoint;
+          if(liveIndexCache[ck]) return Promise.resolve(liveIndexCache[ck]);
+          return fetchAllPages(`${OPEN5E_BASE}/v2/${apiEndpoint(endpoint)}/?document__key__in=srd-2024&limit=200`)
+            .then(list => (liveIndexCache[ck] = list));
         },
         createCharacter(data){
           return charsRef().add(data).then(doc => doc.id);

@@ -444,11 +444,6 @@
       .field{ margin-bottom:10px; }
       .field label{ display:block; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--text-dim); margin-bottom:5px; }
 
-      .gcRow{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
-      .gcSwatch{ width:26px; height:26px; border-radius:50%; cursor:pointer; border:2px solid transparent; padding:0; flex:0 0 auto; }
-      .gcSwatch.selected{ border-color:var(--text); }
-      #gridColorCustom{ width:30px; height:26px; padding:0; border:1px solid var(--border); border-radius:6px; background:none; cursor:pointer; flex:0 0 auto; }
-
       #combatantList{ display:flex; flex-direction:column; gap:8px; margin-bottom:12px; max-height:320px; overflow-y:auto; }
       .card{
         background:#0d1318; border:1px solid var(--border); border-radius:8px;
@@ -1082,10 +1077,6 @@
       <div class="panel">
         <h3>Map Grid</h3>
         <button class="btn" id="gridToggleBtn" disabled>Toggle Grid</button>
-        <div class="field" style="margin-bottom:0;">
-          <label>Line color</label>
-          <div class="gcRow" id="gridColorRow"></div>
-        </div>
       </div>
 
       <div class="panel">
@@ -1791,6 +1782,7 @@
             // code can act as DM, so we just preserve whoever created it first for that list.
             const existingOwner = doc.exists ? doc.data().ownerId : null;
             const metaUpdate = {
+              codeLower: campaignId.toLowerCase(),
               ownerId: existingOwner || fbUser.uid,
               lastConnectedAt: firebase.firestore.FieldValue.serverTimestamp(),
               lastConnectedBy: fbUser.uid
@@ -2469,7 +2461,6 @@
           gridToggleBtn.disabled = !s.mapLoaded;
           gridToggleBtn.classList.toggle('on', !!s.gridOn);
           gridToggleBtn.textContent = s.gridOn ? 'Grid: On' : 'Grid: Off';
-          renderGridColorPicker(s.gridColor);
 
           // Ruler
           const rulerBtn = document.getElementById('rulerBtn');
@@ -2606,26 +2597,6 @@
 
         document.getElementById('gridToggleBtn').addEventListener('click', () => send('toggleGrid'));
 
-        // ---- Grid line color (sent to the TV; the TV reports the current one back) ----
-        const GRID_COLORS = [
-          ['#f4dfa0','Parchment'],['#5ac8c0','Teal'],['#ffffff','White'],['#c0524a','Brick'],['#ff6bd6','Pink'],['#000000','Black'],
-          ['#ff4d4d','Red'],['#ff9f1c','Orange'],['#ffe94d','Yellow'],['#4cd964','Green'],['#4d9fff','Blue'],['#7b6cff','Indigo'],['#c77dff','Violet']
-        ];
-        (function buildGridColorRow(){
-          const row = document.getElementById('gridColorRow');
-          row.innerHTML = GRID_COLORS.map(([c, n]) => `<button class="gcSwatch" data-color="${c}" title="${n}" style="background:${c};"></button>`).join('') +
-            '<input type="color" id="gridColorCustom" value="#7ad4e0" title="Custom color">';
-          row.querySelectorAll('.gcSwatch').forEach(b => b.addEventListener('click', () => send('setGridColor', { color: b.dataset.color })));
-          document.getElementById('gridColorCustom').addEventListener('input', function(){ send('setGridColor', { color: this.value }); });
-        })();
-        function renderGridColorPicker(color){
-          if(!color) return;
-          const c = String(color).toLowerCase();
-          document.querySelectorAll('#gridColorRow .gcSwatch').forEach(b => b.classList.toggle('selected', b.dataset.color === c));
-          const custom = document.getElementById('gridColorCustom');
-          if(custom && document.activeElement !== custom && custom.value.toLowerCase() !== c) custom.value = c;
-        }
-
         document.getElementById('fxArmBtn').addEventListener('click', () => {
           if(lastSnapshot && lastSnapshot.mode === 'spell'){
             send('cancelSpell');
@@ -2709,7 +2680,24 @@
             row.addEventListener('click', () => switchCampaign(row.dataset.id, campaignNames[row.dataset.id] || ''));
           });
         }
+        // Campaign codes are not case-sensitive: "Flab" and "flab" are the same campaign.
+        // Firestore document IDs ARE case-sensitive, so look the code up via a lowercase field first,
+        // then an exact-ID match (older campaigns), and only then create/use the lowercase form.
+        function resolveCampaignCode(raw){
+          const typed = (raw || '').trim() || 'default';
+          const lower = typed.toLowerCase();
+          return db.collection('campaigns').where('codeLower', '==', lower).limit(1).get()
+            .then(snap => {
+              if(!snap.empty) return snap.docs[0].id;
+              return db.collection('campaigns').doc(typed).get().then(d => d.exists ? typed : lower);
+            })
+            .catch(() => typed);
+        }
         function switchCampaign(id, name){
+          if(!db || !fbUser) return switchCampaignExact(id, name);
+          resolveCampaignCode(id).then(real => switchCampaignExact(real, name));
+        }
+        function switchCampaignExact(id, name){
           id = (id || '').trim() || 'default';
           name = (name || '').trim();
           campaignId = id;
@@ -3204,7 +3192,7 @@
         document.getElementById('undoBtn').addEventListener('click', () => send('undo', {}));
 
         // ---- Party cheat-sheet strip: AC / passive Perception / spell save DC / speed for each synced PC ----
-        // Same formulas the player sheet uses (public/index.html + js/dnd-data.js).
+        // Same formulas the player sheet uses (public/index.html + public/js/dnd-data.js).
         const CASTING_ABILITY = { Bard:'cha', Cleric:'wis', Druid:'wis', Paladin:'cha', Ranger:'wis', Sorcerer:'cha', Warlock:'cha', Wizard:'int' };
         function pcCheatStats(c){
           const stats = c.stats || {};

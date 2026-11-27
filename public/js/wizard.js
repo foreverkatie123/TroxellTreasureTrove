@@ -20,7 +20,7 @@
 
   function freshState(){
     return { name:'', ruleset:'2024', cls:'', sub:'', race:'', raceKind:'', bg:'', raceAsi:{}, bgAsi:{}, scores:{}, skills:[], gear:0,
-             cantrips:[], l1:[], persona:{traits:'',ideals:'',bonds:'',flaws:''}, extraRaceSkills:[] };
+             cantrips:[], l1:[], gearMode:'pack', cart:{}, budget:null, persona:{traits:'',ideals:'',bonds:'',flaws:''}, extraRaceSkills:[] };
   }
   function saveDraft(){ try{ localStorage.setItem(DRAFT_KEY, JSON.stringify({ W, stepIdx })); }catch(e){} }
   function loadDraft(){ try{ return JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); }catch(e){ return null; } }
@@ -158,6 +158,7 @@
         if(W.l1.length < c.l1) return `Pick ${c.l1 - W.l1.length} more level 1 spell${c.l1 - W.l1.length > 1 ? 's' : ''}.`;
         return '';
       }
+      case 'gear': return W.gearMode === 'buy' && goldLeft() < 0 ? 'You\'re over budget — remove something or raise your starting gold.' : '';
       default: return '';
     }
   }
@@ -190,6 +191,44 @@
     PlayerApp.liveDetail(endpoint, key).then(d => { live.detail[cacheKey] = d; paint(d); })
       .catch(() => { if(box.isConnected) box.innerHTML = '<p>Couldn\'t load the description (Open5e unreachable). Details will be on your sheet after creation.</p>'; });
   }
+  const cartNames = () => Object.keys(W.cart || {});
+  function currentAc(fs){
+    if(W.gearMode === 'buy') return WZ.acFromItems(cartNames(), mod(fs.dex), mod(fs.con), mod(fs.wis), W.cls);
+    const g = (WZ.GEAR[W.cls] || [])[W.gear] || { ac:{kind:'none'} };
+    return WZ.armorClass(g.ac, mod(fs.dex), mod(fs.con), mod(fs.wis));
+  }
+  const budgetOf = () => W.budget != null ? W.budget : (WZ.START_GOLD[W.cls] || 0);
+  const cartCost = () => Object.values(W.cart || {}).reduce((t, c) => t + (c.gp || 0) * c.qty, 0);
+  const goldLeft = () => Math.round((budgetOf() - cartCost()) * 100) / 100;
+  const bgGold = () => { const b = localBg(); let g = 0; if(b && b.equipment) b.equipment.split(',').forEach(x => { const m = x.trim().match(/^(\d+)\s*gp$/i); if(m) g += +m[1]; }); return g; };
+
+  // ---- shop data (Open5e items/weapons/armor, with built-in fallback) ----
+  const shop = { list:null, loading:false, failed:false };
+  function normShop(o, cat){
+    if(!o || !o.name) return null;
+    if(o.is_magic || (o.rarity && /uncommon|rare|very|legendary|artifact/i.test(JSON.stringify(o.rarity)))) return null;
+    let c = cat;
+    if(!c){
+      const raw = o.category ? (o.category.name || o.category.key || o.category) : '';
+      c = /weapon/i.test(raw) ? 'Weapons' : /armor|shield/i.test(raw) ? 'Armor' : 'Gear';
+    }
+    return { name:o.name, cat:c, gp:WZ.parseGp(o.cost) };
+  }
+  function loadShop(cb){
+    if(shop.list || shop.loading) return;
+    shop.loading = true;
+    const get = ep => PlayerApp.liveAll(ep).catch(() => []);
+    Promise.all([get('weapons'), get('armor'), get('items')]).then(([w, a, i]) => {
+      const seen = new Set(), out = [];
+      [[w,'Weapons'],[a,'Armor'],[i,null]].forEach(([arr, cat]) => (arr || []).forEach(o => {
+        const n = normShop(o, cat); if(!n) return;
+        const k = n.name.toLowerCase(); if(seen.has(k)) return; seen.add(k); out.push(n);
+      }));
+      if(out.length < 10){ shop.failed = true; shop.list = WZ.SHOP_FALLBACK.slice(); } else shop.list = out;
+    }).catch(() => { shop.failed = true; shop.list = WZ.SHOP_FALLBACK.slice(); })
+      .then(() => { shop.loading = false; cb(); });
+  }
+
   const l1Features = () => (DND.CLASS_FEATURES[W.cls] || []).filter(f => f[0] <= 1);
 
   // ---------- step builders ----------
@@ -410,6 +449,8 @@
         <button class="btn small" id="wzStd">Standard array</button>
         <button class="btn small" id="wzClear">Clear</button>
       </div>
+      <label class="wzCheck"><input type="checkbox" id="wzReroll" ${W.reroll1 === false ? '' : 'checked'}> Reroll any 1s when rolling digitally (each 1 is rerolled once)</label>
+      ${W.rolled && W.rollLog ? `<div class="wzInfo wzRollLog"><b>Your rolls</b>${W.rollLog.map(r => `<p><b>${r.total}</b> — ${r.dice.map(d => `<span class="${d.drop ? 'drop' : ''}">${d.v}${d.re ? '<sup title="rerolled a ' + d.was + '">↻</sup>' : ''}</span>`).join(' ')}</p>`).join('')}<p class="wzDim">Lowest die of each set is dropped (crossed out). ↻ = rerolled a 1.</p></div>` : ''}
       <div class="wzAbList">${AB.map(a => {
         const base = W.scores[a], tot = base ? base + bt[a] : null;
         return `<div class="wzAb ${a === (WZ.PRIORITY[W.cls] || [])[0] ? 'top' : ''}">
@@ -441,12 +482,22 @@
       saveDraft(); BUILD.abilities(body); refreshNext();
     };
     $('#wzRoll').onclick = () => {
-      const roll = () => { const d = [1,2,3,4].map(() => 1 + Math.floor(Math.random()*6)).sort((a,b) => a-b); return d[1]+d[2]+d[3]; };
-      W.rolled = true; W.manual = false; W.rollPool = [roll(),roll(),roll(),roll(),roll(),roll()].sort((a,b) => b-a);
+      const d6 = () => 1 + Math.floor(Math.random() * 6);
+      const rr = W.reroll1 !== false;
+      const roll = () => {
+        const dice = [1,2,3,4].map(() => { let v = d6(), was = 0; if(rr && v === 1){ was = 1; v = d6(); } return { v, re: !!was, was }; });
+        const lowest = dice.reduce((m, d, i) => d.v < dice[m].v ? i : m, 0);
+        dice[lowest].drop = true;
+        return { total: dice.filter(d => !d.drop).reduce((t, d) => t + d.v, 0), dice };
+      };
+      const sets = [roll(),roll(),roll(),roll(),roll(),roll()].sort((a,b) => b.total - a.total);
+      W.rollLog = sets;
+      W.rolled = true; W.manual = false; W.rollPool = sets.map(x => x.total);
       W.scores = {}; W.rollAssign = {};
       WZ.PRIORITY[W.cls].forEach((a, i) => { W.scores[a] = W.rollPool[i]; W.rollAssign[a] = i; });
       saveDraft(); BUILD.abilities(body); refreshNext();
     };
+    $('#wzReroll').onchange = e => { W.reroll1 = e.target.checked; saveDraft(); };
     $('#wzManual').onclick = () => { W.manual = true; W.rolled = false; W.rollPool = null; W.rollAssign = null; W.scores = {}; saveDraft(); BUILD.abilities(body); refreshNext(); };
     $('#wzStd').onclick = () => { W.manual = false; W.rolled = false; W.rollPool = null; W.rollAssign = null; W.scores = {}; saveDraft(); BUILD.abilities(body); refreshNext(); };
     body.querySelectorAll('input[data-man]').forEach(inp => inp.oninput = () => {
@@ -502,17 +553,78 @@
   };
 
   BUILD.gear = body => {
+    const buy = W.gearMode === 'buy';
+    body.innerHTML = `<div class="wzTwo" style="margin-bottom:14px">
+        <button class="wzChoice ${buy ? '' : 'sel'}" data-gm="pack"><b>Starting package</b><span>Quick — pick a ready-made kit</span></button>
+        <button class="wzChoice ${buy ? 'sel' : ''}" data-gm="buy"><b>Buy my own</b><span>Spend your starting gold</span></button></div>
+      <div id="wzGearBody"></div>`;
+    body.querySelectorAll('[data-gm]').forEach(b => b.onclick = () => { W.gearMode = b.dataset.gm; saveDraft(); BUILD.gear(body); refreshNext(); });
+    const box = $('#wzGearBody', body);
+    return buy ? buildShop(box) : buildPackages(box);
+  };
+
+  function buildPackages(box){
     const opts = WZ.GEAR[W.cls] || [];
     const fs = finalScores();
-    body.innerHTML = `<p class="wzLead">Pick a starting loadout. It sets your armor class and fills your inventory — you can change it later.</p>
+    box.innerHTML = `<p class="wzLead">Pick a starting loadout. It sets your armor class and fills your inventory — you can change it later.</p>
       <div class="wzGrid">${opts.map((o, i) => {
         const ac = WZ.armorClass(o.ac, mod(fs.dex), mod(fs.con), mod(fs.wis));
         return `<div class="wzCard ${W.gear === i ? 'sel' : ''}" data-g="${i}"><div class="wzCardTop"><b>${esc(o.label)}</b><span class="wzDiff d1">AC ${ac}</span></div>
           <div class="wzTag">${o.items.map(esc).join(' · ')}</div></div>`;
       }).join('')}</div>
       ${localBg() && localBg().equipment ? `<div class="wzInfo"><b>Plus your background gear</b><p>${esc(localBg().equipment)}</p></div>` : ''}`;
-    body.querySelectorAll('[data-g]').forEach(c => c.onclick = () => { W.gear = +c.dataset.g; saveDraft(); BUILD.gear(body); });
-  };
+    box.querySelectorAll('[data-g]').forEach(c => c.onclick = () => { W.gear = +c.dataset.g; saveDraft(); buildPackages(box); });
+  }
+
+  function buildShop(box){
+    let cat = 'All', q = '';
+    box.innerHTML = `<p class="wzLead">Spend your starting gold. Ask your DM how much you have — it's usually set by your class, and you can change the number.</p>
+      <div class="wzBudget"><label>Starting gold</label><input type="number" inputmode="numeric" min="0" id="wzBudget" value="${budgetOf()}"><div class="wzLeft" id="wzLeft"></div></div>
+      <input type="text" id="wzShopQ" placeholder="Search weapons, armor, gear…" autocomplete="off">
+      <div class="wzFilters" style="margin-top:8px">${['All','Weapons','Armor','Gear'].map(c => `<button class="chip ${c === 'All' ? 'selected' : ''}" data-cat="${c}">${c}</button>`).join('')}</div>
+      <div id="wzShopNote" class="wzNote"></div>
+      <div id="wzShopRes" class="wzShopList"></div>
+      <h3 class="wzH">Your gear</h3><div id="wzCart" class="wzShopList"></div>
+      <div class="wzNote" id="wzCartAc"></div>`;
+    const money = () => {
+      const left = goldLeft(), el = $('#wzLeft', box);
+      el.innerHTML = `Left: <b class="${left < 0 ? 'over' : ''}">${left === 0 ? '0 gp' : left < 0 ? '−' + WZ.fmtGp(-left) : WZ.fmtGp(left)}</b>`;
+      $('#wzCartAc', box).textContent = 'Armor class with this gear: ' + currentAc(finalScores()) + (bgGold() ? `  ·  Your background also gives you ${bgGold()} gp (added after).` : '');
+      refreshNext();
+    };
+    const drawCart = () => {
+      const names = cartNames();
+      $('#wzCart', box).innerHTML = names.length ? names.map(n => { const c = W.cart[n]; return `<div class="wzShopRow"><div class="wzShopName"><b>${esc(n)}</b><small>${c.gp == null ? 'price unknown' : WZ.fmtGp(c.gp * c.qty)}</small></div>
+        <div class="wzQty"><button data-q="-1" data-n="${esc(n)}">−</button><span>${c.qty}</span><button data-q="1" data-n="${esc(n)}">＋</button></div></div>`; }).join('')
+        : '<p class="wzDim">Nothing yet — search above and tap ＋.</p>';
+      $('#wzCart', box).querySelectorAll('[data-q]').forEach(b => b.onclick = () => {
+        const c = W.cart[b.dataset.n]; if(!c) return;
+        c.qty += +b.dataset.q; if(c.qty <= 0) delete W.cart[b.dataset.n];
+        saveDraft(); drawCart(); money();
+      });
+    };
+    const drawRes = () => {
+      const note = $('#wzShopNote', box);
+      if(!shop.list){ note.textContent = 'Loading equipment from Open5e…'; $('#wzShopRes', box).innerHTML = ''; return; }
+      note.textContent = shop.failed ? 'Couldn\'t reach Open5e — showing a built-in list of standard gear.' : '';
+      const ql = q.trim().toLowerCase();
+      const list = shop.list.filter(i => (cat === 'All' || i.cat === cat) && (!ql || i.name.toLowerCase().includes(ql)))
+        .sort((a, b) => a.name.localeCompare(b.name)).slice(0, 40);
+      $('#wzShopRes', box).innerHTML = list.length ? list.map(i => `<div class="wzShopRow"><div class="wzShopName"><b>${esc(i.name)}</b><small>${esc(i.cat)} · ${WZ.fmtGp(i.gp)}</small></div>
+        <button class="wzAdd" data-add="${esc(i.name)}">＋</button></div>`).join('') + (shop.list.length > 40 && !ql ? '<p class="wzDim">Showing 40 — type to search the rest.</p>' : '')
+        : '<p class="wzDim">No matches.</p>';
+      $('#wzShopRes', box).querySelectorAll('[data-add]').forEach(b => b.onclick = () => {
+        const it = shop.list.find(x => x.name === b.dataset.add); if(!it) return;
+        if(W.cart[it.name]) W.cart[it.name].qty++; else W.cart[it.name] = { qty:1, gp:it.gp };
+        saveDraft(); drawCart(); money();
+      });
+    };
+    $('#wzBudget', box).oninput = e => { const v = parseFloat(e.target.value); W.budget = isNaN(v) ? 0 : Math.max(0, v); saveDraft(); money(); };
+    $('#wzShopQ', box).oninput = e => { q = e.target.value; drawRes(); };
+    box.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => { cat = b.dataset.cat; box.querySelectorAll('[data-cat]').forEach(x => x.classList.toggle('selected', x === b)); drawRes(); });
+    drawRes(); drawCart(); money();
+    loadShop(() => { if(box.isConnected) drawRes(); });
+  }
 
   BUILD.spells = body => {
     const caps = spellCaps();
@@ -548,7 +660,7 @@
     const g = (WZ.GEAR[W.cls] || [])[W.gear] || { ac:{kind:'none'}, items:[] };
     const hit = DND.CLASS_HIT_DIE[W.cls];
     const hp = hit + mod(fs.con) + (is2014() && W.race === 'Dwarf (Hill)' ? 1 : 0);
-    const ac = WZ.armorClass(g.ac, mod(fs.dex), mod(fs.con), mod(fs.wis));
+    const ac = currentAc(fs);
     body.innerHTML = `
       <div class="wzSummary">
         <div class="wzSumName">${esc(W.name)}</div>
@@ -590,7 +702,8 @@
       name = name.charAt(0).toUpperCase() + name.slice(1);
       inv[name] = (inv[name] || 0) + qty;
     };
-    g.items.forEach(addItem);
+    if(W.gearMode === 'buy'){ Object.keys(W.cart).forEach(n => { inv[n] = (inv[n] || 0) + W.cart[n].qty; }); }
+    else g.items.forEach(addItem);
     const b = localBg(); if(b && b.equipment) b.equipment.split(',').forEach(addItem);
     const inventory = Object.keys(inv).map(n => ({ name:n, quantity:inv[n] }));
 
@@ -613,8 +726,8 @@
 
     return Object.assign(base, {
       name: W.name.trim(), level:1, class:W.cls, subclass: needsSub() ? W.sub : '', race:W.race, background:W.bg, ruleset:W.ruleset,
-      stats: fs, hp_current:hpMax, hp_max:hpMax, ac: WZ.armorClass(g.ac, mod(fs.dex), mod(fs.con), mod(fs.wis)),
-      speed: WZ.RACE_SPEED[W.race] || 30, gold, skillProf, saveProf,
+      stats: fs, hp_current:hpMax, hp_max:hpMax, ac: currentAc(fs),
+      speed: WZ.RACE_SPEED[W.race] || 30, gold: gold + (W.gearMode === 'buy' ? Math.max(0, Math.floor(goldLeft())) : 0), skillProf, saveProf,
       proficiencies: profLines.join('\n'), feats, spells, inventory,
       personality: Object.assign({}, W.persona),
       notes: ''
@@ -687,6 +800,16 @@
   .wzAbRow{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; } .wzAbRow select{ width:90px; margin-top:0; }
   .wzAbRow input.wzNum{ width:90px; margin-top:0; text-align:center; } .wzAbRow input.wzNum.bad{ border-color:var(--danger); }
   .wzBtnRow .btn.on{ border-color:var(--accent); color:var(--accent-bright); }
+  .wzCheck{ display:flex !important; align-items:center; gap:8px; text-transform:none; letter-spacing:0; font-size:12.5px; margin:0 0 12px; cursor:pointer; }
+  .wzCheck input{ width:20px; height:20px; margin:0; flex-shrink:0; }
+  .wzRollLog p{ margin:4px 0 0; } .wzRollLog .drop{ text-decoration:line-through; opacity:.45; } .wzRollLog sup{ color:#e0c26a; }
+  .wzBudget{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px; } .wzBudget label{ margin:0 !important; } .wzBudget input{ width:100px; margin-top:0; }
+  .wzLeft{ margin-left:auto; font-size:14px; color:var(--text-dim); } .wzLeft b{ color:#7fd6a0; font-size:17px; } .wzLeft b.over{ color:var(--danger); }
+  .wzShopList{ display:grid; gap:6px; margin-top:8px; }
+  .wzShopRow{ display:flex; align-items:center; justify-content:space-between; gap:10px; background:#0d1318; border:1px solid var(--border); border-radius:10px; padding:8px 10px; min-height:48px; }
+  .wzShopName{ min-width:0; } .wzShopName b{ font-size:13.5px; display:block; overflow:hidden; text-overflow:ellipsis; } .wzShopName small{ color:var(--text-dim); font-size:11.5px; }
+  .wzAdd, .wzQty button{ width:40px; height:40px; border-radius:8px; border:1px solid var(--border); background:var(--accent); color:#06171a; font-size:18px; cursor:pointer; flex-shrink:0; }
+  .wzQty{ display:flex; align-items:center; gap:8px; flex-shrink:0; } .wzQty button{ background:#0d1318; color:var(--text); } .wzQty span{ min-width:18px; text-align:center; }
   .wzBonus{ font-size:11.5px; color:#7fd6a0; } .wzTotal{ margin-left:auto; font-size:12.5px; color:var(--text-dim); } .wzTotal b{ color:var(--text); font-size:15px; }
   .wzSkillGrid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
   .wzSkill{ background:#0d1318; border:2px solid var(--border); color:var(--text); border-radius:10px; padding:10px 12px; min-height:46px; font-size:13.5px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; text-align:left; }

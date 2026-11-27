@@ -81,417 +81,20 @@
 
   // ---------- Species ability bonuses (2014 rules). fixed: always applied; pick: [amounts] the player assigns to different scores ----------
   WZ.RACE_BONUS = {
-    // ==========================================
-    // PLAYER'S HANDBOOK (2024) — ASIs moved to Backgrounds
-    // ==========================================
-    'Aasimar (2024)': { pick: [] },
-    'Dragonborn (2024)': { pick: [] },
-    'Dwarf (2024)': { pick: [] },
-    'Elf - Drow (2024)': { pick: [] },
-    'Elf - High (2024)': { pick: [] },
-    'Elf - Wood (2024)': { pick: [] },
-    'Gnome - Forest (2024)': { pick: [] },
-    'Gnome - Rock (2024)': { pick: [] },
-    'Goliath - Cloud (2024)': { pick: [] },
-    'Goliath - Fire (2024)': { pick: [] },
-    'Goliath - Frost (2024)': { pick: [] },
-    'Goliath - Hill (2024)': { pick: [] },
-    'Goliath - Stone (2024)': { pick: [] },
-    'Goliath - Storm (2024)': { pick: [] },
-    'Halfling (2024)': { pick: [] },
-    'Human (2024)': { pick: [] },
-    'Orc (2024)': { pick: [] },
-    'Tiefling - Abyssal (2024)': { pick: [] },
-    'Tiefling - Chthonic (2024)': { pick: [] },
-    'Tiefling - Infernal (2024)': { pick: [] },
-
-    // ==========================================
-    // PLAYER'S HANDBOOK (2014) & DMG (2014)
-    // ==========================================
-    'Dark Elf (Drow)': { fixed: { dex: 2, cha: 1 } },
-    'Dragonborn': { fixed: { str: 2, cha: 1 } },
-    'Dwarf (Hill)': { fixed: { con: 2, wis: 1 } },
-    'Dwarf (Mountain)': { fixed: { str: 2, con: 2 } },
-    'Elf (Eladrin - DMG)': { fixed: { dex: 2, int: 1 } },
-    'Elf (High)': { fixed: { dex: 2, int: 1 } },
-    'Gnome (Forest)': { fixed: { dex: 1, int: 2 } },
-    'Gnome (Rock)': { fixed: { con: 1, int: 2 } },
-    'Half-Elf': { fixed: { cha: 2 }, pick: [1, 1] },
-    'Half-Orc': { fixed: { str: 2, con: 1 } },
-    'Halfling (Lightfoot)': { fixed: { dex: 2, cha: 1 } },
-    'Halfling (Stout)': { fixed: { dex: 2, con: 1 } },
-    'Human': { fixed: { str: 1, dex: 1, con: 1, int: 1, wis: 1, cha: 1 } },
-    'Human (Variant)': { pick: [1, 1] },
-    'Tiefling': { fixed: { int: 1, cha: 2 } },
-    'Wood Elf': { fixed: { dex: 2, wis: 1 } },
-    'Aasimar (DMG)': { fixed: { wis: 1, cha: 2 } },
-
-    // ==========================================
-    // TASHA'S CAULDRON OF EVERYTHING
-    // ==========================================
-    'Custom Lineage': { pick: [2] },
-
-    // ==========================================
-    // MONSTERS OF THE MULTIVERSE (Flexible +2/+1)
-    // ==========================================
-    'Aarakocra (MotM)': { pick: [2, 1] },
-    'Aasimar (MotM)': { pick: [2, 1] },
-    'Bugbear (MotM)': { pick: [2, 1] },
-    'Centaur (MotM)': { pick: [2, 1] },
-    'Changeling (MotM)': { pick: [2, 1] },
-    'Deep Gnome (MotM)': { pick: [2, 1] },
-    'Duergar (MotM)': { pick: [2, 1] },
-    'Eladrin (MotM)': { pick: [2, 1] },
-    'Fairy': { pick: [2, 1] },
-    'Firbolg (MotM)': { pick: [2, 1] },
-    'Genasi - Air (MotM)': { pick: [2, 1] },
-    'Genasi - Earth (MotM)': { pick: [2, 1] },
-    'Genasi - Fire (MotM)': { pick: [2, 1] },
-    'Genasi - Water (MotM)': { pick: [2, 1] },
-    'Githyanki (MotM)': { pick: [2, 1] },
-    'Githzerai (MotM)': { pick: [2, 1] },
-    'Goblin (MotM)': { pick: [2, 1] },
-    'Goliath (MotM)': { pick: [2, 1] },
-    'Harengon': { pick: [2, 1] },
-    'Hobgoblin (MotM)': { pick: [2, 1] },
-    'Kenku (MotM)': { pick: [2, 1] },
-    'Kobold (MotM)': { pick: [2, 1] },
-    'Lizardfolk (MotM)': { pick: [2, 1] },
-    'Minotaur (MotM)': { pick: [2, 1] },
-    'Orc (MotM)': { pick: [2, 1] },
-    'Satyr (MotM)': { pick: [2, 1] },
-    'Sea Elf (MotM)': { pick: [2, 1] },
-    'Shadar-kai (MotM)': { pick: [2, 1] },
-    'Shifter (MotM)': { pick: [2, 1] },
-    'Tabaxi (MotM)': { pick: [2, 1] },
-    'Tortle (MotM)': { pick: [2, 1] },
-    'Triton (MotM)': { pick: [2, 1] },
-    'Yuan-ti (MotM)': { pick: [2, 1] },
-
-    // ==========================================
-    // VOLO'S GUIDE TO MONSTERS (Legacy)
-    // ==========================================
-    'Aasimar (Fallen - Legacy)': { fixed: { str: 1, cha: 2 } },
-    'Aasimar (Protector - Legacy)': { fixed: { wis: 1, cha: 2 } },
-    'Aasimar (Scourge - Legacy)': { fixed: { con: 1, cha: 2 } },
-    'Bugbear (Legacy)': { fixed: { str: 2, dex: 1 } },
-    'Firbolg (Legacy)': { fixed: { str: 1, wis: 2 } },
-    'Goblin (Legacy)': { fixed: { dex: 2, con: 1 } },
-    'Goliath (Legacy)': { fixed: { str: 2, con: 1 } },
-    'Hobgoblin (Legacy)': { fixed: { con: 2, int: 1 } },
-    'Kenku (Legacy)': { fixed: { dex: 2, wis: 1 } },
-    'Kobold (Legacy)': { fixed: { dex: 2 } }, // Note: Originally had -2 STR, removed in later errata
-    'Lizardfolk (Legacy)': { fixed: { con: 2, wis: 1 } },
-    'Orc (Legacy - Volo)': { fixed: { str: 2, con: 1 } }, // Note: Originally had -2 INT, removed in errata
-    'Tabaxi (Legacy)': { fixed: { dex: 2, cha: 1 } },
-    'Triton (Legacy)': { fixed: { str: 1, con: 1, cha: 1 } },
-    'Yuan-ti Pureblood (Legacy)': { fixed: { int: 1, cha: 2 } },
-
-    // ==========================================
-    // MORDENKAINEN'S TOME OF FOES (Legacy)
-    // ==========================================
-    'Dwarf (Duergar - Legacy)': { fixed: { str: 1, con: 2 } },
-    'Elf (Eladrin - Legacy)': { fixed: { dex: 2, cha: 1 } },
-    'Elf (Sea Elf - Legacy)': { fixed: { dex: 2, con: 1 } },
-    'Elf (Shadar-kai - Legacy)': { fixed: { dex: 2, con: 1 } },
-    'Githyanki (Legacy)': { fixed: { str: 2, int: 1 } },
-    'Githzerai (Legacy)': { fixed: { int: 1, wis: 2 } },
-    'Gnome (Deep / Svirfneblin - Legacy)': { fixed: { dex: 1, int: 2 } },
-    'Tiefling (Asmodeus)': { fixed: { int: 1, cha: 2 } },
-    'Tiefling (Baalzebul)': { fixed: { int: 1, cha: 2 } },
-    'Tiefling (Dispater)': { fixed: { dex: 1, cha: 2 } },
-    'Tiefling (Fierna)': { fixed: { wis: 1, cha: 2 } },
-    'Tiefling (Glasya)': { fixed: { dex: 1, cha: 2 } },
-    'Tiefling (Levistus)': { fixed: { con: 1, cha: 2 } },
-    'Tiefling (Mammon)': { fixed: { int: 1, cha: 2 } },
-    'Tiefling (Mephistopheles)': { fixed: { int: 1, cha: 2 } },
-    'Tiefling (Zariel)': { fixed: { str: 1, cha: 2 } },
-
-    // ==========================================
-    // SWORD COAST ADVENTURER'S GUIDE
-    // ==========================================
-    'Half-Elf (Aquatic)': { fixed: { cha: 2 }, pick: [1, 1] },
-    'Half-Elf (Drow Descent)': { fixed: { cha: 2 }, pick: [1, 1] },
-    'Half-Elf (High Elf Descent)': { fixed: { cha: 2 }, pick: [1, 1] },
-    'Half-Elf (Wood Elf Descent)': { fixed: { cha: 2 }, pick: [1, 1] },
-    'Halfling (Ghostwise)': { fixed: { dex: 2, wis: 1 } },
-    'Tiefling (Feral)': { fixed: { dex: 2, int: 1 } },
-
-    // ==========================================
-    // FIZBAN'S TREASURY OF DRAGONS
-    // ==========================================
-    'Dragonborn (Chromatic)': { pick: [2, 1] },
-    'Dragonborn (Gem)': { pick: [2, 1] },
-    'Dragonborn (Metallic)': { pick: [2, 1] },
-
-    // ==========================================
-    // EBERRON: RISING FROM THE LAST WAR
-    // ==========================================
-    'Changeling (Eberron)': { fixed: { cha: 2 }, pick: [1] }, // Note: Could pick CHA for +3 originally, errata'd to any other
-    'Kalashtar': { fixed: { wis: 2, cha: 1 } },
-    'Orc (Eberron)': { fixed: { str: 2, con: 1 } },
-    'Shifter (Beasthide - Eberron)': { fixed: { str: 1, con: 2 } },
-    'Shifter (Longtooth - Eberron)': { fixed: { str: 2, dex: 1 } },
-    'Shifter (Swiftstride - Eberron)': { fixed: { dex: 2, cha: 1 } },
-    'Shifter (Wildhunt - Eberron)': { fixed: { dex: 1, wis: 2 } },
-    'Warforged': { fixed: { con: 2 }, pick: [1] },
-
-    // ==========================================
-    // VAN RICHTEN'S GUIDE TO RAVENLOFT
-    // ==========================================
-    'Dhampir': { pick: [2, 1] },
-    'Hexblood': { pick: [2, 1] },
-    'Reborn': { pick: [2, 1] },
-
-    // ==========================================
-    // SPELLJAMMER: ADVENTURES IN SPACE
-    // ==========================================
-    'Astral Elf': { pick: [2, 1] },
-    'Autognome': { pick: [2, 1] },
-    'Giff': { pick: [2, 1] },
-    'Hadozee': { pick: [2, 1] },
-    'Plasmoid': { pick: [2, 1] },
-    'Thri-kreen': { pick: [2, 1] },
-
-    // ==========================================
-    // STRIXHAVEN: A CURRICULUM OF CHAOS
-    // ==========================================
-    'Owlin': { pick: [2, 1] },
-
-    // ==========================================
-    // GUILDMASTER'S GUIDE TO RAVNICA
-    // ==========================================
-    'Centaur (Ravnica)': { fixed: { str: 2, wis: 1 } },
-    'Goblin (Ravnica)': { fixed: { dex: 2, con: 1 } },
-    'Loxodon': { fixed: { con: 2, wis: 1 } },
-    'Minotaur (Ravnica)': { fixed: { str: 2, con: 1 } },
-    'Simic Hybrid': { fixed: { con: 2 }, pick: [1] },
-    'Vedalken': { fixed: { int: 2, wis: 1 } },
-
-    // ==========================================
-    // MYTHIC ODYSSEYS OF THEROS
-    // ==========================================
-    'Centaur (Theros)': { fixed: { str: 2, wis: 1 } },
-    'Leonin': { fixed: { con: 2, str: 1 } },
-    'Minotaur (Theros)': { fixed: { str: 2, con: 1 } },
-    'Satyr (Theros)': { fixed: { dex: 1, cha: 2 } },
-    'Triton (Theros)': { fixed: { str: 1, con: 1, cha: 1 } },
-
-    // ==========================================
-    // DRAGONLANCE: SHADOW OF THE DRAGON QUEEN
-    // ==========================================
-    'Kender': { pick: [2, 1] }
+    'Astral Elf':{pick:[2,1]}, 'Dark Elf (Drow)':{fixed:{dex:2,cha:1}}, 'Dragonborn':{fixed:{str:2,cha:1}},
+    'Dwarf (Hill)':{fixed:{con:2,wis:1}}, 'Dwarf (Mountain)':{fixed:{str:2,con:2}}, 'Elf (High)':{fixed:{dex:2,int:1}},
+    'Fairy':{pick:[2,1]}, 'Gnome (Forest)':{fixed:{dex:1,int:2}}, 'Gnome (Rock)':{fixed:{con:1,int:2}},
+    'Half-Elf':{fixed:{cha:2}, pick:[1,1]}, 'Half-Orc':{fixed:{str:2,con:1}},
+    'Halfling (Lightfoot)':{fixed:{dex:2,cha:1}}, 'Halfling (Stout)':{fixed:{dex:2,con:1}},
+    'Human':{fixed:{str:1,dex:1,con:1,int:1,wis:1,cha:1}}, 'Human (Variant)':{pick:[1,1]},
+    'Tiefling':{fixed:{int:1,cha:2}}, 'Wood Elf':{fixed:{dex:2,wis:1}}, 'Custom Lineage':{pick:[2]},
   };
   // Skills a species hands you: fixed list and/or a number of free picks
   WZ.RACE_SKILLS = {
-    // ==========================================
-    // PLAYER'S HANDBOOK (2024)
-    // ==========================================
-    'Elf - Drow (2024)': { from: ['Insight', 'Perception', 'Survival'], pick: 1 },
-    'Elf - High (2024)': { from: ['Insight', 'Perception', 'Survival'], pick: 1 },
-    'Elf - Wood (2024)': { from: ['Insight', 'Perception', 'Survival'], pick: 1 },
-    'Human (2024)': { pick: 1 },
-
-    // ==========================================
-    // PLAYER'S HANDBOOK (2014) & DMG (2014)
-    // ==========================================
-    'Dark Elf (Drow)': { fixed: ['Perception'] },
-    'Elf (Eladrin - DMG)': { fixed: ['Perception'] },
-    'Elf (High)': { fixed: ['Perception'] },
-    'Half-Elf': { pick: 2 },
-    'Half-Orc': { fixed: ['Intimidation'] },
-    'Human (Variant)': { pick: 1 },
-    'Wood Elf': { fixed: ['Perception'] },
-
-    // ==========================================
-    // TASHA'S CAULDRON OF EVERYTHING
-    // ==========================================
-    'Custom Lineage': { pick: 1 }, // Note: Optional; player may choose Darkvision (60 ft) OR 1 skill proficiency
-
-    // ==========================================
-    // MONSTERS OF THE MULTIVERSE
-    // ==========================================
-    'Bugbear (MotM)': { fixed: ['Stealth'] },
-    'Centaur (MotM)': { from: ['Animal Handling', 'Medicine', 'Nature', 'Survival'], pick: 1 },
-    'Changeling (MotM)': { from: ['Deception', 'Insight', 'Intimidation', 'Performance', 'Persuasion'], pick: 2 },
-    'Eladrin (MotM)': { fixed: ['Perception'] },
-    'Githyanki (MotM)': { pick: 1 }, // Astral Knowledge: 1 skill + 1 weapon/tool (changeable on Long Rest)
-    'Harengon': { fixed: ['Perception'] },
-    'Kenku (MotM)': { pick: 2 },
-    'Kobold (MotM)': { from: ['Arcana', 'Investigation', 'Medicine', 'Sleight of Hand', 'Survival'], pick: 1 }, // Only if Craftiness is chosen for Draconic Legacy
-    'Lizardfolk (MotM)': { from: ['Animal Handling', 'Medicine', 'Nature', 'Perception', 'Stealth', 'Survival'], pick: 2 },
-    'Minotaur (MotM)': { from: ['Intimidation', 'Persuasion'], pick: 1 },
-    'Orc (MotM)': { from: ['Animal Handling', 'Insight', 'Intimidation', 'Medicine', 'Nature', 'Perception', 'Survival'], pick: 2 },
-    'Satyr (MotM)': { fixed: ['Performance', 'Persuasion'] },
-    'Sea Elf (MotM)': { fixed: ['Perception'] },
-    'Shadar-kai (MotM)': { fixed: ['Perception'] },
-    'Shifter (MotM)': { from: ['Acrobatics', 'Athletics', 'Intimidation', 'Survival'], pick: 1 },
-    'Tabaxi (MotM)': { fixed: ['Perception', 'Stealth'] },
-    'Tortle (MotM)': { fixed: ['Survival'] },
-
-    // ==========================================
-    // VOLO'S GUIDE TO MONSTERS (Legacy)
-    // ==========================================
-    'Bugbear (Legacy)': { fixed: ['Stealth'] },
-    'Kenku (Legacy)': { from: ['Acrobatics', 'Deception', 'Stealth', 'Sleight of Hand'], pick: 2 },
-    'Lizardfolk (Legacy)': { from: ['Animal Handling', 'Nature', 'Perception', 'Stealth', 'Survival'], pick: 2 },
-    'Orc (Legacy - Volo)': { fixed: ['Intimidation'] },
-    'Tabaxi (Legacy)': { fixed: ['Perception', 'Stealth'] },
-
-    // ==========================================
-    // MORDENKAINEN'S TOME OF FOES (Legacy)
-    // ==========================================
-    'Elf (Eladrin - Legacy)': { fixed: ['Perception'] },
-    'Elf (Sea Elf - Legacy)': { fixed: ['Perception'] },
-    'Elf (Shadar-kai - Legacy)': { fixed: ['Perception'] },
-    'Githyanki (Legacy)': { pick: 1 }, // Decadent Mastery: 1 skill or tool
-
-    // ==========================================
-    // SWORD COAST ADVENTURER'S GUIDE
-    // ==========================================
-    'Half-Elf (Drow Descent)': { pick: 2 }, // Note: Optional Skill Versatility can be swapped for Drow Magic
-    'Half-Elf (High Elf Descent)': { pick: 2 }, // Note: Optional Skill Versatility can be swapped for Elf Weapon Training or Cantrip
-    'Half-Elf (Wood Elf Descent)': { pick: 2 }, // Note: Optional Skill Versatility can be swapped for Elf Weapon Training, Fleet of Foot, or Mask of the Wild
-    'Half-Elf (Aquatic)': { pick: 2 }, // Note: Optional Skill Versatility can be swapped for 30 ft swim speed
-
-    // ==========================================
-    // EBERRON: RISING FROM THE LAST WAR
-    // ==========================================
-    'Changeling (Eberron)': { from: ['Deception', 'Insight', 'Intimidation', 'Persuasion'], pick: 2 },
-    'Orc (Eberron)': { from: ['Animal Handling', 'Insight', 'Intimidation', 'Medicine', 'Nature', 'Perception', 'Survival'], pick: 2 },
-    'Shifter (Beasthide - Eberron)': { fixed: ['Athletics'] },
-    'Shifter (Longtooth - Eberron)': { fixed: ['Intimidation'] },
-    'Shifter (Swiftstride - Eberron)': { fixed: ['Acrobatics'] },
-    'Shifter (Wildhunt - Eberron)': { fixed: ['Survival'] },
-    'Warforged': { pick: 1 }, // Specialized Design: 1 skill + 1 tool
-
-    // ==========================================
-    // VAN RICHTEN'S GUIDE TO RAVENLOFT
-    // ==========================================
-    'Dhampir': { pick: 2 },
-    'Hexblood': { pick: 2 },
-    'Reborn': { pick: 2 },
-
-    // ==========================================
-    // SPELLJAMMER: ADVENTURES IN SPACE
-    // ==========================================
-    'Astral Elf': { fixed: ['Perception'] },
-
-    // ==========================================
-    // STRIXHAVEN: A CURRICULUM OF CHAOS
-    // ==========================================
-    'Owlin': { fixed: ['Stealth'] },
-
-    // ==========================================
-    // GUILDMASTER'S GUIDE TO RAVNICA
-    // ==========================================
-    'Centaur (Ravnica)': { from: ['Animal Handling', 'Medicine', 'Nature', 'Survival'], pick: 1 },
-    'Minotaur (Ravnica)': { from: ['Intimidation', 'Persuasion'], pick: 1 },
-    'Simic Hybrid': { from: ['Athletics', 'Intimidation', 'Medicine', 'Nature', 'Perception', 'Survival'], pick: 1 }, // Note: Only if Nimble Climber/Underwater Adaptation isn't traded; grants 1 skill from list
-    'Vedalken': { from: ['Arcana', 'History', 'Investigation', 'Medicine', 'Performance', 'Sleight of Hand'], pick: 1 },
-
-    // ==========================================
-    // MYTHIC ODYSSEYS OF THEROS
-    // ==========================================
-    'Centaur (Theros)': { from: ['Animal Handling', 'Medicine', 'Nature', 'Survival'], pick: 1 },
-    'Leonin': { from: ['Athletics', 'Intimidation', 'Perception', 'Survival'], pick: 1 },
-    'Minotaur (Theros)': { from: ['Intimidation', 'Persuasion'], pick: 1 },
-    'Satyr (Theros)': { fixed: ['Performance', 'Persuasion'] },
-
-    // ==========================================
-    // DRAGONLANCE: SHADOW OF THE DRAGON QUEEN
-    // ==========================================
-    'Kender': { from: ['Insight', 'Investigation', 'Sleight of Hand', 'Stealth', 'Survival'], pick: 1 }
+    'Astral Elf':{fixed:['Perception']}, 'Dark Elf (Drow)':{fixed:['Perception']}, 'Elf (High)':{fixed:['Perception']},
+    'Wood Elf':{fixed:['Perception']}, 'Half-Orc':{fixed:['Intimidation']}, 'Half-Elf':{pick:2}, 'Human (Variant)':{pick:1},
   };
-
-  WZ.RACE_SPEED = {
-    // 2024 PHB
-    'Elf - Wood (2024)': 35,
-    'Goliath - Cloud (2024)': 35,
-    'Goliath - Fire (2024)': 35,
-    'Goliath - Frost (2024)': 35,
-    'Goliath - Hill (2024)': 35,
-    'Goliath - Stone (2024)': 35,
-    'Goliath - Storm (2024)': 35,
-
-    // 2014 PHB & DMG
-    'Dwarf (Hill)': 25,
-    'Dwarf (Mountain)': 25,
-    'Gnome (Forest)': 25,
-    'Gnome (Rock)': 25,
-    'Halfling (Lightfoot)': 25,
-    'Halfling (Stout)': 25,
-    'Wood Elf': 35,
-
-    // Monsters of the Multiverse
-    'Centaur (MotM)': 40,
-    'Goliath (MotM)': 35,
-    'Satyr (MotM)': 35,
-
-    // Volo's Guide to Monsters (Legacy)
-    'Goblin (Legacy)': 30, // Standard 30, included only if checking small races; remove if strictly != 30
-    'Kobold (Legacy)': 30, // Standard 30
-
-    // Mordenkainen's Tome of Foes (Legacy)
-    'Dwarf (Duergar - Legacy)': 25,
-    'Gnome (Deep / Svirfneblin - Legacy)': 25,
-
-    // Sword Coast Adventurer's Guide
-    'Halfling (Ghostwise)': 25,
-
-    // Van Richten's Guide to Ravenloft
-    'Dhampir': 35,
-
-    // Guildmaster's Guide to Ravnica
-    'Centaur (Ravnica)': 40,
-
-    // Mythic Odysseys of Theros
-    'Centaur (Theros)': 40,
-    'Leonin': 35,
-    'Satyr (Theros)': 35
-  };
-  WZ.RACE_SPEED = {
-    // 2024 PHB
-    'Elf - Wood (2024)': 35,
-    'Goliath - Cloud (2024)': 35,
-    'Goliath - Fire (2024)': 35,
-    'Goliath - Frost (2024)': 35,
-    'Goliath - Hill (2024)': 35,
-    'Goliath - Stone (2024)': 35,
-    'Goliath - Storm (2024)': 35,
-
-    // 2014 PHB
-    'Dwarf (Hill)': 25,
-    'Dwarf (Mountain)': 25,
-    'Gnome (Forest)': 25,
-    'Gnome (Rock)': 25,
-    'Halfling (Lightfoot)': 25,
-    'Halfling (Stout)': 25,
-    'Wood Elf': 35,
-
-    // Monsters of the Multiverse
-    'Centaur (MotM)': 40,
-    'Goliath (MotM)': 35,
-    'Satyr (MotM)': 35,
-
-    // Mordenkainen's Tome of Foes (Legacy)
-    'Dwarf (Duergar - Legacy)': 25,
-    'Gnome (Deep / Svirfneblin - Legacy)': 25,
-
-    // Sword Coast Adventurer's Guide
-    'Halfling (Ghostwise)': 25,
-
-    // Van Richten's Guide to Ravenloft
-    'Dhampir': 35,
-
-    // Guildmaster's Guide to Ravnica
-    'Centaur (Ravnica)': 40,
-
-    // Mythic Odysseys of Theros
-    'Centaur (Theros)': 40,
-    'Leonin': 35,
-    'Satyr (Theros)': 35
-  };
+  WZ.RACE_SPEED = { 'Dwarf (Hill)':25,'Dwarf (Mountain)':25,'Gnome (Forest)':25,'Gnome (Rock)':25,'Halfling (Lightfoot)':25,'Halfling (Stout)':25,'Wood Elf':35 };
 
   // ---------- Subclasses ----------
   // When the player must choose (2014 rules). 2024 rules: everyone chooses at level 3.
@@ -700,6 +303,62 @@
   //   halfprep — Paladin, Artificer: prepare mod + half level (min 1)
   WZ.CASTER_STYLE = { Bard:'known', Sorcerer:'known', Warlock:'known', Ranger:'known', Wizard:'book', Cleric:'prepared', Druid:'prepared', Paladin:'halfprep', Artificer:'halfprep' };
   WZ.firstSpellLevel = { Paladin:2, Ranger:2 };
+
+  // ---------- Equipment shop ----------
+  // Starting gold if a player buys their own gear instead of taking a package (editable in the UI — ask your DM).
+  WZ.START_GOLD = { Barbarian:50, Bard:125, Cleric:125, Druid:50, Fighter:125, Monk:12, Paladin:125, Ranger:125, Rogue:100, Sorcerer:75, Warlock:100, Wizard:100, Artificer:125 };
+
+  // Armor AC math by name (lowercase, matched by "contains"). dex: 'full' | 'max2' | 'none'
+  WZ.ARMOR = [
+    ['padded',{base:11,dex:'full'}], ['studded leather',{base:12,dex:'full'}], ['leather',{base:11,dex:'full'}],
+    ['hide',{base:12,dex:'max2'}], ['chain shirt',{base:13,dex:'max2'}], ['scale mail',{base:14,dex:'max2'}],
+    ['breastplate',{base:14,dex:'max2'}], ['half plate',{base:15,dex:'max2'}],
+    ['ring mail',{base:14,dex:'none'}], ['chain mail',{base:16,dex:'none'}], ['splint',{base:17,dex:'none'}], ['plate',{base:18,dex:'none'}],
+  ];
+  WZ.armorFor = name => { const n = String(name).toLowerCase(); const h = WZ.ARMOR.find(a => n.includes(a[0])); return h ? h[1] : null; };
+  WZ.isShield = name => /\bshield\b/i.test(name) && !/(spell|cursed|animated)/i.test(name);
+  // AC for a list of item names (best armor + shield; falls back to unarmored defense)
+  WZ.acFromItems = function(names, dexMod, conMod, wisMod, cls){
+    let best = null, shield = false;
+    names.forEach(n => {
+      if(WZ.isShield(n)) shield = true;
+      else { const a = WZ.armorFor(n); if(a){ const v = a.base + (a.dex === 'full' ? dexMod : a.dex === 'max2' ? Math.min(2, dexMod) : 0); if(!best || v > best) best = v; } }
+    });
+    let v = best;
+    if(v == null){ v = 10 + dexMod; if(cls === 'Barbarian') v += conMod; else if(cls === 'Monk') v += wisMod; }
+    return v + (shield ? 2 : 0);
+  };
+
+  // Parse a price in whatever form Open5e gives ("15 gp", "15.00", 15, {amount,unit}) into gold pieces. null = unknown.
+  WZ.parseGp = function(c){
+    if(c == null || c === '') return null;
+    if(typeof c === 'number') return c;
+    if(typeof c === 'object') return WZ.parseGp((c.amount != null ? c.amount : c.value) + ' ' + (c.unit || c.currency || 'gp'));
+    const m = String(c).replace(/,/g, '').match(/^\s*([\d.]+)\s*([a-z]{2})?/i);
+    if(!m) return null;
+    const v = parseFloat(m[1]); if(isNaN(v)) return null;
+    const mult = { pp:10, gp:1, ep:0.5, sp:0.1, cp:0.01 }[(m[2] || 'gp').toLowerCase()] || 1;
+    return Math.round(v * mult * 100) / 100;
+  };
+  WZ.fmtGp = gp => gp == null ? '—' : gp >= 1 ? (Math.round(gp * 100) / 100) + ' gp' : gp >= 0.1 ? Math.round(gp * 10) + ' sp' : Math.round(gp * 100) + ' cp';
+
+  // Offline fallback list (standard prices) used if Open5e can't be reached.
+  const W_ = (n, gp) => ({ name:n, cat:'Weapons', gp }), A_ = (n, gp) => ({ name:n, cat:'Armor', gp }), G_ = (n, gp) => ({ name:n, cat:'Gear', gp });
+  WZ.SHOP_FALLBACK = [
+    W_('Club',0.1), W_('Dagger',2), W_('Greatclub',0.2), W_('Handaxe',5), W_('Javelin',0.5), W_('Light hammer',2), W_('Mace',5), W_('Quarterstaff',0.2),
+    W_('Sickle',1), W_('Spear',1), W_('Light crossbow',25), W_('Dart',0.05), W_('Shortbow',25), W_('Sling',0.1),
+    W_('Battleaxe',10), W_('Flail',10), W_('Glaive',20), W_('Greataxe',30), W_('Greatsword',50), W_('Halberd',20), W_('Lance',10), W_('Longsword',15),
+    W_('Maul',10), W_('Morningstar',15), W_('Pike',5), W_('Rapier',25), W_('Scimitar',25), W_('Shortsword',10), W_('Trident',5), W_('War pick',5),
+    W_('Warhammer',15), W_('Whip',2), W_('Hand crossbow',75), W_('Heavy crossbow',50), W_('Longbow',50),
+    A_('Padded armor',5), A_('Leather armor',10), A_('Studded leather armor',45), A_('Hide armor',10), A_('Chain shirt',50), A_('Scale mail',50),
+    A_('Breastplate',400), A_('Half plate armor',750), A_('Ring mail',30), A_('Chain mail',75), A_('Splint armor',200), A_('Plate armor',1500), A_('Shield',10),
+    G_('Arrows (20)',1), G_('Crossbow bolts (20)',1), G_('Backpack',2), G_('Bedroll',1), G_('Blanket',0.5), G_('Candle',0.01), G_('Crowbar',2),
+    G_('Rations (1 day)',0.5), G_('Rope, hempen (50 ft)',1), G_('Tinderbox',0.5), G_('Torch',0.01), G_('Waterskin',0.2), G_('Healer\'s kit',5),
+    G_('Holy symbol',5), G_('Arcane focus (crystal)',10), G_('Component pouch',25), G_('Spellbook',50), G_('Thieves\' tools',25), G_('Herbalism kit',5),
+    G_('Potion of healing',50), G_('Lantern, hooded',5), G_('Oil flask',0.1), G_('Grappling hook',2), G_('Hammer',1), G_('Piton',0.05), G_('Mess kit',0.2),
+    G_('Lute',35), G_('Flute',2), G_('Disguise kit',25), G_('Rope, silk (50 ft)',10), G_('Ball bearings (bag of 1,000)',1), G_('Caltrops (bag of 20)',1),
+    G_('Explorer\'s pack',10), G_('Dungeoneer\'s pack',12), G_('Priest\'s pack',20), G_('Scholar\'s pack',40), G_('Burglar\'s pack',16), G_('Diplomat\'s pack',39), G_('Entertainer\'s pack',40),
+  ];
 
   window.WZ = WZ;
 })();
