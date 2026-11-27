@@ -151,6 +151,8 @@
   }
   .chip.selected{ background:var(--accent-2); border-color:var(--accent-2); color:#06171a; font-weight:600; }
   .chip.disabled{ opacity:.4; cursor:not-allowed; }
+  .chip.locked{ cursor:default; }
+  .chip.locked:not(.selected){ opacity:.35; cursor:not-allowed; }
 
   details{ border-bottom:1px solid var(--border); padding:8px 0; }
   details:last-child{ border-bottom:none; }
@@ -308,6 +310,7 @@
             <button class="chip" data-ruleset="2014">2014 Rules</button>
           </div>
           <p class="infoText" id="rulesetStatus" style="margin-top:8px;"></p>
+          <p class="infoText hidden" id="rulesetLock" style="margin-top:8px;">🔒 The rules are chosen when a character is created and can't be changed afterwards. Ask your DM if this needs to change.</p>
         </div>
 
         <div class="section">
@@ -677,8 +680,16 @@
         return parts.join('');
       }
 
+      // A character that has a class, species or background is "created": its rules are locked.
+      const rulesetLocked = () => !!(sheet && (sheet.class || sheet.race || sheet.background));
       function setRulesetChipUI(){
-        document.getElementById('rulesetChips').querySelectorAll('.chip').forEach(c => c.classList.toggle('selected', c.dataset.ruleset === ruleset));
+        const locked = rulesetLocked();
+        document.getElementById('rulesetChips').querySelectorAll('.chip').forEach(c => {
+          c.classList.toggle('selected', c.dataset.ruleset === ruleset);
+          c.classList.toggle('locked', locked);
+          c.disabled = locked && c.dataset.ruleset !== ruleset;
+        });
+        document.getElementById('rulesetLock').classList.toggle('hidden', !locked);
         document.getElementById('fSubclass').classList.toggle('hidden', ruleset !== '2014');
         document.getElementById('fSubclassText').classList.toggle('hidden', ruleset === '2014');
       }
@@ -705,6 +716,7 @@
           populateSelect(document.getElementById('fBackground'), Object.keys(DND.BACKGROUNDS), '— choose —');
           document.getElementById('featPicker').innerHTML = '<option value="">— choose a feat to add —</option>' +
             DND.FEATS.map((f,i) => `<option value="${i}">${escapeHtml(f.name)}</option>`).join('');
+          document.getElementById('rulesetStatus').textContent = '';
           keepCurrentOptions();
           renderAll();
           return;
@@ -742,6 +754,7 @@
       document.getElementById('rulesetChips').querySelectorAll('.chip').forEach(chip => {
         chip.addEventListener('click', () => {
           if(chip.dataset.ruleset === ruleset) return;
+          if(rulesetLocked()){ UI.toast('Rules are locked for this character.'); return; }
           ruleset = chip.dataset.ruleset;
           if(sheet) sheet.ruleset = ruleset;
           refreshRulesetDropdowns();
