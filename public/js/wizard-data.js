@@ -360,5 +360,98 @@
     G_('Explorer\'s pack',10), G_('Dungeoneer\'s pack',12), G_('Priest\'s pack',20), G_('Scholar\'s pack',40), G_('Burglar\'s pack',16), G_('Diplomat\'s pack',39), G_('Entertainer\'s pack',40),
   ];
 
+  // ---------- "Choose N from a list" class features ----------
+  // Each set: how many you know at a level, and the options (short plain-language summaries written for this app).
+  // min / req are a guide only (soft warnings) — confirm exact prerequisites in your book or with your DM.
+  const O = (n, b, min, req) => ({ n, b, min: min || 1, req: req || '' });
+  const INV_2014 = [
+    O('Agonizing Blast','Eldritch Blast hits harder (add your Cha to its damage).',1,'Eldritch Blast'),
+    O('Armor of Shadows','Cast Mage Armor on yourself at will.'),
+    O('Ascendant Step','Float upward at will.',9),
+    O('Beast Speech','Talk to animals at will.'),
+    O('Beguiling Influence','Gain Deception and Persuasion proficiency.'),
+    O('Bewitching Whispers','Once per rest, cast Compulsion with a spell slot.',7),
+    O('Book of Ancient Secrets','Learn and cast ritual spells from any class.',1,'Pact of the Tome'),
+    O('Chains of Carceri','Hold celestials, fiends and elementals in place.',15,'Pact of the Chain'),
+    O('Devil\'s Sight','See in darkness, even magical darkness.'),
+    O('Dreadful Word','Once per rest, cast Confusion with a spell slot.',7),
+    O('Eldritch Sight','Cast Detect Magic at will.'),
+    O('Eldritch Spear','Eldritch Blast reaches much farther.',1,'Eldritch Blast'),
+    O('Eyes of the Rune Keeper','Read any written language.'),
+    O('Fiendish Vigor','Gain temporary hit points at will.'),
+    O('Gaze of Two Minds','See through a willing creature\'s eyes.'),
+    O('Lifedrinker','Weapon hits drain extra life.',12,'Pact of the Blade'),
+    O('Mask of Many Faces','Cast Disguise Self at will.'),
+    O('Master of Myriad Forms','Cast Alter Self at will.',15),
+    O('Minions of Chaos','Once per rest, summon an elemental.',9),
+    O('Mire the Mind','Once per rest, cast Slow with a spell slot.',5),
+    O('Misty Visions','Cast Silent Image at will.'),
+    O('One with Shadows','Turn invisible while standing in dim light or darkness.',5),
+    O('Otherworldly Leap','Cast Jump at will.',9),
+    O('Repelling Blast','Eldritch Blast pushes targets away.',1,'Eldritch Blast'),
+    O('Sculptor of Flesh','Once per rest, cast Polymorph with a spell slot.',7),
+    O('Sign of Ill Omen','Once per rest, cast Bestow Curse with a spell slot.',5),
+    O('Thief of Five Fates','Once per rest, cast Bane with a spell slot.'),
+    O('Thirsting Blade','Attack twice with your pact weapon.',5,'Pact of the Blade'),
+    O('Visions of Distant Realms','Cast Arcane Eye at will.',15),
+    O('Voice of the Chain Master','Speak and sense through your familiar from afar.',1,'Pact of the Chain'),
+    O('Whispers of the Grave','Cast Speak with Dead at will.',9),
+    O('Witch Sight','See the true form of shapechangers and illusions.',15),
+  ];
+  const INV_2024 = [
+    O('Agonizing Blast','Eldritch Blast hits harder (add your Cha to its damage).',1,'a Warlock cantrip that deals damage'),
+    O('Armor of Shadows','Cast Mage Armor on yourself at will.'),
+    O('Ascendant Step','Float upward at will.',5),
+    O('Devil\'s Sight','See in darkness, even magical darkness.'),
+    O('Devouring Blade','A stronger version of Thirsting Blade — extra attacks with your pact weapon.',12,'Thirsting Blade'),
+    O('Eldritch Mind','Better focus on your concentration spells.'),
+    O('Eldritch Smite','Spend a spell slot on a weapon hit for extra force damage.',5,'Pact of the Blade'),
+    O('Fiendish Vigor','Gain temporary hit points at will.'),
+    O('Gaze of Two Minds','See through a willing creature\'s eyes.'),
+    O('Lessons of the First Ones','Gain an extra feat of your choice.'),
+    O('Lifedrinker','Weapon hits drain extra life.',9,'Pact of the Blade'),
+    O('Mask of Many Faces','Cast Disguise Self at will.'),
+    O('Misty Visions','Cast Silent Image at will.'),
+    O('Otherworldly Leap','Cast Jump at will.',5),
+    O('Pact of the Blade','Conjure or bond with a magic weapon.'),
+    O('Pact of the Chain','Gain a special familiar.'),
+    O('Pact of the Tome','Gain a book of extra cantrips and rituals.'),
+    O('Repelling Blast','Eldritch Blast pushes targets away.',1,'a Warlock cantrip that deals damage'),
+    O('Thirsting Blade','Attack twice with your pact weapon.',5,'Pact of the Blade'),
+    O('Visions of Distant Realms','Cast Arcane Eye at will.',9),
+    O('Whispers of the Grave','Cast Speak with Dead at will.',7),
+    O('Witch Sight','See the true form of shapechangers and illusions.',15),
+  ];
+  const invKnown = (lv, rs) => {
+    if(rs === '2024') return lv >= 18 ? 10 : lv >= 15 ? 9 : lv >= 12 ? 8 : lv >= 9 ? 7 : lv >= 7 ? 6 : lv >= 5 ? 5 : lv >= 2 ? 3 : lv >= 1 ? 1 : 0;
+    return lv >= 18 ? 8 : lv >= 15 ? 7 : lv >= 12 ? 6 : lv >= 9 ? 5 : lv >= 7 ? 4 : lv >= 5 ? 3 : lv >= 2 ? 2 : 0;
+  };
+  // Add more sets here (Fighting Style, Metamagic, Maneuvers…) — the sheet, wizard and level-up all read this list.
+  WZ.CHOICE_SETS = [
+    { id:'invocations', cls:'Warlock', label:'Eldritch Invocations', noun:'invocation', known: invKnown,
+      options: rs => rs === '2024' ? INV_2024 : INV_2014 },
+  ];
+  WZ.choiceSetsFor = cls => WZ.CHOICE_SETS.filter(c => c.cls === cls);
+
+  // ---------- More species (other books) — name + one-line summary written for this app ----------
+  WZ.SPECIES_EXTRA = {
+    'Aasimar':'Touched by a celestial power; heals, shines with radiance, resists necrotic and radiant harm.',
+    'Aarakocra':'Bird-people with natural flight and talons.', 'Bugbear':'Long-limbed goblinoid with surprising stealth and reach.',
+    'Centaur':'Horse-bodied folk: fast, strong charges and hooves.', 'Changeling':'Shapechanger who can alter their face and voice.',
+    'Eladrin':'Fey elves tied to the seasons, with a short teleport.', 'Firbolg':'Gentle forest giants with druid-like magic.',
+    'Genasi (Air)':'Elemental-touched: levitate and breathe on the wind.', 'Genasi (Earth)':'Elemental-touched: move through earth and stone.',
+    'Genasi (Fire)':'Elemental-touched: resist fire, burn bright.', 'Genasi (Water)':'Elemental-touched: swim, breathe water, resist acid.',
+    'Githyanki':'Astral warriors with psionic leaps.', 'Githzerai':'Disciplined monastic mind-warriors.', 'Goblin':'Small and quick, with a knack for slipping away.',
+    'Harengon':'Rabbit-folk with big jumps and quick reflexes.', 'Hobgoblin':'Disciplined soldiers who help allies in combat.',
+    'Kalashtar':'Humans joined with a dream-spirit; mental defenses.', 'Kenku':'Raven-like mimics and forgers.', 'Kobold':'Small dragon-kin who fight best in packs.',
+    'Leonin':'Lion-folk with a mighty roar and claws.', 'Lizardfolk':'Cold-blooded survivalists with natural armor and a bite.',
+    'Loxodon':'Elephant-folk with thick hides and calm strength.', 'Minotaur':'Horned brutes who charge and gore.', 'Owlin':'Silent-flying owl-folk with keen night sight.',
+    'Satyr':'Fey revelers with magic resistance and a love of music.', 'Shifter':'Part-beast humanoids who briefly unleash bestial traits.',
+    'Simic Hybrid':'Engineered grafts of animal traits.', 'Tabaxi':'Quick cat-folk with claws and wanderlust.', 'Tortle':'Turtle-folk with a hard shell and calm.',
+    'Triton':'Ocean guardians who breathe water and call sea creatures.', 'Vedalken':'Cool, precise scholars with sharp minds.',
+    'Warforged':'Living constructs: tough, tireless and resilient.', 'Yuan-ti Pureblood':'Serpent-touched folk, immune to poison and resistant to magic.',
+    'Fairy':'Tiny fey with flight and innate magic (see your table\'s version).',
+  };
+
   window.WZ = WZ;
 })();

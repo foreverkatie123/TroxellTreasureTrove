@@ -20,7 +20,7 @@
 
   function freshState(){
     return { name:'', ruleset:'2024', cls:'', sub:'', race:'', raceKind:'', bg:'', raceAsi:{}, bgAsi:{}, scores:{}, skills:[], gear:0,
-             cantrips:[], l1:[], gearMode:'pack', cart:{}, budget:null, persona:{traits:'',ideals:'',bonds:'',flaws:''}, extraRaceSkills:[] };
+             cantrips:[], l1:[], gearMode:'pack', cart:{}, budget:null, choices:{}, isCustom:false, customTraits:'', persona:{traits:'',ideals:'',bonds:'',flaws:''}, extraRaceSkills:[] };
   }
   function saveDraft(){ try{ localStorage.setItem(DRAFT_KEY, JSON.stringify({ W, stepIdx })); }catch(e){} }
   function loadDraft(){ try{ return JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); }catch(e){ return null; } }
@@ -31,6 +31,7 @@
   const subLevel = () => WZ.subclassLevel(W.cls, W.ruleset);
   const needsSub = () => W.cls && subLevel() <= 1;
   const subList = () => is2014() ? (DND.SUBCLASSES[W.cls] || []) : (WZ.SUBCLASSES_2024[W.cls] || DND.SUBCLASSES[W.cls] || []);
+  const choiceSets = () => W && W.cls ? WZ.choiceSetsFor(W.cls).filter(c => c.known(1, W.ruleset) > 0) : [];
   const casterStyle = () => WZ.CASTER_STYLE[W.cls];
   const castsAtL1 = () => casterStyle() && !WZ.firstSpellLevel[W.cls];
 
@@ -73,11 +74,12 @@
     const s = ['intro','class'];
     if(needsSub()) s.push('subclass');
     s.push('species','background','abilities','skills','gear');
+    if(choiceSets().length) s.push('choices');
     if(castsAtL1()) s.push('spells');
     s.push('finish');
     return s;
   }
-  const TITLES = { intro:'Name & rules', class:'Pick a class', subclass:'Pick a subclass', species:'Pick a species', background:'Pick a background',
+  const TITLES = { choices:'Class choices', intro:'Name & rules', class:'Pick a class', subclass:'Pick a subclass', species:'Pick a species', background:'Pick a background',
                    abilities:'Ability scores', skills:'Choose skills', gear:'Starting gear', spells:'Choose spells', finish:'Final touches' };
 
   // ---------- container ----------
@@ -158,6 +160,7 @@
         if(W.l1.length < c.l1) return `Pick ${c.l1 - W.l1.length} more level 1 spell${c.l1 - W.l1.length > 1 ? 's' : ''}.`;
         return '';
       }
+      case 'choices': { for(const c of choiceSets()){ const n = c.known(1, W.ruleset), have = (W.choices[c.id] || []).length; if(have < n) return `Pick ${n - have} more ${c.noun}${n - have > 1 ? 's' : ''}.`; } return ''; }
       case 'gear': return W.gearMode === 'buy' && goldLeft() < 0 ? 'You\'re over budget — remove something or raise your starting gold.' : '';
       default: return '';
     }
@@ -248,7 +251,7 @@
     $('#wzName').oninput = e => { W.name = e.target.value; saveDraft(); refreshNext(); };
     body.querySelectorAll('[data-rs]').forEach(b => b.onclick = () => {
       if(W.ruleset !== b.dataset.rs){
-        W.ruleset = b.dataset.rs; W.race = ''; W.raceAsi = {}; W.bg = ''; W.bgAsi = {}; W.sub = '';
+        W.ruleset = b.dataset.rs; W.choices = {}; W.isCustom = false; W.race = ''; W.raceAsi = {}; W.bg = ''; W.bgAsi = {}; W.sub = '';
         W.scores = {}; W.skills = []; W.extraRaceSkills = [];
       }
       body.querySelectorAll('[data-rs]').forEach(x => x.classList.toggle('sel', x === b));
@@ -284,7 +287,7 @@
       body.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { classFilter = b.dataset.f; render(); });
       body.querySelectorAll('[data-c]').forEach(card => card.onclick = () => {
         if(W.cls !== card.dataset.c){
-          W.cls = card.dataset.c; W.sub = ''; W.skills = []; W.scores = {}; W.gear = 0; W.cantrips = []; W.l1 = [];
+          W.cls = card.dataset.c; W.sub = ''; W.choices = {}; W.skills = []; W.scores = {}; W.gear = 0; W.cantrips = []; W.l1 = [];
         }
         saveDraft(); render(); refreshNext();
         const sel = body.querySelector('.wzCard.sel'); if(sel) sel.scrollIntoView({ block:'nearest', behavior:'smooth' });
@@ -308,7 +311,7 @@
     if(is2014() || live.races || live.loading || live.failed) return;
     live.loading = true;
     Promise.all([PlayerApp.liveIndex('races'), PlayerApp.liveIndex('backgrounds')]).then(([r, b]) => {
-      live.races = r.map(x => x.name); live.backgrounds = b.map(x => x.name);
+      live.races = r.map(x => x.name); live.backgrounds = b.map(x => x.name); if(!live.races.length || !live.backgrounds.length) live.failed = true;
       r.forEach(x => live.raceKeys[x.name] = x.key); b.forEach(x => live.bgKeys[x.name] = x.key);
     }).catch(() => { live.failed = true; }).then(() => {
       live.loading = false;
@@ -323,23 +326,40 @@
     if(is2014() || live.failed || !live.races) names = Object.keys(DND.RACE_TRAITS);
     else names = live.races;
     const waiting = !is2014() && !live.races && !live.failed;
+    const have = new Set([...names, ...Object.keys(DND.RACE_TRAITS)].map(x => x.toLowerCase()));
+    const extras = Object.keys(WZ.SPECIES_EXTRA).filter(n => !have.has(n.toLowerCase())).sort();
     body.innerHTML = `${!is2014() && live.failed ? '<p class="wzNote">Couldn\'t reach the 2024 list — showing the classic species instead.</p>' : ''}
       ${waiting ? '<p class="wzNote">Loading 2024 species…</p>' : ''}
-      <div class="wzGrid wzSmall">${names.map(n => `<div class="wzCard ${W.race === n ? 'sel' : ''}" data-r="${esc(n)}"><b>${esc(n)}</b></div>`).join('')}</div>
+      <div class="wzGrid wzSmall">${names.map(n => `<div class="wzCard ${W.race === n && !W.isCustom ? 'sel' : ''}" data-r="${esc(n)}"><b>${esc(n)}</b></div>`).join('')}</div>
+      <details class="wzMore" ${(extras.includes(W.race) || W.isCustom) ? 'open' : ''}><summary>More species (other books) &amp; custom</summary>
+        <div class="wzGrid wzSmall" style="margin-top:8px">${extras.map(n => `<div class="wzCard ${W.race === n && !W.isCustom ? 'sel' : ''}" data-r="${esc(n)}"><b>${esc(n)}</b></div>`).join('')}
+        <div class="wzCard ${W.isCustom ? 'sel' : ''}" data-custom="1"><b>✎ Custom species…</b></div></div></details>
       <div id="wzRaceInfo"></div>`;
     body.querySelectorAll('[data-r]').forEach(c => c.onclick = () => {
-      if(W.race !== c.dataset.r){ W.race = c.dataset.r; W.raceAsi = {}; W.extraRaceSkills = []; W.skills = []; }
+      if(W.race !== c.dataset.r || W.isCustom){ W.race = c.dataset.r; W.isCustom = false; W.raceAsi = {}; W.extraRaceSkills = []; W.skills = []; }
+      saveDraft(); BUILD.species(body); refreshNext();
+    });
+    body.querySelectorAll('[data-custom]').forEach(c => c.onclick = () => {
+      if(!W.isCustom){ W.isCustom = true; W.race = W.customName || ''; W.raceAsi = {}; W.extraRaceSkills = []; W.skills = []; }
       saveDraft(); BUILD.species(body); refreshNext();
     });
     const info = $('#wzRaceInfo', body);
-    if(W.race){
+    if(W.isCustom){
+      info.innerHTML = `<div class="wzInfo"><b>Custom species</b><p>Name your species and describe its traits. They'll be saved on your sheet's Features tab. Adjust ability scores on the sheet if your species gives bonuses.</p>
+        <input type="text" id="wzCName" placeholder="Species name" value="${esc(W.customName || '')}" maxlength="40">
+        <textarea id="wzCTraits" rows="4" placeholder="Traits (darkvision, speed, special abilities…)" style="margin-top:8px">${esc(W.customTraits)}</textarea></div>`;
+      $('#wzCName', info).oninput = e => { W.customName = e.target.value; W.race = e.target.value.trim(); saveDraft(); refreshNext(); };
+      $('#wzCTraits', info).oninput = e => { W.customTraits = e.target.value; saveDraft(); };
+    } else if(W.race){
       const traits = DND.RACE_TRAITS[W.race];
+      const extra = WZ.SPECIES_EXTRA[W.race];
       let h = `<div class="wzInfo"><b>${esc(W.race)}</b>`;
       if(traits) h += `<p>${esc(traits)}</p>`;
+      else if(extra && !live.raceKeys[W.race]) h += `<p>${esc(extra)}</p><p class="wzDim">Exact traits are in your book — add them on the sheet's Features tab${is2014() ? ', and adjust ability scores on the Core tab' : ''}.</p>`;
       else h += '<div id="wzLiveBox"><p class="wzDim">Loading description…</p></div>';
       h += '</div>';
       info.innerHTML = h;
-      if(!traits) showLiveDetail('races', W.race, live.raceKeys[W.race], $('#wzLiveBox', info), () => W.race);
+      if(!traits && !(extra && !live.raceKeys[W.race])) showLiveDetail('races', W.race, live.raceKeys[W.race], $('#wzLiveBox', info), () => W.race);
       const rb = raceBonusDef();
       if(rb){
         const fixed = rb.fixed ? Object.keys(rb.fixed).map(a => `${AB_NAME[a]} ${sgn(rb.fixed[a])}`).join(', ') : '';
@@ -626,6 +646,22 @@
     loadShop(() => { if(box.isConnected) drawRes(); });
   }
 
+  BUILD.choices = body => {
+    let h = '';
+    choiceSets().forEach(c => {
+      const n = c.known(1, W.ruleset), mine = W.choices[c.id] = W.choices[c.id] || [];
+      h += `<p class="wzLead"><b>${esc(c.label)}</b> — choose <b>${n}</b> <span class="wzCount">(${mine.length}/${n})</span></p>
+        <div class="wzGrid">${c.options(W.ruleset).map(o => `<div class="wzCard ${mine.includes(o.n) ? 'sel' : ''}" data-set="${esc(c.id)}" data-n="${esc(o.n)}"><div class="wzCardTop"><b>${esc(o.n)}</b>${o.min > 1 || o.req ? `<span class="wzDiff ${o.min > 1 ? 'd3' : 'd2'}">${[o.min > 1 ? 'Lvl ' + o.min : '', o.req].filter(Boolean).map(esc).join(' · ')}</span>` : ''}</div><div class="wzTag">${esc(o.b)}</div></div>`).join('')}</div>`;
+    });
+    h += '<p class="wzNote">Tags show prerequisites as a guide — at level 1 pick ones with no level tag, and confirm anything else with your DM or book. You can change these later on the sheet.</p>';
+    body.innerHTML = h;
+    body.querySelectorAll('[data-set]').forEach(card => card.onclick = () => {
+      const c = choiceSets().find(x => x.id === card.dataset.set), mine = W.choices[c.id], n = card.dataset.n, max = c.known(1, W.ruleset);
+      const i = mine.indexOf(n); if(i >= 0) mine.splice(i, 1); else if(mine.length < max) mine.push(n); else return;
+      const y = window.scrollY; saveDraft(); BUILD.choices(body); refreshNext(); window.scrollTo(0, y);
+    });
+  };
+
   BUILD.spells = body => {
     const caps = spellCaps();
     const lists = WZ.SPELL_LISTS[W.cls];
@@ -722,6 +758,8 @@
     if(b && b.languages && b.languages !== 'None') profLines.push('Languages: ' + b.languages);
 
     const feats = [];
+    if(W.isCustom && W.customTraits.trim()) feats.push({ name: W.race + ' traits', desc: W.customTraits.trim() });
+    else if(!W.isCustom && !DND.RACE_TRAITS[W.race] && WZ.SPECIES_EXTRA[W.race]) feats.push({ name: W.race, desc: WZ.SPECIES_EXTRA[W.race] + ' (Add the exact traits from your book here.)' });
     if(b && b.feature) feats.push({ name: b.feature, desc: b.featureDesc || '' });
 
     return Object.assign(base, {
@@ -730,6 +768,7 @@
       speed: WZ.RACE_SPEED[W.race] || 30, gold: gold + (W.gearMode === 'buy' ? Math.max(0, Math.floor(goldLeft())) : 0), skillProf, saveProf,
       proficiencies: profLines.join('\n'), feats, spells, inventory,
       personality: Object.assign({}, W.persona),
+      choices: Object.fromEntries(Object.entries(W.choices || {}).map(([k, v]) => [k, [...v]])),
       notes: ''
     });
   }
@@ -811,6 +850,7 @@
   .wzShopName{ min-width:0; } .wzShopName b{ font-size:13.5px; display:block; overflow:hidden; text-overflow:ellipsis; } .wzShopName small{ color:var(--text-dim); font-size:11.5px; }
   .wzAdd, .wzQty button{ width:40px; height:40px; border-radius:8px; border:1px solid var(--border); background:var(--accent); color:#06171a; font-size:18px; cursor:pointer; flex-shrink:0; }
   .wzQty{ display:flex; align-items:center; gap:8px; flex-shrink:0; } .wzQty button{ background:#0d1318; color:var(--text); } .wzQty span{ min-width:18px; text-align:center; }
+  .wzMore{ margin-top:12px; } .wzMore summary{ cursor:pointer; color:var(--accent-bright); font-size:13px; padding:6px 0; }
   .wzBonus{ font-size:11.5px; color:#7fd6a0; } .wzTotal{ margin-left:auto; font-size:12.5px; color:var(--text-dim); } .wzTotal b{ color:var(--text); font-size:15px; }
   .wzSkillGrid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
   .wzSkill{ background:#0d1318; border:2px solid var(--border); color:var(--text); border-radius:10px; padding:10px 12px; min-height:46px; font-size:13.5px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; text-align:left; }

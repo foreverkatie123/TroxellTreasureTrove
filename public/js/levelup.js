@@ -29,6 +29,9 @@
     out.hasAsi = asiLevels(cls).includes(to);
     const subLvl = WZ.subclassLevel(cls, s.ruleset);
     out.needsSub = !s.subclass && to >= subLvl && (WZ.SUBCLASSES_2024[cls] || DND.SUBCLASSES[cls] || []).length > 0;
+    // "choose N from a list" features (e.g. Warlock invocations)
+    const rs = s.ruleset === '2014' ? '2014' : '2024';
+    out.newChoices = WZ.choiceSetsFor(cls).map(set => ({ set, rs, n: Math.max(0, set.known(to, rs) - Math.max(set.known(from, rs), (s.choices && s.choices[set.id] ? s.choices[set.id].length : 0))) })).filter(x => x.n > 0);
     // spells
     const style = WZ.CASTER_STYLE[cls];
     out.style = style;
@@ -55,11 +58,12 @@
     const st = ['overview', 'hp'];
     if(F.needsSub) st.push('subclass');
     if(F.hasAsi) st.push('asi');
+    if(F.newChoices.length) st.push('choices');
     if(F.casts && (F.newCantrips || F.newKnown || F.style)) st.push('spells');
     st.push('review');
     return st;
   }
-  const TITLES = { overview:'What you gain', hp:'Hit points', subclass:'Choose your subclass', asi:'Ability Score Improvement', spells:'New spells', review:'Ready to level up?' };
+  const TITLES = { overview:'What you gain', hp:'Hit points', subclass:'Choose your subclass', asi:'Ability Score Improvement', choices:'New choices', spells:'New spells', review:'Ready to level up?' };
 
   // ---------- screen shell ----------
   const root = () => $('#levelUpScreen');
@@ -106,6 +110,7 @@
   function invalid(key, F){
     if(key === 'hp') return hpReady() ? '' : (L.hp.mode === 'table' ? 'Enter the number you rolled.' : 'Choose how to gain hit points.');
     if(key === 'subclass') return L.sub ? '' : 'Pick a subclass to continue.';
+    if(key === 'choices'){ for(const c of F.newChoices){ const have = (L.choices[c.set.id] || []).length; if(have < c.n) return `Pick ${c.n - have} more ${c.set.noun}${c.n - have > 1 ? 's' : ''}.`; } return ''; }
     if(key === 'asi'){
       if(L.asi.mode === 'feat'){
         if(L.asi.custom) return L.asi.customName.trim() ? '' : 'Type the name of your feat.';
@@ -140,6 +145,7 @@
       ? F.features.map(f => `<p><b>${esc(f[1])}.</b> ${esc(f[2])}</p>`).join('')
       : '<p>No new class features listed at this level. (Subclass features arrive with your subclass — check your book or your DM.)</p>') + '</div>';
     if(F.hasAsi) h += `<div class="wzInfo"><b>Ability Score Improvement</b><p>Raise your ability scores or take a feat — you'll choose in a moment.</p></div>`;
+    F.newChoices.forEach(c => { h += `<div class="wzInfo"><b>${esc(c.set.label)}</b><p>You learn <b>${c.n}</b> new ${esc(c.set.noun)}${c.n > 1 ? 's' : ''}.</p></div>`; });
     if(F.needsSub) h += `<div class="wzInfo"><b>Subclass</b><p>${esc(F.cls)}s choose a subclass by level ${WZ.subclassLevel(F.cls, s.ruleset)}. You'll pick yours now.</p></div>`;
     if(F.slotsTo) h += `<div class="wzInfo"><b>Spell slots</b><p>${slotTxt(F.slotsFrom)} → <b>${slotTxt(F.slotsTo)}</b>${F.maxSpellLvl > (F.slotsFrom && F.slotsFrom.rows.length ? Math.max(...F.slotsFrom.rows.map(r => r.lvl)) : 0) ? `<br><b>You can now cast level ${F.maxSpellLvl} spells!</b>` : ''}</p></div>`;
     if(s.ruleset === '2024') h += '<p class="wzNote">The feature text above is the classic list. Check your 2024 class page on the Features tab for the newest wording.</p>';
@@ -215,6 +221,69 @@
     if(fd) fd.oninput = () => { a.customDesc = fd.value; };
   };
 
+  BUILD.choices = (body, F) => {
+    const s = sheet();
+    let h = '';
+    F.newChoices.forEach(c => {
+      const mine = L.choices[c.set.id] = L.choices[c.set.id] || [];
+      const already = new Set(s.choices && s.choices[c.set.id] || []);
+      h += `<p class="wzLead"><b>${esc(c.set.label)}</b> — choose <b>${c.n}</b> <span class="wzCount">(${mine.length}/${c.n})</span></p>
+        <div class="wzGrid">${c.set.options(c.rs).filter(o => !already.has(o.n)).map(o => {
+          const sel = mine.includes(o.n), low = o.min > F.to;
+          return `<div class="wzCard ${sel ? 'sel' : ''}" data-set="${esc(c.set.id)}" data-n="${esc(o.n)}"><div class="wzCardTop"><b>${esc(o.n)}</b>${o.min > 1 || o.req ? `<span class="wzDiff ${low ? 'd3' : 'd2'}">${[o.min > 1 ? 'Lvl ' + o.min : '', o.req].filter(Boolean).map(esc).join(' · ')}</span>` : ''}</div><div class="wzTag">${esc(o.b)}</div></div>`;
+        }).join('')}</div>`;
+    });
+    h += '<p class="wzNote">Prerequisites shown are a guide — confirm them in your book or with your DM. Want to swap an old one for a new one? Do that on the Features tab.</p>';
+    body.innerHTML = h;
+    body.querySelectorAll('[data-set]').forEach(card => card.onclick = () => {
+      const c = F.newChoices.find(x => x.set.id === card.dataset.set), mine = L.choices[c.set.id], n = card.dataset.n;
+      const i = mine.indexOf(n); if(i >= 0) mine.splice(i, 1); else if(mine.length < c.n) mine.push(n); else return;
+      const y = window.scrollY; BUILD.choices(body, F); window.scrollTo(0, y); refresh();
+    });
+  };
+
+  // ---------- spell search (Open5e, with built-in fallback) ----------
+  let spellCache = null, spellLoading = false, spellFailed = false;
+  function loadSpells(cb){
+    if(spellCache || spellLoading) return;
+    spellLoading = true;
+    PlayerApp.liveSpells().then(list => { spellCache = list.length > 20 ? list : null; if(!spellCache) spellFailed = true; })
+      .catch(() => { spellFailed = true; })
+      .then(() => {
+        if(!spellCache){ spellCache = Object.keys(WZ.SPELLS).map(n => ({ name:n, level:WZ.SPELLS[n][0], school:'', classes:[], desc:WZ.SPELLS[n][1] })); }
+        spellLoading = false; cb();
+      });
+  }
+  function mountSpellSearch(host, F, have){
+    let q = '', lvl = 'all', mineOnly = false;
+    const clsKey = F.cls.toLowerCase();
+    host.innerHTML = `<h3 class="wzH">Search all spells</h3>
+      <input type="text" id="luQ" placeholder="Search by name…" autocomplete="off">
+      <div class="wzFilters" id="luLv" style="margin-top:8px"></div>
+      <label class="wzCheck hidden" id="luMineWrap"><input type="checkbox" id="luMine"> Only my class's spell list</label>
+      <div id="luNote" class="wzNote"></div><div id="luRes" class="wzShopList"></div>`;
+    const draw = () => {
+      const lvls = ['all', ...Array.from({ length: F.maxSpellLvl + 1 }, (_, i) => i)];
+      $('#luLv', host).innerHTML = lvls.map(v => `<button class="chip ${String(lvl) === String(v) ? 'selected' : ''}" data-l="${v}">${v === 'all' ? 'All' : v === 0 ? 'Cantrip' : 'Lv ' + v}</button>`).join('');
+      $('#luLv', host).querySelectorAll('[data-l]').forEach(b => b.onclick = () => { lvl = b.dataset.l; draw(); });
+      const note = $('#luNote', host), res = $('#luRes', host);
+      if(!spellCache){ note.textContent = 'Loading spells from Open5e…'; res.innerHTML = ''; return; }
+      const hasClassData = spellCache.some(x => x.classes && x.classes.includes(clsKey));
+      $('#luMineWrap', host).classList.toggle('hidden', !hasClassData);
+      note.textContent = spellFailed ? 'Couldn\'t reach Open5e — showing a short built-in list. Use "Add a spell by name" below for anything else.' : '';
+      const taken = n => have.has(n.toLowerCase()) || L.extra.some(x => x.name.toLowerCase() === n.toLowerCase());
+      const ql = q.trim().toLowerCase();
+      const list = spellCache.filter(x => x.level <= F.maxSpellLvl && (lvl === 'all' || x.level === +lvl) && (!ql || x.name.toLowerCase().includes(ql)) && (!mineOnly || !hasClassData || x.classes.includes(clsKey)) && !taken(x.name))
+        .sort((a, b) => a.level - b.level || a.name.localeCompare(b.name)).slice(0, 30);
+      res.innerHTML = list.length ? list.map(x => `<div class="wzShopRow"><div class="wzShopName"><b>${esc(x.name)}</b><small>${x.level === 0 ? 'Cantrip' : 'Level ' + x.level}${x.school ? ' · ' + esc(x.school) : ''}</small></div><button class="wzAdd" data-add="${esc(x.name)}" data-lv="${x.level}">＋</button></div>`).join('') : '<p class="wzDim">No matches.</p>';
+      res.querySelectorAll('[data-add]').forEach(b => b.onclick = () => { L.extra.push({ name:b.dataset.add, level:+b.dataset.lv }); const y = window.scrollY; BUILD.spells($('#luBody'), F); window.scrollTo(0, y); });
+    };
+    $('#luQ', host).oninput = e => { q = e.target.value; draw(); };
+    $('#luMine', host).onchange = e => { mineOnly = e.target.checked; draw(); };
+    draw();
+    loadSpells(() => { if(host.isConnected) draw(); });
+  }
+
   BUILD.spells = (body, F) => {
     const s = sheet(), lists = WZ.SPELL_LISTS[F.cls] || { cantrips:[], l1:[] };
     const have = new Set((s.spells || []).map(x => x.name.toLowerCase()));
@@ -232,6 +301,7 @@
       + `</p></div>`;
     if(F.newCantrips){ h += `<h3 class="wzH">Cantrips <span class="wzCount">${L.cantrips.length}/${F.newCantrips}</span></h3><div class="wzSpellGrid">${cList.map(n => row(n, 'c', L.cantrips.includes(n))).join('') || '<p class="wzDim">No more starter cantrips in the list — add one below.</p>'}</div>`; }
     if(F.newKnown){ h += `<h3 class="wzH">Level 1 spells <span class="wzCount">${L.l1.length}/${F.newKnown}</span></h3><p class="wzDim">Spells of level 2 and up aren't in the quick list — add them by name below.</p><div class="wzSpellGrid">${lList.map(n => row(n, 'l', L.l1.includes(n))).join('')}</div>`; }
+    h += '<div id="luSearchHost"></div>';
     h += `<h3 class="wzH">Add a spell by name</h3><div class="addRow"><input type="text" id="luSpName" class="addName" placeholder="Spell name"><select id="luSpLvl" class="addLevel">${[0,1,2,3,4,5,6,7,8,9].filter(x => x <= F.maxSpellLvl).map(x => `<option value="${x}">${x === 0 ? 'Cantrip' : 'Level ' + x}</option>`).join('')}</select><button class="btn small" id="luSpAdd">+ Add</button></div>`;
     if(L.extra.length) h += `<div class="wzShopList" style="margin-top:8px">${L.extra.map((x, i) => `<div class="wzShopRow"><div class="wzShopName"><b>${esc(x.name)}</b><small>${x.level === 0 ? 'Cantrip' : 'Level ' + x.level}</small></div><button class="wzAdd" data-rm="${i}" style="background:#0d1318;color:var(--text)">✕</button></div>`).join('')}</div>`;
     h += '<p class="wzNote">You can skip any of this and add spells later on the Spells tab.</p>';
@@ -247,6 +317,7 @@
       const y = window.scrollY; BUILD.spells(body, F); window.scrollTo(0, y);
     };
     body.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { L.extra.splice(+b.dataset.rm, 1); BUILD.spells(body, F); });
+    mountSpellSearch($('#luSearchHost', body), F, have);
   };
 
   BUILD.review = (body, F) => {
@@ -260,6 +331,7 @@
       if(a.mode === 'split') ch.push(`<b>${AB_NAME[a.a]}</b> ${s.stats[a.a]} → ${s.stats[a.a] + 1}<br><b>${AB_NAME[a.b]}</b> ${s.stats[a.b]} → ${s.stats[a.b] + 1}`);
       if(a.mode === 'feat') ch.push(`<b>Feat</b> ${esc(a.custom ? a.customName : DND.FEATS[a.feat].name)}${a.featAb ? ' (+' + DND.FEATS[a.feat].asi.amount + ' ' + AB_NAME[a.featAb] + ')' : ''}`);
     }
+    F.newChoices.forEach(c => { const m = L.choices[c.set.id] || []; if(m.length) ch.push(`<b>${esc(c.set.label)}</b> ${m.map(esc).join(', ')}`); });
     const newSp = [...L.cantrips.map(n => n + ' (cantrip)'), ...L.l1.map(n => n + ' (lvl 1)'), ...L.extra.map(x => x.name + (x.level ? ' (lvl ' + x.level + ')' : ' (cantrip)'))];
     if(newSp.length) ch.push(`<b>New spells</b> ${newSp.map(esc).join(', ')}`);
     if(F.features.length) ch.push(`<b>New features</b> ${F.features.map(f => esc(f[1])).join(', ')}`);
@@ -287,7 +359,9 @@
         }
       }
     }
-    const prepAuto = !['Cleric','Druid','Paladin','Wizard'].includes(F.cls);
+    s.choices = s.choices || {};
+    Object.keys(L.choices).forEach(id => { s.choices[id] = [...(s.choices[id] || []), ...L.choices[id]]; });
+    const prepAuto = !['Cleric','Druid','Paladin','Wizard','Artificer'].includes(F.cls);
     L.cantrips.forEach(n => s.spells.push({ name:n, level:0, prepared:true }));
     L.l1.forEach(n => s.spells.push({ name:n, level:1, prepared:prepAuto }));
     L.extra.forEach(x => s.spells.push({ name:x.name, level:x.level, prepared: x.level === 0 || prepAuto }));
@@ -303,7 +377,7 @@
     if(!s) return;
     if(!s.class){ UI.alert('Pick a class on the Core tab first, then level up.', { title:'Choose a class' }); return; }
     if((s.level || 1) >= 20){ UI.alert('Level 20 is the top. Nothing further to level up!', { title:'Max level' }); return; }
-    L = { hp:{ mode:null, value:null }, sub:'', asi:{ mode:null, a:'', b:'', feat:null, featAb:'', custom:false, customName:'', customDesc:'' }, cantrips:[], l1:[], extra:[] };
+    L = { choices:{}, hp:{ mode:null, value:null }, sub:'', asi:{ mode:null, a:'', b:'', feat:null, featAb:'', custom:false, customName:'', customDesc:'' }, cantrips:[], l1:[], extra:[] };
     stepIdx = 0;
     PlayerApp.show('levelUpScreen');
     render(); window.scrollTo(0, 0);

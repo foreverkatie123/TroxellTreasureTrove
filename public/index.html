@@ -479,6 +479,8 @@
           <div id="classFeaturesLive" class="infoText hidden"></div>
         </div>
 
+        <div id="choiceSections"></div>
+
         <div class="section">
           <h3>Feats</h3>
           <div id="featList"></div>
@@ -916,7 +918,7 @@
           stats: { str:10, dex:10, con:10, int:10, wis:10, cha:10 },
           hp_current:10, hp_max:10, ac:10, speed:30, gold:0,
           skillProf: {}, saveProf: {},
-          proficiencies:'', feats: [], spells: [], inventory: [],
+          proficiencies:'', feats: [], spells: [], inventory: [], choices: {},
           personality: { traits:'', ideals:'', bonds:'', flaws:'' },
           appearance: { age:'', height:'', weight:'', eyes:'', skin:'', hair:'' },
           deathSaves: { success:[false,false,false], fail:[false,false,false] },
@@ -944,8 +946,8 @@
       function cantripsKnownMax(cls, level){ return (DND.CANTRIPS_KNOWN[cls] && DND.CANTRIPS_KNOWN[cls][level-1]) ?? null; }
       function spellsKnownMax(cls, level){ return (DND.SPELLS_KNOWN[cls] && DND.SPELLS_KNOWN[cls][level-1]) ?? null; }
       function preparedMax(cls, level, mod){
-        if(!['Cleric','Druid','Paladin','Wizard'].includes(cls)) return null;
-        const effLevel = cls === 'Paladin' ? Math.floor(level/2) : level;
+        if(!['Cleric','Druid','Paladin','Wizard','Artificer'].includes(cls)) return null;
+        const effLevel = (cls === 'Paladin' || cls === 'Artificer') ? Math.floor(level/2) : level;
         return Math.max(1, mod + effLevel);
       }
 
@@ -1320,11 +1322,42 @@
         }
 
         renderFeatList();
+        renderChoices();
 
         document.getElementById('fTraits').value = sheet.personality.traits || '';
         document.getElementById('fIdeals').value = sheet.personality.ideals || '';
         document.getElementById('fBonds').value = sheet.personality.bonds || '';
         document.getElementById('fFlaws').value = sheet.personality.flaws || '';
+      }
+      // ---- "Choose N from a list" class features (e.g. Warlock invocations) ----
+      function renderChoices(){
+        const host = document.getElementById('choiceSections');
+        const sets = window.WZ ? WZ.choiceSetsFor(sheet.class) : [];
+        host.innerHTML = '';
+        sets.forEach(set => {
+          const rs = sheet.ruleset === '2014' ? '2014' : '2024';
+          const max = set.known(sheet.level || 1, rs);
+          if(!max && !(sheet.choices[set.id] || []).length) return;
+          const chosen = sheet.choices[set.id] = sheet.choices[set.id] || [];
+          const opts = set.options(rs), byName = Object.fromEntries(opts.map(o => [o.n, o]));
+          const avail = opts.filter(o => !chosen.includes(o.n));
+          const over = chosen.length > max;
+          const sec = document.createElement('div'); sec.className = 'section';
+          sec.innerHTML = `<h3>${escapeHtml(set.label)} <span style="text-transform:none;letter-spacing:0;">— ${chosen.length} / ${max} chosen</span></h3>
+            ${chosen.length ? chosen.map((n, i) => `<div class="featCard"><div class="featTop"><span class="featName">${escapeHtml(n)}</span><button class="removeX" data-rmc="${i}">✕</button></div>
+              <div class="featDesc">${escapeHtml((byName[n] && byName[n].b) || 'Custom choice')}</div></div>`).join('') : '<p class="infoText">None chosen yet.</p>'}
+            ${over ? '<p class="infoText" style="color:#e0a83f;">You have more than your level allows — remove one, or ask your DM.</p>' : ''}
+            <div class="addRow"><select class="addName" data-pick>
+              <option value="">— add ${escapeHtml(set.noun)} —</option>
+              ${avail.map(o => `<option value="${escapeHtml(o.n)}">${escapeHtml(o.n)}${o.min > (sheet.level || 1) ? ' (level ' + o.min + ')' : ''}</option>`).join('')}</select>
+              <button class="btn small" data-addc>+ Add</button></div>
+            <div class="addRow"><input type="text" class="addName" data-custom placeholder="Other / homebrew ${escapeHtml(set.noun)}"><button class="btn small" data-addcustom>+ Add</button></div>
+            <p class="infoText" style="margin-top:8px;">Prerequisites are a guide — confirm them in your book or with your DM.</p>`;
+          host.appendChild(sec);
+          sec.querySelectorAll('[data-rmc]').forEach(b => b.addEventListener('click', () => { chosen.splice(+b.dataset.rmc, 1); renderChoices(); }));
+          sec.querySelector('[data-addc]').addEventListener('click', () => { const v = sec.querySelector('[data-pick]').value; if(v){ chosen.push(v); renderChoices(); } });
+          sec.querySelector('[data-addcustom]').addEventListener('click', () => { const v = sec.querySelector('[data-custom]').value.trim(); if(v){ chosen.push(v); renderChoices(); } });
+        });
       }
       function renderFeatList(){
         const el = document.getElementById('featList');
@@ -1519,7 +1552,7 @@
           el.innerHTML = '<p class="infoText">No spells added yet.</p>';
           return;
         }
-        const showPrepared = ['Cleric','Druid','Paladin','Wizard'].includes(sheet.class);
+        const showPrepared = ['Cleric','Druid','Paladin','Wizard','Artificer'].includes(sheet.class);
         const sorted = sheet.spells.map((s,i) => ({...s, idx:i})).sort((a,b) => a.level - b.level || a.name.localeCompare(b.name));
         el.innerHTML = sorted.map(s => `
           <div class="listRow">
@@ -1629,7 +1662,8 @@
           resourceState: Object.assign({}, blank.resourceState, c.resourceState),
           feats: Array.isArray(c.feats) ? [...c.feats] : [],
           spells: Array.isArray(c.spells) ? [...c.spells] : [],
-          inventory: Array.isArray(c.inventory) ? [...c.inventory] : []
+          inventory: Array.isArray(c.inventory) ? [...c.inventory] : [],
+          choices: Object.fromEntries(Object.entries(c.choices || {}).map(([k, v]) => [k, Array.isArray(v) ? [...v] : []]))
         });
         ruleset = sheet.ruleset === '2014' ? '2014' : '2024';
         document.getElementById('sheetTabBar').querySelector('[data-tab="core"]').click();
@@ -1699,6 +1733,22 @@
           if(liveIndexCache[ck]) return Promise.resolve(liveIndexCache[ck]);
           return fetchAllPages(`${OPEN5E_BASE}/v2/${apiEndpoint(endpoint)}/?document__key__in=srd-2024&limit=200`)
             .then(list => (liveIndexCache[ck] = list));
+        },
+        // All 2024 SRD spells (name, level, school, classes when Open5e provides them), cached.
+        liveSpells(){
+          const ck = '2024:spells';
+          if(liveIndexCache[ck]) return Promise.resolve(liveIndexCache[ck]);
+          return fetchAllPages(`${OPEN5E_BASE}/v2/spells/?document__key__in=srd-2024&limit=200`).then(list => {
+            const out = list.map(o => {
+              const lvl = typeof o.level === 'number' ? o.level : parseInt(o.level, 10);
+              let cls = o.classes || o.class_list || o.spell_lists || [];
+              if(typeof cls === 'string') cls = cls.split(/,\s*/);
+              cls = (Array.isArray(cls) ? cls : []).map(c => String(typeof c === 'string' ? c : (c && (c.name || c.key)) || '').toLowerCase().replace(/^srd(-2024)?_/, ''));
+              const school = o.school && (o.school.name || o.school) || '';
+              return { name:o.name, level: isNaN(lvl) ? 0 : lvl, school:String(school), classes:cls, desc:String(o.desc || '').slice(0, 220) };
+            }).filter(x => x.name);
+            return (liveIndexCache[ck] = out);
+          });
         },
         createCharacter(data){
           return charsRef().add(data).then(doc => doc.id);
