@@ -120,8 +120,8 @@
     const hint = $('#wzHint');
     if(hint) hint.textContent = why || '';
   }
-  function cancel(){
-    if(W && (W.name || W.cls) && !confirm('Leave character creation? Your answers are saved on this device so you can pick up again.')) return;
+  async function cancel(){
+    if(W && (W.name || W.cls) && !(await UI.confirm('Your answers are saved on this device so you can pick up again later.', { title:'Leave character creation?', ok:'Leave', cancel:'Keep going' }))) return;
     saveDraft();
     PlayerApp.show('charListScreen');
   }
@@ -737,17 +737,18 @@
   function create(){
     const btn = $('#wzNext'); btn.classList.add('disabled'); btn.textContent = 'Creating…';
     let data;
-    try{ data = buildCharacter(); }catch(e){ btn.classList.remove('disabled'); btn.textContent = 'Create character ✓'; alert('Something went wrong building the character: ' + e.message); return; }
+    try{ data = buildCharacter(); }catch(e){ btn.classList.remove('disabled'); btn.textContent = 'Create character ✓'; UI.alert(e.message, { title:'Something went wrong building the character' }); return; }
     PlayerApp.createCharacter(data).then(id => { clearDraft(); W = null; PlayerApp.openCharSheet(id); })
-      .catch(err => { btn.classList.remove('disabled'); btn.textContent = 'Create character ✓'; alert('Could not save the character: ' + err.message); });
+      .catch(err => { btn.classList.remove('disabled'); btn.textContent = 'Create character ✓'; UI.alert(err.message, { title:'Could not save the character' }); });
   }
 
   // ---------- public ----------
-  function start(){
+  async function start(){
     const draft = loadDraft();
-    if(draft && draft.W && (draft.W.name || draft.W.cls) && confirm('Pick up your unfinished character' + (draft.W.name ? ' “' + draft.W.name + '”' : '') + '?\n\nOK = continue · Cancel = start over')){
-      W = Object.assign(freshState(), draft.W); stepIdx = draft.stepIdx || 0;
-    } else { W = freshState(); stepIdx = 0; clearDraft(); }
+    const hasDraft = draft && draft.W && (draft.W.name || draft.W.cls);
+    const resume = hasDraft && await UI.confirm((draft.W.name ? '“' + draft.W.name + '”' : 'Your character') + ' is partly built. Pick up where you left off?', { title:'Unfinished character', ok:'Continue', cancel:'Start over' });
+    if(resume){ W = Object.assign(freshState(), draft.W); stepIdx = draft.stepIdx || 0; }
+    else { W = freshState(); stepIdx = 0; clearDraft(); }
     classFilter = 'all';
     PlayerApp.show('wizardScreen');
     render(); window.scrollTo(0, 0);

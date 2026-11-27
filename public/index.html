@@ -304,8 +304,8 @@
         <div class="section">
           <h3>Ruleset</h3>
           <div class="chipRow" id="rulesetChips">
-            <button class="chip" data-ruleset="2024">2024 Rules (live from Open5e)</button>
-            <button class="chip" data-ruleset="2014">2014 Rules (built in)</button>
+            <button class="chip" data-ruleset="2024">2024 Rules</button>
+            <button class="chip" data-ruleset="2014">2014 Rules</button>
           </div>
           <p class="infoText" id="rulesetStatus" style="margin-top:8px;"></p>
         </div>
@@ -321,7 +321,7 @@
             <div>
               <label>Subclass</label>
               <select id="fSubclass"><option value="">— pick class first —</option></select>
-              <input type="text" id="fSubclassText" class="hidden" placeholder="Type your subclass (2024 subclass lists aren't fetched live)">
+              <input type="text" id="fSubclassText" class="hidden" placeholder="Type your subclass">
             </div>
           </div>
           <div class="row2">
@@ -585,6 +585,7 @@
   <script defer src="/__/firebase/12.16.0/firebase-firestore-compat.js"></script>
   <script defer src="/__/firebase/init.js"></script>
 
+  <script src="js/ui-dialogs.js"></script>
   <script src="js/dnd-data.js"></script>
   <script src="js/wizard-data.js"></script>
   <script src="js/wizard.js"></script>
@@ -704,12 +705,11 @@
           populateSelect(document.getElementById('fBackground'), Object.keys(DND.BACKGROUNDS), '— choose —');
           document.getElementById('featPicker').innerHTML = '<option value="">— choose a feat to add —</option>' +
             DND.FEATS.map((f,i) => `<option value="${i}">${escapeHtml(f.name)}</option>`).join('');
-          document.getElementById('rulesetStatus').textContent = 'Using the built-in 2014 rules — no internet needed.';
           keepCurrentOptions();
           renderAll();
           return;
         }
-        document.getElementById('rulesetStatus').textContent = 'Fetching 2024 races, backgrounds, and feats from Open5e…';
+        document.getElementById('rulesetStatus').textContent = 'Fetching 2024 races, backgrounds, and feats…';
         document.getElementById('fRace').innerHTML = '<option value="">Loading…</option>';
         document.getElementById('fBackground').innerHTML = '<option value="">Loading…</option>';
         document.getElementById('featPicker').innerHTML = '<option value="">Loading…</option>';
@@ -728,7 +728,7 @@
               list.map((f,i) => `<option value="live:${i}">${escapeHtml(f.name)}</option>`).join('');
           })
         ]).then(() => {
-          document.getElementById('rulesetStatus').textContent = '2024 SRD content loaded from Open5e.';
+          document.getElementById('rulesetStatus').textContent = '2024 SRD content loaded.';
           keepCurrentOptions();
           renderAll();
         }).catch(err => {
@@ -788,8 +788,8 @@
         firebase.auth().signInWithPopup(provider).catch(err => {
           if(IN_APP_BROWSER || /network-request-failed|disallowed|popup/i.test(err.code + ' ' + err.message)){
             document.getElementById('inAppWarn').classList.remove('hidden');
-            alert('Sign-in failed. If you opened this link from a chat app, open it in Chrome or Safari instead (see the notice on this page).');
-          } else alert('Sign-in failed: ' + err.message);
+            UI.alert('If you opened this link from a chat app, open it in Chrome or Safari instead (see the notice on this page).', { title:'Sign-in failed' });
+          } else UI.alert(err.message, { title:'Sign-in failed' });
         });
       });
       // Chat apps' built-in browsers (Messenger, Facebook, Instagram, TikTok…) block Google sign-in.
@@ -804,8 +804,8 @@
       }
       document.getElementById('copyLinkBtn').addEventListener('click', () => {
         const done = () => { document.getElementById('copyLinkBtn').textContent = 'Copied ✓'; };
-        if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(location.href).then(done).catch(() => prompt('Copy this link:', location.href));
-        else prompt('Copy this link:', location.href);
+        if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(location.href).then(done).catch(() => UI.prompt('Copy this link:', { value:location.href, readonly:true }));
+        else UI.prompt('Copy this link:', { value:location.href, readonly:true });
       });
       function signOut(){
         if(charsUnsub){ charsUnsub(); charsUnsub = null; }
@@ -882,14 +882,14 @@
           card.addEventListener('click', () => openCharSheet(card.dataset.id));
         });
       }
-      document.getElementById('newCharBtn').addEventListener('click', () => {
+      document.getElementById('newCharBtn').addEventListener('click', async () => {
         if(window.Wizard){ window.Wizard.start(); return; }
         // fallback if the wizard scripts failed to load: quick blank character
-        const name = prompt('Character name?');
+        const name = await UI.prompt('Character name?', { placeholder:'e.g. Thorn Ironfoot', ok:'Create' });
         if(!name || !name.trim()) return;
         charsRef().add(blankCharacter(name.trim()))
           .then(doc => openCharSheet(doc.id))
-          .catch(err => alert('Could not create character: ' + err.message));
+          .catch(err => UI.alert(err.message, { title:'Could not create character' }));
       });
       function blankCharacter(name){
         return {
@@ -1384,7 +1384,7 @@
             ability = feat.asi.choose[0];
           } else {
             const selected = document.getElementById('featAsiChips').querySelector('.chip.selected');
-            if(!selected){ alert('Choose an ability score for this feat first.'); return; }
+            if(!selected){ UI.alert('Choose an ability score for this feat first.'); return; }
             ability = selected.dataset.asiability || selected.getAttribute('data-asiAbility');
           }
           sheet.stats[ability] = Math.min(20, (sheet.stats[ability]||10) + feat.asi.amount);
@@ -1444,8 +1444,8 @@
         restMsg('Short rest: ' + bits.join('; ') + '.');
         renderCombat(); renderSpells();
       });
-      document.getElementById('longRestBtn').addEventListener('click', () => {
-        if(!confirm('Take a long rest? This restores HP, spell slots and resources.')) return;
+      document.getElementById('longRestBtn').addEventListener('click', async () => {
+        if(!(await UI.confirm('This restores HP, spell slots and class resources, and gives back some Hit Dice.', { title:'Take a long rest?', ok:'Long rest' }))) return;
         const rs = sheet.resourceState;
         sheet.hp_current = sheet.hp_max || 0;
         rs.slotsUsed = [0,0,0,0,0,0,0,0,0];
@@ -1646,12 +1646,12 @@
         delete payload.createdAt; // never overwrite on update
         charsRef().doc(editingCharId).set(payload, { merge:true })
           .then(() => show('charListScreen'))
-          .catch(err => alert('Save failed: ' + err.message));
+          .catch(err => UI.alert(err.message, { title:'Save failed' }));
       });
-      document.getElementById('sheetDeleteBtn').addEventListener('click', () => {
+      document.getElementById('sheetDeleteBtn').addEventListener('click', async () => {
         if(!editingCharId) return;
-        if(!confirm('Delete this character? This cannot be undone.')) return;
-        charsRef().doc(editingCharId).delete().then(() => show('charListScreen')).catch(err => alert('Delete failed: ' + err.message));
+        if(!(await UI.confirm('This cannot be undone.', { title:'Delete this character?', ok:'Delete', danger:true }))) return;
+        charsRef().doc(editingCharId).delete().then(() => show('charListScreen')).catch(err => UI.alert(err.message, { title:'Delete failed' }));
       });
 
       // ---- Hooks for the guided creator (js/wizard.js) ----
