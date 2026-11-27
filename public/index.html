@@ -585,9 +585,12 @@
       let liveBackgroundKeyByName = {};
       let liveFeatList = [];
 
+      // Open5e renamed /v2/races/ to /v2/species/; keep calling code using 'races'.
+      const ENDPOINT_ALIAS = { races:'species' };
+      const apiEndpoint = e => ENDPOINT_ALIAS[e] || e;
       function fetchAllPages(url, acc){
         acc = acc || [];
-        return fetch(url).then(r => r.json()).then(data => {
+        return fetch(url).then(r => { if(!r.ok) throw new Error('Open5e returned HTTP ' + r.status); return r.json(); }).then(data => {
           const results = acc.concat(data.results || []);
           if(data.next) return fetchAllPages(data.next, results);
           return results;
@@ -597,7 +600,7 @@
         const cacheKey = `${ruleset}:${endpoint}`;
         if(liveIndexCache[cacheKey]) return Promise.resolve(liveIndexCache[cacheKey]);
         const docKey = RULESET_DOC_KEY[ruleset];
-        return fetchAllPages(`${OPEN5E_BASE}/v2/${endpoint}/?document__key__in=${docKey}&fields=key,name`)
+        return fetchAllPages(`${OPEN5E_BASE}/v2/${apiEndpoint(endpoint)}/?document__key__in=${docKey}&fields=key,name`)
           .then(results => {
             const list = results.map(r => ({ key:r.key, name:r.name }));
             liveIndexCache[cacheKey] = list;
@@ -607,7 +610,7 @@
       function fetchLiveDetail(endpoint, key){
         const cacheKey = `${ruleset}:${endpoint}:${key}`;
         if(liveDetailCache[cacheKey]) return Promise.resolve(liveDetailCache[cacheKey]);
-        return fetch(`${OPEN5E_BASE}/v2/${endpoint}/${key}/`)
+        return fetch(`${OPEN5E_BASE}/v2/${apiEndpoint(endpoint)}/${key}/`)
           .then(r => { if(!r.ok) throw new Error('not found'); return r.json(); })
           .then(d => { liveDetailCache[cacheKey] = d; return d; });
       }
