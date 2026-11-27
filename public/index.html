@@ -300,7 +300,7 @@
             <div>
               <label>Subclass</label>
               <select id="fSubclass"><option value="">— pick class first —</option></select>
-              <input type="text" id="fSubclassText" class="hidden" placeholder="Type your subclass (2024 subclass lists aren't fetched live)">
+              <input type="text" id="fSubclassText" class="hidden" placeholder="Type your subclass">
             </div>
           </div>
           <div class="row2">
@@ -1512,6 +1512,12 @@
         liveIndex(endpoint){
           const prev = ruleset; ruleset = '2024';
           const p = loadLiveIndex(endpoint);   // reads `ruleset` synchronously
+          ruleset = prev;
+          return p;
+        },
+        liveDetail(endpoint, key){
+          const prev = ruleset; ruleset = '2024';
+          const p = fetchLiveDetail(endpoint, key);  // reads `ruleset` synchronously
           ruleset = prev;
           return p;
         },

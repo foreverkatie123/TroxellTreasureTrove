@@ -15,7 +15,7 @@
   // ---------- state ----------
   let W = null;
   let stepIdx = 0;
-  let live = { races:null, backgrounds:null, loading:false, failed:false };
+  let live = { races:null, backgrounds:null, raceKeys:{}, bgKeys:{}, detail:{}, loading:false, failed:false };
   let classFilter = 'all';
 
   function freshState(){
@@ -143,7 +143,7 @@
         if(!is2014() && !bgAsiValid()) return 'Choose where your +2 / +1 (or three +1) bonuses go.';
         return '';
       }
-      case 'abilities': return AB.every(a => W.scores[a]) ? '' : 'Give every ability a score — or tap “Recommended”.';
+      case 'abilities': return AB.every(a => W.scores[a]) ? '' : (W.manual ? 'Enter a number from 3 to 20 for every ability.' : 'Give every ability a score — or tap “Recommended”.');
       case 'skills': {
         const need = classPicks().count;
         const have = W.skills.length;
@@ -166,6 +166,31 @@
     const sum = v.reduce((a,b) => a + b, 0);
     return (v.length === 2 && sum === 3) || (v.length === 3 && sum === 3);
   }
+
+  // ---------- live (Open5e) detail helpers ----------
+  const clean = t => esc(String(t || '').replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*(.+?)\*/g, '$1').replace(/^#+\s*/gm, '').replace(/\|[-: |]+\|/g, '').trim());
+  const para = t => clean(t).split(/\n{2,}|\n/).filter(Boolean).map(x => '<p>' + x + '</p>').join('');
+  function detailHtml(d){
+    let h = '';
+    if(d.desc) h += para(d.desc);
+    const lists = [d.traits, d.benefits, d.features].filter(Array.isArray);
+    lists.forEach(arr => arr.forEach(t => {
+      if(!t || !t.name) return;
+      h += '<p><b>' + esc(t.name) + '.</b> ' + clean(t.desc || t.description || '') + '</p>';
+    }));
+    return h || '<p>No description available — details are on your sheet after creation.</p>';
+  }
+  // Fetch + show a live species/background description inside `box`.
+  function showLiveDetail(endpoint, name, key, box, cur){
+    if(!key){ box.innerHTML = '<p>Full details will be on your character sheet after creation.</p>'; return; }
+    const cacheKey = endpoint + ':' + key;
+    const paint = d => { if(box.isConnected && cur() === name) box.innerHTML = detailHtml(d); };
+    if(live.detail[cacheKey]) return paint(live.detail[cacheKey]);
+    box.innerHTML = '<p class="wzDim">Loading description…</p>';
+    PlayerApp.liveDetail(endpoint, key).then(d => { live.detail[cacheKey] = d; paint(d); })
+      .catch(() => { if(box.isConnected) box.innerHTML = '<p>Couldn\'t load the description (Open5e unreachable). Details will be on your sheet after creation.</p>'; });
+  }
+  const l1Features = () => (DND.CLASS_FEATURES[W.cls] || []).filter(f => f[0] <= 1);
 
   // ---------- step builders ----------
   const BUILD = {};
@@ -213,7 +238,8 @@
             <div class="wzTag">${esc(i.tag)}</div>
             ${sel ? `<ul class="wzDoes">${i.does.map(d => `<li>${esc(d)}</li>`).join('')}</ul>
               <div class="wzKey"><b>Most important scores:</b> ${esc(i.key)}</div>
-              <div class="wzKey"><b>Hit die:</b> d${DND.CLASS_HIT_DIE[c]}</div>` : ''}
+              <div class="wzKey"><b>Hit die:</b> d${DND.CLASS_HIT_DIE[c]}</div>
+              ${(DND.CLASS_FEATURES[c] || []).filter(f => f[0] <= 1).length ? `<div class="wzFeat"><b>You get at level 1:</b>${(DND.CLASS_FEATURES[c] || []).filter(f => f[0] <= 1).map(f => `<p><b>${esc(f[1])}.</b> ${esc(f[2])}</p>`).join('')}</div>` : ''}` : ''}
           </div>`;
         }).join('')}</div>`;
       body.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { classFilter = b.dataset.f; render(); });
@@ -244,6 +270,7 @@
     live.loading = true;
     Promise.all([PlayerApp.liveIndex('races'), PlayerApp.liveIndex('backgrounds')]).then(([r, b]) => {
       live.races = r.map(x => x.name); live.backgrounds = b.map(x => x.name);
+      r.forEach(x => live.raceKeys[x.name] = x.key); b.forEach(x => live.bgKeys[x.name] = x.key);
     }).catch(() => { live.failed = true; }).then(() => {
       live.loading = false;
       const k = stepList()[stepIdx];
@@ -270,9 +297,10 @@
       const traits = DND.RACE_TRAITS[W.race];
       let h = `<div class="wzInfo"><b>${esc(W.race)}</b>`;
       if(traits) h += `<p>${esc(traits)}</p>`;
-      else h += `<p>You'll find the full ${esc(W.race)} details on your character sheet after creation.</p>`;
+      else h += '<div id="wzLiveBox"><p class="wzDim">Loading description…</p></div>';
       h += '</div>';
       info.innerHTML = h;
+      if(!traits) showLiveDetail('races', W.race, live.raceKeys[W.race], $('#wzLiveBox', info), () => W.race);
       const rb = raceBonusDef();
       if(rb){
         const fixed = rb.fixed ? Object.keys(rb.fixed).map(a => `${AB_NAME[a]} ${sgn(rb.fixed[a])}`).join(', ') : '';
@@ -332,9 +360,10 @@
       h += `<p>${esc(b.featureDesc || '')}</p>
         <p><b>Skills:</b> ${esc(b.skills.join(', ') || '—')}</p>`;
       if(b.tools && b.tools !== 'None') h += `<p><b>Tools:</b> ${esc(b.tools)}</p>`;
-    } else h += '<p>Full details (skills, feat, gear) are on your sheet after creation — you can add them there.</p>';
+    } else h += '<div id="wzLiveBox"><p class="wzDim">Loading description…</p></div>';
     h += '</div>';
     info.innerHTML = h;
+    if(!b) showLiveDetail('backgrounds', W.bg, live.bgKeys[W.bg], $('#wzLiveBox', info), () => W.bg);
     if(!is2014()){
       info.insertAdjacentHTML('beforeend', `<div class="wzInfo"><b>Ability bonuses</b>
         <p>Pick <b>+2 and +1</b> for two different scores, or <b>+1 to three</b> scores.</p>
@@ -375,8 +404,10 @@
     body.innerHTML = `
       <p class="wzLead">Six scores describe what your character is good at. Start with the <b>Recommended</b> button, then tweak if you like.</p>
       <div class="wzBtnRow">
-        <button class="btn primary small" id="wzRec">★ Recommended for ${esc(W.cls)}</button>
+        <button class="btn primary small" id="wzRec">${W.manual ? '★ Best fit for my numbers' : '★ Recommended for ' + esc(W.cls)}</button>
         <button class="btn small" id="wzRoll">🎲 Roll 4d6</button>
+        <button class="btn small ${W.manual ? 'on' : ''}" id="wzManual">✎ Enter my own</button>
+        <button class="btn small" id="wzStd">Standard array</button>
         <button class="btn small" id="wzClear">Clear</button>
       </div>
       <div class="wzAbList">${AB.map(a => {
@@ -385,17 +416,25 @@
           <div class="wzAbHead"><b>${AB_NAME[a]}</b><span class="wzAbMod">${tot ? sgn(mod(tot)) : '–'}</span></div>
           <div class="wzAbHelp">${esc(WZ.ABILITY_HINT[a])}</div>
           <div class="wzAbRow">
-            ${W.rolled
+            ${W.manual
+              ? `<input type="number" inputmode="numeric" min="3" max="20" step="1" class="wzNum" data-man="${a}" value="${base || ''}" placeholder="3–20">`
+              : W.rolled
               ? `<select data-ab="${a}"><option value="">—</option>${(W.rollPool || []).map((v,i) => `<option value="${i}" ${W.rollAssign && W.rollAssign[a] === i ? 'selected' : ''} ${Object.values(W.rollAssign || {}).includes(i) && W.rollAssign[a] !== i ? 'disabled' : ''}>${v}</option>`).join('')}</select>`
               : `<select data-ab="${a}"><option value="">—</option>${STD_ARRAY.map(v => `<option value="${v}" ${base === v ? 'selected' : ''} ${used[v] && base !== v ? 'disabled' : ''}>${v}</option>`).join('')}</select>`}
             ${bt[a] ? `<span class="wzBonus">${sgn(bt[a])} bonus</span>` : ''}
             <span class="wzTotal">${tot ? 'Total <b>' + tot + '</b>' : ''}</span>
           </div></div>`;
       }).join('')}</div>
-      <p class="wzNote">${W.rolled ? 'Assign each rolled number to a score.' : 'Using the standard array: 15, 14, 13, 12, 10, 8 — one for each score.'} ${hasAll ? '' : ''}</p>`;
+      <p class="wzNote">${W.manual ? 'Type the numbers you rolled at the table (before species or background bonuses — those are added for you). Tap “Best fit” to have the app assign your six numbers to the best scores for your class.' : W.rolled ? 'Assign each rolled number to a score.' : 'Using the standard array: 15, 14, 13, 12, 10, 8 — one for each score.'}</p>`;
 
     $('#wzRec').onclick = () => {
       const order = WZ.PRIORITY[W.cls];
+      if(W.manual){
+        const vals = AB.map(a => W.scores[a]).filter(Boolean).sort((x, y) => y - x);
+        if(vals.length < 6){ $('#wzHint').textContent = 'Enter all six numbers first, then tap Best fit.'; return; }
+        W.scores = {}; order.forEach((a, i) => W.scores[a] = vals[i]);
+        saveDraft(); BUILD.abilities(body); refreshNext(); return;
+      }
       const pool = W.rolled && W.rollPool ? [...W.rollPool].map((v,i) => [v,i]).sort((a,b) => b[0]-a[0]) : STD_ARRAY.map((v,i) => [v,i]);
       W.scores = {}; if(W.rolled) W.rollAssign = {};
       order.forEach((a, i) => { W.scores[a] = pool[i][0]; if(W.rolled) W.rollAssign[a] = pool[i][1]; });
@@ -403,11 +442,23 @@
     };
     $('#wzRoll').onclick = () => {
       const roll = () => { const d = [1,2,3,4].map(() => 1 + Math.floor(Math.random()*6)).sort((a,b) => a-b); return d[1]+d[2]+d[3]; };
-      W.rolled = true; W.rollPool = [roll(),roll(),roll(),roll(),roll(),roll()].sort((a,b) => b-a);
+      W.rolled = true; W.manual = false; W.rollPool = [roll(),roll(),roll(),roll(),roll(),roll()].sort((a,b) => b-a);
       W.scores = {}; W.rollAssign = {};
       WZ.PRIORITY[W.cls].forEach((a, i) => { W.scores[a] = W.rollPool[i]; W.rollAssign[a] = i; });
       saveDraft(); BUILD.abilities(body); refreshNext();
     };
+    $('#wzManual').onclick = () => { W.manual = true; W.rolled = false; W.rollPool = null; W.rollAssign = null; W.scores = {}; saveDraft(); BUILD.abilities(body); refreshNext(); };
+    $('#wzStd').onclick = () => { W.manual = false; W.rolled = false; W.rollPool = null; W.rollAssign = null; W.scores = {}; saveDraft(); BUILD.abilities(body); refreshNext(); };
+    body.querySelectorAll('input[data-man]').forEach(inp => inp.oninput = () => {
+      const a = inp.dataset.man, v = parseInt(inp.value, 10);
+      if(v >= 3 && v <= 20) W.scores[a] = v; else delete W.scores[a];
+      const box = inp.closest('.wzAb');
+      const tot = W.scores[a] ? W.scores[a] + bonusTotals()[a] : null;
+      box.querySelector('.wzAbMod').textContent = tot ? sgn(mod(tot)) : '–';
+      box.querySelector('.wzTotal').innerHTML = tot ? 'Total <b>' + tot + '</b>' : '';
+      inp.classList.toggle('bad', !!inp.value && !W.scores[a]);
+      saveDraft(); refreshNext();
+    });
     $('#wzClear').onclick = () => { W.scores = {}; W.rolled = false; W.rollPool = null; W.rollAssign = null; saveDraft(); BUILD.abilities(body); refreshNext(); };
     body.querySelectorAll('select[data-ab]').forEach(s => s.onchange = () => {
       const a = s.dataset.ab;
@@ -507,7 +558,12 @@
           <div><b>${WZ.RACE_SPEED[W.race] || 30}</b><span>Speed</span></div><div><b>${sgn(mod(fs.dex))}</b><span>Initiative</span></div></div>
         <div class="wzAbMini">${AB.map(a => `<div><span>${a.toUpperCase()}</span><b>${fs[a]}</b><small>${sgn(mod(fs[a]))}</small></div>`).join('')}</div>
       </div>
-      <p class="wzLead">Optional: who are you? (Skip any you like — you can fill these in later.)</p>
+      <div class="wzInfo"><b>What you get</b>
+        ${l1Features().map(f => `<p><b>${esc(f[1])}.</b> ${esc(f[2])}</p>`).join('')}
+        ${DND.RACE_TRAITS[W.race] ? `<p><b>${esc(W.race)}:</b> ${esc(DND.RACE_TRAITS[W.race])}</p>` : (live.detail['races:' + live.raceKeys[W.race]] ? `<p><b>${esc(W.race)}</b></p>${detailHtml(live.detail['races:' + live.raceKeys[W.race]])}` : '')}
+        ${localBg() && localBg().feature ? `<p><b>${esc(localBg().feature)}.</b> ${esc(localBg().featureDesc || '')}</p>` : ''}
+      </div>
+      <p class="wzLead" style="margin-top:14px">Optional: who are you? (Skip any you like — you can fill these in later.)</p>
       ${[['traits','Personality traits'],['ideals','Ideals — what you believe'],['bonds','Bonds — who/what you care about'],['flaws','Flaws']].map(([k, l]) =>
         `<label>${l}</label><textarea data-p="${k}" rows="2">${esc(W.persona[k])}</textarea>`).join('')}`;
     body.querySelectorAll('[data-p]').forEach(t => t.oninput = () => { W.persona[t.dataset.p] = t.value; W.personaTouched = true; saveDraft(); });
@@ -617,6 +673,7 @@
   .wzDiff.d1{ color:#7fd6a0; border-color:#2f6b49; } .wzDiff.d2{ color:#e0c26a; border-color:#6b5a2a; } .wzDiff.d3{ color:#e29a7a; border-color:#6b402f; }
   .wzDoes{ margin:8px 0 6px; padding-left:18px; color:var(--text); font-size:12.5px; line-height:1.55; }
   .wzKey{ font-size:12px; color:var(--text-dim); margin-top:4px; } .wzKey b{ font-size:12px; color:var(--text); }
+  .wzFeat{ margin-top:8px; font-size:12.5px; color:var(--text); } .wzFeat p{ margin:6px 0 0; color:var(--text-dim); line-height:1.5; } .wzFeat > b{ font-size:12px; }
   .wzInfo{ background:#0d1318; border:1px solid var(--border); border-radius:10px; padding:12px; margin-top:12px; font-size:13px; }
   .wzInfo p{ margin:6px 0 0; color:var(--text-dim); line-height:1.5; font-size:12.5px; }
   .wzPickRow{ display:flex; align-items:center; gap:10px; margin-top:8px; } .wzPickRow span{ min-width:62px; color:var(--text); font-size:13px; }
@@ -628,6 +685,8 @@
   .wzAbHead{ display:flex; justify-content:space-between; align-items:center; } .wzAbMod{ font-family:'Cinzel',serif; font-size:20px; color:var(--accent-bright); }
   .wzAbHelp{ font-size:11.5px; color:var(--text-dim); margin:2px 0 8px; }
   .wzAbRow{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; } .wzAbRow select{ width:90px; margin-top:0; }
+  .wzAbRow input.wzNum{ width:90px; margin-top:0; text-align:center; } .wzAbRow input.wzNum.bad{ border-color:var(--danger); }
+  .wzBtnRow .btn.on{ border-color:var(--accent); color:var(--accent-bright); }
   .wzBonus{ font-size:11.5px; color:#7fd6a0; } .wzTotal{ margin-left:auto; font-size:12.5px; color:var(--text-dim); } .wzTotal b{ color:var(--text); font-size:15px; }
   .wzSkillGrid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
   .wzSkill{ background:#0d1318; border:2px solid var(--border); color:var(--text); border-radius:10px; padding:10px 12px; min-height:46px; font-size:13.5px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; text-align:left; }
